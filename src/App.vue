@@ -1,160 +1,91 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { invoke } from "@tauri-apps/api/core";
+import WindowHeader from "./components/WindowHeader.vue";
+import Sidebar from "./components/Sidebar.vue";
+import Home from "./pages/Home.vue";
+import Profile from "./pages/Profile.vue";
+import Results from "./pages/Results.vue";
+import Settings from "./pages/Settings.vue";
 
-const greetMsg = ref("");
-const name = ref("");
+// 当前活动页面
+const activePage = ref('home');
 
-async function greet() {
-  // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-  greetMsg.value = await invoke("greet", { name: name.value });
-}
+// 切换页面
+const changePage = (page: string) => {
+  activePage.value = page;
+};
+
+// 背景装饰
+const decorations = [
+  { type: 'star', position: 'top-10 right-10', delay: '0s' },
+  { type: 'star', position: 'top-20 left-20', delay: '0.5s' },
+  { type: 'star', position: 'bottom-20 right-30', delay: '1s' },
+  { type: 'star', position: 'bottom-40 left-40', delay: '1.5s' },
+  { type: 'balloon', position: 'top-0 left-10', delay: '0s' },
+  { type: 'balloon', position: 'top-5 right-20', delay: '2s' }
+];
 </script>
 
 <template>
-  <main class="container">
-    <h1>Welcome to Tauri + Vue</h1>
-
-    <div class="row">
-      <a href="https://vitejs.dev" target="_blank">
-        <img src="/vite.svg" class="logo vite" alt="Vite logo" />
-      </a>
-      <a href="https://tauri.app" target="_blank">
-        <img src="/tauri.svg" class="logo tauri" alt="Tauri logo" />
-      </a>
-      <a href="https://vuejs.org/" target="_blank">
-        <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
-      </a>
+  <div class="bg-gradient-to-r from-blue-50 via-purple-50 to-pink-50 h-screen overflow-hidden flex flex-col">
+    <!-- 背景装饰 -->
+    <div 
+      v-for="(decoration, index) in decorations" 
+      :key="index" 
+      :class="[
+        'fixed', 
+        decoration.position, 
+        decoration.type === 'star' ? 'star text-2xl opacity-70' : 'float text-3xl',
+      ]"
+      :style="{ animationDelay: decoration.delay }"
+    >
+      {{ decoration.type === 'star' ? '✨' : '🎈' }}
     </div>
-    <p>Click on the Tauri, Vite, and Vue logos to learn more.</p>
+    
+    <!-- 顶部标题栏 -->
+    <WindowHeader />
+    
+    <!-- 主内容区域 -->
+    <div class="flex flex-1 overflow-hidden">
+      <!-- 侧边栏导航 -->
+      <Sidebar :active-page="activePage" @change-page="changePage" />
+      
+      <!-- 页面内容区域 -->
+      <div class="content-container flex-1 overflow-hidden relative bg-white bg-opacity-80 rounded-tl-3xl">
+        <!-- 彩带装饰 -->
+        <div class="absolute top-0 right-0 w-full h-6 bg-gradient-to-r from-red-300 via-yellow-300 to-green-300 opacity-70"></div>
+        
+        <!-- 页面内容 -->
+        <div class="h-full overflow-auto pt-8 pb-4 px-2">
+          <Home v-if="activePage === 'home'" />
+          <Profile v-else-if="activePage === 'profile'" />
+          <Results v-else-if="activePage === 'results'" />
+          <Settings v-else-if="activePage === 'settings'" />
+        </div>
+      </div>
+    </div>
 
-    <form class="row" @submit.prevent="greet">
-      <input id="greet-input" v-model="name" placeholder="Enter a name..." />
-      <button type="submit">Greet</button>
-    </form>
-    <p>{{ greetMsg }}</p>
-  </main>
+    <!-- 底部装饰 -->
+    <div class="fixed bottom-0 left-0 w-full flex justify-between py-2 px-4 space-x-4 text-2xl opacity-50 pointer-events-none">
+      <div class="flex space-x-4">
+        <div class="bounce" style="animation-delay: 0s;">🐰</div>
+        <div class="bounce" style="animation-delay: 0.3s;">🐱</div>
+        <div class="bounce" style="animation-delay: 0.6s;">🐶</div>
+      </div>
+      <div class="flex space-x-4">
+        <div class="bounce" style="animation-delay: 0.9s;">🐼</div>
+        <div class="bounce" style="animation-delay: 1.2s;">🦊</div>
+        <div class="bounce" style="animation-delay: 1.5s;">🐨</div>
+      </div>
+    </div>
+  </div>
 </template>
 
-<style scoped>
-.logo.vite:hover {
-  filter: drop-shadow(0 0 2em #747bff);
-}
-
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #249b73);
-}
-
-</style>
 <style>
-:root {
-  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
-  font-size: 16px;
-  line-height: 24px;
-  font-weight: 400;
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css');
+@import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap');
 
-  color: #0f0f0f;
-  background-color: #f6f6f6;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-text-size-adjust: 100%;
+* {
+  font-family: 'Comic Neue', 'Comic Sans MS', cursive, 'Microsoft YaHei', sans-serif;
 }
-
-.container {
-  margin: 0;
-  padding-top: 10vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  text-align: center;
-}
-
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: 0.75s;
-}
-
-.logo.tauri:hover {
-  filter: drop-shadow(0 0 2em #24c8db);
-}
-
-.row {
-  display: flex;
-  justify-content: center;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-
-a:hover {
-  color: #535bf2;
-}
-
-h1 {
-  text-align: center;
-}
-
-input,
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  color: #0f0f0f;
-  background-color: #ffffff;
-  transition: border-color 0.25s;
-  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
-}
-
-button {
-  cursor: pointer;
-}
-
-button:hover {
-  border-color: #396cd8;
-}
-button:active {
-  border-color: #396cd8;
-  background-color: #e8e8e8;
-}
-
-input,
-button {
-  outline: none;
-}
-
-#greet-input {
-  margin-right: 5px;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    color: #f6f6f6;
-    background-color: #2f2f2f;
-  }
-
-  a:hover {
-    color: #24c8db;
-  }
-
-  input,
-  button {
-    color: #ffffff;
-    background-color: #0f0f0f98;
-  }
-  button:active {
-    background-color: #0f0f0f69;
-  }
-}
-
 </style>
