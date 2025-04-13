@@ -95,18 +95,6 @@
           <!-- 转盘组件 -->
           <LuckyWheelComp ref="wheelRef" />
           
-          <!-- 抽奖按钮 -->
-          <button 
-            id="spinButton" 
-            class="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-bold py-4 px-10 rounded-full text-xl shadow-lg transform transition hover:scale-110 relative overflow-hidden border-4 border-white mb-6 spin-button"
-            :disabled="isSpinning"
-            :class="{ 'opacity-50': isSpinning }"
-            @click="startSpin"
-          >
-            <span class="relative z-10">{{ isSpinning ? '抽奖中...' : '开始抽奖' }}</span>
-            <span class="button-glow"></span>
-          </button>
-          
           <!-- 操作说明 -->
           <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl border-2 border-blue-200 p-4 max-w-md">
             <h3 class="font-bold text-lg mb-2 text-blue-700 flex items-center">
@@ -163,11 +151,6 @@ const students = [
 ];
 
 // 转盘引用
-interface WheelRef {
-  spin: () => boolean;
-  setCustomWords: (words: {cn: string, en: string}[]) => void;
-}
-const wheelRef = ref<WheelRef | null>(null);
 const isSpinning = ref(false);
 
 // 自定义单词
@@ -182,54 +165,6 @@ const newWordEN = ref('');
 const selectedWordIndex = ref(0);
 const updateStatus = ref('');
 
-// 监听单词变化
-watch(wordList, (newWords: {cn: string, en: string}[]) => {
-  if (wheelRef.value) {
-    wheelRef.value.setCustomWords(newWords);
-  }
-}, { deep: true });
-
-// 组件挂载后初始化
-onMounted(() => {
-  // 确保转盘组件已加载
-  const initWheel = () => {
-    if (wheelRef.value) {
-      console.log('转盘组件已加载，设置自定义单词');
-      wheelRef.value.setCustomWords(wordList.value);
-    } else {
-      console.error('转盘组件未正确加载，重试中...');
-      setTimeout(initWheel, 200);
-    }
-  };
-  
-  // 延迟初始化以确保组件已挂载
-  setTimeout(initWheel, 200);
-});
-
-// 开始旋转
-const startSpin = () => {
-  console.log('开始旋转转盘', wheelRef.value);
-  if (wheelRef.value) {
-    isSpinning.value = true;
-    // 添加按钮震动效果
-    const button = document.getElementById('spinButton');
-    if (button) {
-      button.classList.add('animate-shake');
-      setTimeout(() => {
-        button.classList.remove('animate-shake');
-      }, 500);
-    }
-    
-    const success = wheelRef.value.spin();
-    if (!success) {
-      isSpinning.value = false;
-    }
-  } else {
-    console.error('转盘组件未找到');
-    isSpinning.value = false;
-  }
-};
-
 // 更新自定义单词
 const updateWord = () => {
   if (newWordEN.value.trim() && newWordCN.value.trim()) {
@@ -237,15 +172,6 @@ const updateWord = () => {
       en: newWordEN.value.trim(),
       cn: newWordCN.value.trim()
     };
-    
-    // 更新转盘中的单词
-    if (wheelRef.value) {
-      wheelRef.value.setCustomWords(wordList.value);
-      updateStatus.value = '单词已更新！';
-      setTimeout(() => {
-        updateStatus.value = '';
-      }, 2000);
-    }
     
     newWordEN.value = '';
     newWordCN.value = '';
@@ -260,14 +186,6 @@ const resetWords = () => {
     { cn: '太阳', en: 'Sun' },
     { cn: '月亮', en: 'Moon' }
   ];
-  
-  if (wheelRef.value) {
-    wheelRef.value.setCustomWords(wordList.value);
-    updateStatus.value = '已重置为默认单词';
-    setTimeout(() => {
-      updateStatus.value = '';
-    }, 2000);
-  }
   
   newWordEN.value = '';
   newWordCN.value = '';

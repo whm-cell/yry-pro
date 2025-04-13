@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@lucky-canvas/vue':
+        specifier: ^0.1.11
+        version: 0.1.11(vue@3.5.13(typescript@5.6.3))
       '@tailwindcss/postcss':
         specifier: ^4.1.3
         version: 4.1.3
@@ -332,6 +335,11 @@ packages:
   '@jridgewell/sourcemap-codec@1.5.0':
     resolution: {integrity: sha512-gv3ZRaISU3fjPAgNsriBRqGWQL6quFx04YMPW/zD8XMLsU32mhCCbfbO6KZFLjvYpCZ8zyDEgqsgf+PwPaM7GQ==}
 
+  '@lucky-canvas/vue@0.1.11':
+    resolution: {integrity: sha512-5vm0txSKRBtMgrE/HZEvw1joSTx9NTdAkc8tBp/aX0LxyhQtiTVBLsRgdYUK/OiURCL8bo+046BTGnV+Q4JFlg==}
+    peerDependencies:
+      vue: ^2.0.0 || >=3.0.0-rc.0
+
   '@rollup/rollup-android-arm-eabi@4.39.0':
     resolution: {integrity: sha512-lGVys55Qb00Wvh8DMAocp5kIcaNzEFTmGhfFd88LfaogYTRKrdxgtlO5H6S49v2Nd8R2C6wLOal0qv6/kCkOwA==}
     cpu: [arm]
@@ -624,6 +632,11 @@ packages:
 
   '@vue/compiler-vue2@2.7.16':
     resolution: {integrity: sha512-qYC3Psj9S/mfu9uVi5WvNZIzq+xnXMhOwbTFKKDD7b1lhpnn71jXSFdTQ+WsIEk0ONCd7VV2IMm7ONl6tbQ86A==}
+
+  '@vue/composition-api@1.7.2':
+    resolution: {integrity: sha512-M8jm9J/laYrYT02665HkZ5l2fWTK4dcVg3BsDHm/pfz+MjDYwX+9FUaZyGwEyXEDonQYRCo0H7aLgdklcIELjw==}
+    peerDependencies:
+      vue: '>= 2.5 < 2.7'
 
   '@vue/language-core@2.2.8':
     resolution: {integrity: sha512-rrzB0wPGBvcwaSNRriVWdNAbHQWSf0NlGqgKHK5mEkXpefjUlVRP62u03KvwZpvKVjRnBIQ/Lwre+Mx9N6juUQ==}
@@ -1117,6 +1130,9 @@ packages:
   lodash@4.17.21:
     resolution: {integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==}
 
+  lucky-canvas@1.7.27:
+    resolution: {integrity: sha512-Ftz6qD+863bI7xijBmZg3dw3cNEc7odPr70EZQcGA14y3TgTAzH65HPosOCd6kKUlMwhntBaHMx3onoj9MtJRQ==}
+
   magic-string@0.30.17:
     resolution: {integrity: sha512-sNPKHvyjVf7gyjwS4xGTaW/mCnF8wnjtifKBEhxfZ7E/S8tQ0rssrwGNn6q8JH/ohItJfSQp9mBtQYuTlH5QnA==}
 
@@ -1439,6 +1455,16 @@ packages:
   vscode-uri@3.1.0:
     resolution: {integrity: sha512-/BpdSx+yCQGnCvecbyXdxHDkuk55/G3xwnC0GqY4gmQ3j+A+g8kzzgB4Nk/SINjqn6+waqw3EgbVF2QKExkRxQ==}
 
+  vue-demi@0.7.5:
+    resolution: {integrity: sha512-eFSQSvbQdY7C9ujOzvM6tn7XxwLjn0VQDXQsiYBLBwf28Na+2nTQR4BBBcomhmdP6mmHlBKAwarq6a0BPG87hQ==}
+    hasBin: true
+    peerDependencies:
+      '@vue/composition-api': ^1.0.0-beta.1
+      vue: ^2.6.0 || >=3.0.0-rc.1
+    peerDependenciesMeta:
+      '@vue/composition-api':
+        optional: true
+
   vue-eslint-parser@9.4.3:
     resolution: {integrity: sha512-2rYRLWlIpaiN8xbPiDyXZXRgLGOtWxERV7ND5fFAv5qo1D2N9Fu9MNajBNc6o13lZ+24DAWCkQCvj4klgmcITg==}
     engines: {node: ^14.17.0 || >=16.0.0}
@@ -1657,6 +1683,13 @@ snapshots:
   '@humanwhocodes/retry@0.4.2': {}
 
   '@jridgewell/sourcemap-codec@1.5.0': {}
+
+  '@lucky-canvas/vue@0.1.11(vue@3.5.13(typescript@5.6.3))':
+    dependencies:
+      '@vue/composition-api': 1.7.2(vue@3.5.13(typescript@5.6.3))
+      lucky-canvas: 1.7.27
+      vue: 3.5.13(typescript@5.6.3)
+      vue-demi: 0.7.5(@vue/composition-api@1.7.2(vue@3.5.13(typescript@5.6.3)))(vue@3.5.13(typescript@5.6.3))
 
   '@rollup/rollup-android-arm-eabi@4.39.0':
     optional: true
@@ -1892,6 +1925,10 @@ snapshots:
     dependencies:
       de-indent: 1.0.2
       he: 1.2.0
+
+  '@vue/composition-api@1.7.2(vue@3.5.13(typescript@5.6.3))':
+    dependencies:
+      vue: 3.5.13(typescript@5.6.3)
 
   '@vue/language-core@2.2.8(typescript@5.6.3)':
     dependencies:
@@ -2391,6 +2428,8 @@ snapshots:
 
   lodash@4.17.21: {}
 
+  lucky-canvas@1.7.27: {}
+
   magic-string@0.30.17:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.0
@@ -2686,6 +2725,12 @@ snapshots:
       lightningcss: 1.29.2
 
   vscode-uri@3.1.0: {}
+
+  vue-demi@0.7.5(@vue/composition-api@1.7.2(vue@3.5.13(typescript@5.6.3)))(vue@3.5.13(typescript@5.6.3)):
+    dependencies:
+      vue: 3.5.13(typescript@5.6.3)
+    optionalDependencies:
+      '@vue/composition-api': 1.7.2(vue@3.5.13(typescript@5.6.3))
 
   vue-eslint-parser@9.4.3(eslint@9.24.0(jiti@2.4.2)):
     dependencies:
