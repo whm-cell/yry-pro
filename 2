@@ -1,0 +1,354 @@
+<template>
+    <div class="lucky-container">
+      <LuckyWheel
+        ref="myLucky"
+        :width="1000"
+        :height="1000"
+        :prizes="prizes"
+        :blocks="blocks"
+        :buttons="buttons"
+        @start="startCallback"
+        @end="endCallback"
+      />
+      
+      <!-- 半透明弹窗 -->
+      <transition name="fade">
+        <div v-if="showModal" class="modal-overlay" @click="closeModal">
+          <div class="modal-card" @click.stop>
+            <div class="modal-header">
+              <div class="modal-title">{{ modalTitle }}</div>
+              <button class="close-button" @click="closeModal">×</button>
+            </div>
+            <div class="modal-content">
+              <div class="prize-image">
+                <img :src="selectedPrize.imgSrc" alt="Prize Image">
+              </div>
+              <div class="prize-info">
+                <h2>{{ selectedPrize.name }}</h2>
+                <p>{{ selectedPrize.description }}</p>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="confirm-button" @click="closeModal">我知道了</button>
+            </div>
+          </div>
+        </div>
+      </transition>
+    </div>
+  </template>
+  
+  <script>
+  // 引入图片资源
+  import applePng from './ct-converted.png'  // 使用@别名指向src目录
+  import catPng from './ct-converted.png'
+  import ballPng from './ct-converted.png'
+  import dogPng from './ct-converted.png'
+  import starPng from './ct-converted.png'
+  import crownPng from './ct-converted.png'
+  import dotsPng from './ct-converted.png'
+  
+  export default {
+    data() {
+      return {
+        // 弹窗控制
+        showModal: false,
+        modalTitle: "",
+        selectedPrize: {
+          name: "",
+          description: "",
+          imgSrc: ""
+        },
+        
+        // 可爱的边框设计
+        blocks: [
+          { padding: '15px', background: 'linear-gradient(to right, #ff7979, #ffbe76)' },
+          { padding: '2px', background: '#ffffff'}
+        ],
+        
+        // 五个格子：四个英语单词和一个谢谢惠顾
+        prizes: [
+          { 
+            background: '#badc58', 
+            fonts: [
+              { text: 'Apple', top: '35%', fontColor: '#2d3436', fontSize: '20px', fontWeight: 'bold' },
+              { text: '苹果', top: '55%', fontColor: '#2d3436', fontSize: '16px' }
+            ],
+            imgs: [{ src: applePng, width: '150px', top: '10%' }],
+            // 为弹窗准备的额外信息
+            prizeInfo: {
+              name: "Apple",
+              description: "苹果是一种常见的水果，营养丰富。",
+              imgSrc: applePng
+            }
+          },
+          { 
+            background: '#ff9ff3', 
+            fonts: [
+              { text: 'Cat', top: '35%', fontColor: '#2d3436', fontSize: '20px', fontWeight: 'bold' },
+              { text: '猫咪', top: '55%', fontColor: '#2d3436', fontSize: '16px' }
+            ],
+            imgs: [{ src: catPng, width: '60px', top: '10%' }],
+            prizeInfo: {
+              name: "Cat",
+              description: "猫咪是可爱的宠物，喜欢捉老鼠。",
+              imgSrc: catPng
+            }
+          },
+          { 
+            background: '#ffeaa7', 
+            fonts: [
+              { text: 'Ball', top: '35%', fontColor: '#2d3436', fontSize: '20px', fontWeight: 'bold' },
+              { text: '球', top: '55%', fontColor: '#2d3436', fontSize: '16px' }
+            ],
+            imgs: [{ src: ballPng, width: '60px', top: '10%' }],
+            prizeInfo: {
+              name: "Ball",
+              description: "球是圆形的玩具，可以用来踢、投或滚动。",
+              imgSrc: ballPng
+            }
+          },
+          { 
+            background: '#74b9ff', 
+            fonts: [
+              { text: 'Dog', top: '35%', fontColor: '#2d3436', fontSize: '20px', fontWeight: 'bold' },
+              { text: '小狗', top: '55%', fontColor: '#2d3436', fontSize: '16px' }
+            ],
+            imgs: [{ src: dogPng, width: '60px', top: '10%' }],
+            prizeInfo: {
+              name: "Dog",
+              description: "小狗是人类的好朋友，很忠诚。",
+              imgSrc: dogPng
+            }
+          },
+          { 
+            background: '#fab1a0', 
+            fonts: [
+              { text: '谢谢惠顾', top: '40%', fontColor: '#2d3436', fontSize: '20px', fontWeight: 'bold' }
+            ],
+            imgs: [{ src: starPng, width: '60px', top: '10%' }],
+            prizeInfo: {
+              name: "谢谢惠顾",
+              description: "再接再厉，下次一定能中奖哦！",
+              imgSrc: starPng
+            }
+          }
+        ],
+        
+        // 可爱的中心按钮
+        buttons: [{
+          radius: '35%',
+          background: '#ff7675',
+          pointer: true,
+          fonts: [
+            { 
+              text: '转一转', 
+              top: '35%',
+              fontColor: '#fff',
+              fontSize: '24px',
+              fontWeight: 'bold'
+            }
+          ],
+          imgs: [
+            { src: crownPng, width: '35px', top: '10%' }
+          ]
+        }]
+      }
+    },
+    methods: {
+      startCallback() {
+        this.$refs.myLucky.play()
+        // 模拟抽奖
+        setTimeout(() => {
+          // 随机选择索引（0-4）
+          const index = Math.floor(Math.random() * 5)
+          this.$refs.myLucky.stop(index)
+        }, 3000)
+      },
+      endCallback(prize) {
+        // 设置弹窗内容
+        const prizeIndex = this.prizes.findIndex(p => 
+          p.fonts[0].text === prize.fonts[0].text);
+        
+        if (prizeIndex !== -1) {
+          const prizeData = this.prizes[prizeIndex];
+          this.selectedPrize = prizeData.prizeInfo;
+          this.modalTitle = prize.fonts[0].text === '谢谢惠顾' ? 
+            '很遗憾' : '恭喜抽中';
+          this.showModal = true;
+        }
+      },
+      closeModal() {
+        this.showModal = false;
+      }
+    }
+  }
+  </script>
+  
+  <style scoped>
+  .lucky-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 30px;
+  margin: 20px;
+  padding: 20px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  position: relative;
+  /* 添加容器大小适配 */
+  min-width: 1040px; /* 略大于转盘 */
+  min-height: 1040px;
+  overflow: hidden; /* 处理可能的溢出 */
+}
+  /* 添加响应式布局 */
+@media (max-width: 1100px) {
+  .lucky-container {
+    min-width: auto;
+    min-height: auto;
+    width: 100%;
+  }
+  
+  /* 转盘大小需要在js中动态设置 */
+}
+  /* 弹窗样式 */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+    backdrop-filter: blur(5px);
+  }
+  
+  .modal-card {
+    width: 360px;
+    background-color: rgba(255, 255, 255, 0.85);
+    border-radius: 20px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    animation: pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  }
+  
+  .modal-header {
+    padding: 15px 20px;
+    background: linear-gradient(to right, rgba(255, 121, 121, 0.8), rgba(255, 190, 118, 0.8));
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .modal-title {
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+  }
+  
+  .close-button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+  }
+  
+  .modal-content {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .prize-image {
+    width: 140px;
+    height: 140px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.7);
+    border-radius: 50%;
+    margin-bottom: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 15px;
+  }
+  
+  .prize-image img {
+    max-width: 100%;
+    max-height: 100%;
+  }
+  
+  .prize-info {
+    text-align: center;
+  }
+  
+  .prize-info h2 {
+    margin: 0 0 10px;
+    color: #2d3436;
+    font-size: 24px;
+  }
+  
+  .prize-info p {
+    margin: 0;
+    color: #636e72;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  
+  .modal-footer {
+    padding: 15px 20px;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .confirm-button {
+    background: linear-gradient(to right, #ff7979, #ffbe76);
+    border: none;
+    border-radius: 50px;
+    color: white;
+    padding: 10px 30px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  
+  .confirm-button:hover {
+    transform: scale(1.05);
+  }
+  
+  /* 动画 */
+  @keyframes pop-in {
+    0% {
+      transform: scale(0.8);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  
+  .fade-enter-active, .fade-leave-active {
+    transition: opacity 0.3s;
+  }
+  
+  .fade-enter, .fade-leave-to {
+    opacity: 0;
+  }
+  
+  @font-face {
+    font-family: 'KidFont';
+    src: url('@/assets/kid-font.woff2') format('woff2');
+  }
+  
+  .prize-info h2, .modal-title, .confirm-button {
+    font-family: 'KidFont', sans-serif;
+  }
+  </style>
+  
