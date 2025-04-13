@@ -16,109 +16,13 @@
       </div>
       
       <div class="flex flex-col md:flex-row h-full">
-        <!-- 左侧单词设置 -->
-        <div class="w-full md:w-1/3 pr-0 md:pr-6 mb-6 md:mb-0 animate-fadeIn">
-          <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl border-2 border-blue-200 p-4 h-full overflow-auto">
-            <h3 class="font-bold text-xl mb-4 text-blue-700 flex items-center">
-              <span class="text-2xl mr-2 animate-bounce">📝</span> 中英文单词对照
-            </h3>
-            
-            <div class="space-y-4">
-              <div 
-                v-for="(word, index) in wordList" 
-                :key="index"
-                class="bg-white p-3 rounded-xl shadow-sm flex items-center justify-between transform hover:scale-105 transition cursor-pointer w-full"
-                :class="{ 'border-2 border-blue-400': selectedWordIndex === index }"
-                @click="selectedWordIndex = index; newWordCN = word.cn; newWordEN = word.en"
-              >
-                <div class="flex items-center">
-                  <div class="w-10 h-10 rounded-full flex items-center justify-center text-xl bg-blue-100">{{ index + 1 }}</div>
-                  <div class="ml-3">
-                    <div class="font-bold text-purple-600">{{ word.en }}</div>
-                    <div class="text-sm text-gray-500">{{ word.cn }}</div>
-                  </div>
-                </div>
-                <div class="text-blue-500">✏️</div>
-              </div>
-              
-              <div class="mt-6 bg-blue-50 p-4 rounded-xl">
-                <h4 class="font-medium text-blue-700 mb-2">修改单词</h4>
-                <div class="space-y-3">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">英文单词</label>
-                    <input 
-                      v-model="newWordEN" 
-                      type="text" 
-                      class="w-full rounded-lg border border-gray-300 p-2 focus:ring-2 focus:ring-blue-400 focus:outline-none"
-                      placeholder="输入英文单词"
-                    />
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">中文翻译</label>
-                    <input 
-                      v-model="newWordCN" 
-                      type="text" 
-                      class="w-full rounded-lg border border-gray-300 p-2 focus:ring-2 focus:ring-blue-400 focus:outline-none"
-                      placeholder="输入中文翻译"
-                    />
-                  </div>
-                  <div class="flex justify-between">
-                    <button 
-                      @click="updateWord"
-                      class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transform transition hover:scale-105"
-                    >
-                      更新单词
-                    </button>
-                    <button 
-                      @click="resetWords" 
-                      class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg"
-                    >
-                      重置
-                    </button>
-                  </div>
-                </div>
-                <div class="flex justify-between items-center mt-2">
-                  <p class="text-sm text-gray-500">当前修改第 {{ selectedWordIndex + 1 }} 个单词</p>
-                </div>
-                
-                <!-- 更新状态提示 -->
-                <div v-if="updateStatus" class="mt-2 text-center text-green-500 bg-green-50 py-1 px-2 rounded-lg text-sm animate-pulse">
-                  {{ updateStatus }}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
         
         <!-- 右侧转盘 -->
-        <div class="w-full md:w-2/3 flex flex-col items-center justify-center animate-fadeIn-delay">
+        <div class="w-full flex flex-col items-center justify-center animate-fadeIn-delay">
           <!-- 转盘组件 -->
           <LuckyWheelComp ref="wheelRef" />
           
-          <!-- 操作说明 -->
-          <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl border-2 border-blue-200 p-4 max-w-md">
-            <h3 class="font-bold text-lg mb-2 text-blue-700 flex items-center">
-              <span class="text-xl mr-2">📝</span> 操作说明
-            </h3>
-            <ul class="space-y-2 text-sm">
-              <li class="flex items-start">
-                <span class="text-green-500 mr-2">✓</span>
-                <span>左侧可以自定义英文和中文单词对照</span>
-              </li>
-              <li class="flex items-start">
-                <span class="text-green-500 mr-2">✓</span>
-                <span>点击"开始抽奖"按钮开始转动转盘</span>
-              </li>
-              <li class="flex items-start">
-                <span class="text-green-500 mr-2">✓</span>
-                <span>转盘停止后，被选中的单词会放大显示</span>
-              </li>
-              <li class="flex items-start">
-                <span class="text-green-500 mr-2">✓</span>
-                <span>如果抽到"魔法袋子"，会有特殊惊喜哦！</span>
-              </li>
-            </ul>
-          </div>
+          
         </div>
       </div>
       
