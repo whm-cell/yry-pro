@@ -42,6 +42,17 @@
         </div>
       </div>
     </div>
+    
+    <!-- 添加抽奖记录展示 -->
+    <div class="prize-records" v-if="showRecords">
+      <h3>抽奖记录</h3>
+      <div class="records-list">
+        <div v-for="(count, name) in prizeRecords" :key="name" class="record-item">
+          <span>{{ name }}:</span>
+          <span>{{ count }}次</span>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -62,6 +73,17 @@ export default {
       selectedPrize: null,
       isEnlarged: false, // 控制图片大小状态
       showImageDisplay: false, // 新属性控制显示状态
+      
+      // 添加抽奖记录跟踪
+      prizeRecords: {
+        "Apple / 苹果": 0,
+        "Cat / 猫咪": 0,
+        "Ball / 球": 0,
+        "Dog / 小狗": 0,
+        "谢谢惠顾": 0
+      },
+      showRecords: true, // 是否显示抽奖记录
+      allPrizesDrawnOnce: false, // 是否所有奖品都至少抽中一次
       
       // 边框设计
       blocks: [
@@ -158,25 +180,109 @@ export default {
       // 只有在图片没有显示时才允许开始转盘
       if (!this.showImageDisplay) {
         this.$refs.myLucky.play()
-        // 模拟抽奖
+        
+        // 根据规则选择抽奖结果
         setTimeout(() => {
-          // 随机选择索引（0-4）
-          const index = Math.floor(Math.random() * 5)
-          this.$refs.myLucky.stop(index)
+          const selectedIndex = this.getNextPrizeIndex();
+          this.$refs.myLucky.stop(selectedIndex);
         }, 3000)
       }
     },
+    
+    // 获取下一个奖品索引
+    getNextPrizeIndex() {
+      // 检查是否所有普通奖品都至少抽中一次
+      this.checkAllPrizesDrawnOnce();
+      
+      // 如果所有奖品都至少抽中一次，并且所有普通奖品都已经抽中2次，则返回"谢谢惠顾"的索引
+      if (this.allPrizesDrawnOnce && this.areAllPrizesDrawnTwice()) {
+        return 4; // "谢谢惠顾"的索引
+      }
+      
+      // 获取可选的奖品索引
+      const availablePrizes = this.getAvailablePrizeIndices();
+      
+      // 如果已经所有奖品都抽过一次，那么随机选择一个未达到2次的奖品
+      if (this.allPrizesDrawnOnce) {
+        if (availablePrizes.length > 0) {
+          const randomIndex = Math.floor(Math.random() * availablePrizes.length);
+          return availablePrizes[randomIndex];
+        } else {
+          return 4; // 如果没有可选奖品，返回"谢谢惠顾"
+        }
+      }
+      
+      // 如果还有未抽中过的奖品，优先选择它们
+      const undrawnPrizes = this.getUndrawnPrizeIndices();
+      if (undrawnPrizes.length > 0) {
+        const randomIndex = Math.floor(Math.random() * undrawnPrizes.length);
+        return undrawnPrizes[randomIndex];
+      }
+      
+      // 如果所有奖品都抽过，随机选择一个未达到上限的奖品
+      const randomIndex = Math.floor(Math.random() * availablePrizes.length);
+      return availablePrizes[randomIndex];
+    },
+    
+    // 获取未抽中过的奖品索引
+    getUndrawnPrizeIndices() {
+      const undrawnIndices = [];
+      for (let i = 0; i < 4; i++) { // 只检查前4个普通奖品
+        const prizeName = this.prizes[i].prizeInfo.name;
+        if (this.prizeRecords[prizeName] === 0) {
+          undrawnIndices.push(i);
+        }
+      }
+      return undrawnIndices;
+    },
+    
+    // 获取可选的奖品索引（次数小于2的奖品）
+    getAvailablePrizeIndices() {
+      const availableIndices = [];
+      for (let i = 0; i < 4; i++) { // 只检查前4个普通奖品
+        const prizeName = this.prizes[i].prizeInfo.name;
+        if (this.prizeRecords[prizeName] < 2) {
+          availableIndices.push(i);
+        }
+      }
+      return availableIndices;
+    },
+    
+    // 检查是否所有普通奖品都至少抽中一次
+    checkAllPrizesDrawnOnce() {
+      const prizeNames = Object.keys(this.prizeRecords).filter(name => name !== "谢谢惠顾");
+      this.allPrizesDrawnOnce = prizeNames.every(name => this.prizeRecords[name] > 0);
+    },
+    
+    // 检查是否所有普通奖品都已经抽中两次
+    areAllPrizesDrawnTwice() {
+      const prizeNames = Object.keys(this.prizeRecords).filter(name => name !== "谢谢惠顾");
+      return prizeNames.every(name => this.prizeRecords[name] >= 2);
+    },
+    
     endCallback(prize) {
       // 设置选中的奖品
       const prizeIndex = this.prizes.findIndex(p => 
         p.fonts[0].text === prize.fonts[0].text);
       
       if (prizeIndex !== -1) {
+        // 更新抽奖记录
+        const prizeName = this.prizes[prizeIndex].prizeInfo.name;
+        this.prizeRecords[prizeName]++;
+        
+        // 设置选中的奖品显示
         this.selectedPrize = this.prizes[prizeIndex].prizeInfo;
         this.isEnlarged = true; // 初始状态为放大
         this.showImageDisplay = true; // 显示图片
+        
+        // 检查是否所有奖品都至少抽中一次
+        this.checkAllPrizesDrawnOnce();
+        
+        console.log('抽奖记录:', this.prizeRecords);
+        console.log('是否所有奖品都至少抽中一次:', this.allPrizesDrawnOnce);
       }
     },
+    
     // 点击切换图片显示
     toggleImageSize() {
       if (this.isEnlarged) {
@@ -191,6 +297,14 @@ export default {
         this.showImageDisplay = true;
         this.isEnlarged = true;
       }
+    },
+    
+    // 重置抽奖记录
+    resetRecords() {
+      for (const key in this.prizeRecords) {
+        this.prizeRecords[key] = 0;
+      }
+      this.allPrizesDrawnOnce = false;
     }
   }
 }
@@ -449,5 +563,43 @@ export default {
     width: 90%; /* 在移动端稍微大一点 */
     max-width: 90%;
   }
+}
+
+/* 添加抽奖记录样式 */
+.prize-records {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 10px;
+  padding: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 4;
+  max-width: 150px;
+}
+
+.prize-records h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  color: #ff6b81;
+  text-align: center;
+}
+
+.records-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.record-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #555;
+}
+
+.record-item span:first-child {
+  margin-right: 10px;
+  font-weight: bold;
 }
 </style>
