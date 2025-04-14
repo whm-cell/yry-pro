@@ -52,13 +52,13 @@
           <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
           <polyline points="22 4 12 14.01 9 11.01"></polyline>
         </svg>
-        <span>抽奖已完成，点击重置按钮可重新开始</span>
+        <span>单词转盘已完成，点击重置按钮可重新开始</span>
       </div>
     </div>
     
     <!-- 添加抽奖记录展示 -->
     <div class="prize-records" :style="{ display: 'block', opacity: 1 }">
-      <h3>抽奖记录</h3>
+      <h3>单词转盘记录</h3>
       <div class="records-list">
         <div v-for="(count, name) in prizeRecords" :key="name" class="record-item">
           <span>{{ name }}:</span>
@@ -415,14 +415,14 @@ function resetRecords(): void {
   
   allPrizesDrawnOnce.value = false;
   isCompletedFlag.value = false;
-  showTip('抽奖记录已重置，可以重新开始抽奖！', 3000);
+  showTip('单词转盘记录已重置，可以重新开始抽单词！', 3000);
 }
 
 // 开始转动回调
 function startCallback(): void {
   // 如果抽奖已完成并且锁定，显示提示而不启动转盘
   if (isCompletedFlag.value && lockAfterComplete.value) {
-    alert("抽奖已完成，请点击重置按钮重新开始");
+    alert("单词转盘已完成，请点击重置按钮重新开始");
     return;
   }
   

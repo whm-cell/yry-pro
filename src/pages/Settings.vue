@@ -1,124 +1,370 @@
 <template>
   <div class="p-6 h-full">
     <div class="bg-white rounded-3xl shadow-lg p-6 h-full flex flex-col border-4 border-dashed border-purple-300">
-      <h2 class="text-3xl font-bold mb-6 text-center text-purple-700">抽奖转盘设置</h2>
-      
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 flex-grow">
-        <!-- 抽奖模式设置 -->
-        <div class="bg-purple-50 rounded-xl p-5 border border-purple-200 shadow-sm">
-          <h3 class="text-xl font-bold mb-4 text-purple-700 flex items-center">
-            <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M19.4 15C19.2669 15.3016 19.2272 15.6362 19.286 15.9606C19.3448 16.285 19.4995 16.5843 19.73 16.82L19.79 16.88C19.976 17.0657 20.1235 17.2863 20.2241 17.5291C20.3248 17.7719 20.3766 18.0322 20.3766 18.295C20.3766 18.5578 20.3248 18.8181 20.2241 19.0609C20.1235 19.3037 19.976 19.5243 19.79 19.71C19.6043 19.896 19.3837 20.0435 19.1409 20.1441C18.8981 20.2448 18.6378 20.2966 18.375 20.2966C18.1122 20.2966 17.8519 20.2448 17.6091 20.1441C17.3663 20.0435 17.1457 19.896 16.96 19.71L16.9 19.65C16.6643 19.4195 16.365 19.2648 16.0406 19.206C15.7162 19.1472 15.3816 19.1869 15.08 19.32C14.7842 19.4468 14.532 19.6572 14.3543 19.9255C14.1766 20.1938 14.0813 20.5082 14.08 20.83V21C14.08 21.5304 13.8693 22.0391 13.4942 22.4142C13.1191 22.7893 12.6104 23 12.08 23C11.5496 23 11.0409 22.7893 10.6658 22.4142C10.2907 22.0391 10.08 21.5304 10.08 21V20.91C10.0723 20.579 9.96512 20.258 9.77251 19.9887C9.5799 19.7194 9.31074 19.5143 9 19.4C8.69838 19.2669 8.36381 19.2272 8.03941 19.286C7.71502 19.3448 7.41568 19.4995 7.18 19.73L7.12 19.79C6.93425 19.976 6.71368 20.1235 6.47088 20.2241C6.22808 20.3248 5.96783 20.3766 5.705 20.3766C5.44217 20.3766 5.18192 20.3248 4.93912 20.2241C4.69632 20.1235 4.47575 19.976 4.29 19.79C4.10405 19.6043 3.95653 19.3837 3.85588 19.1409C3.75523 18.8981 3.70343 18.6378 3.70343 18.375C3.70343 18.1122 3.75523 17.8519 3.85588 17.6091C3.95653 17.3663 4.10405 17.1457 4.29 16.96L4.35 16.9C4.58054 16.6643 4.73519 16.365 4.794 16.0406C4.85282 15.7162 4.81312 15.3816 4.68 15.08C4.55324 14.7842 4.34276 14.532 4.07447 14.3543C3.80618 14.1766 3.49179 14.0813 3.17 14.08H3C2.46957 14.08 1.96086 13.8693 1.58579 13.4942C1.21071 13.1191 1 12.6104 1 12.08C1 11.5496 1.21071 11.0409 1.58579 10.6658C1.96086 10.2907 2.46957 10.08 3 10.08H3.09C3.42099 10.0723 3.742 9.96512 4.0113 9.77251C4.28059 9.5799 4.48572 9.31074 4.6 9C4.73312 8.69838 4.77282 8.36381 4.714 8.03941C4.65519 7.71502 4.50054 7.41568 4.27 7.18L4.21 7.12C4.02405 6.93425 3.87653 6.71368 3.77588 6.47088C3.67523 6.22808 3.62343 5.96783 3.62343 5.705C3.62343 5.44217 3.67523 5.18192 3.77588 4.93912C3.87653 4.69632 4.02405 4.47575 4.21 4.29C4.39575 4.10405 4.61632 3.95653 4.85912 3.85588C5.10192 3.75523 5.36217 3.70343 5.625 3.70343C5.88783 3.70343 6.14808 3.75523 6.39088 3.85588C6.63368 3.95653 6.85425 4.10405 7.04 4.29L7.1 4.35C7.33568 4.58054 7.63502 4.73519 7.95941 4.794C8.28381 4.85282 8.61838 4.81312 8.92 4.68H9C9.29577 4.55324 9.54802 4.34276 9.72569 4.07447C9.90337 3.80618 9.99872 3.49179 10 3.17V3C10 2.46957 10.2107 1.96086 10.5858 1.58579C10.9609 1.21071 11.4696 1 12 1C12.5304 1 13.0391 1.21071 13.4142 1.58579C13.7893 1.96086 14 2.46957 14 3V3.09C14.0013 3.41179 14.0966 3.72618 14.2743 3.99447C14.452 4.26276 14.7042 4.47324 15 4.6C15.3016 4.73312 15.6362 4.77282 15.9606 4.714C16.285 4.65519 16.5843 4.50054 16.82 4.27L16.88 4.21C17.0657 4.02405 17.2863 3.87653 17.5291 3.77588C17.7719 3.67523 18.0322 3.62343 18.295 3.62343C18.5578 3.62343 18.8181 3.67523 19.0609 3.77588C19.3037 3.87653 19.5243 4.02405 19.71 4.21C19.896 4.39575 20.0435 4.61632 20.1441 4.85912C20.2448 5.10192 20.2966 5.36217 20.2966 5.625C20.2966 5.88783 20.2448 6.14808 20.1441 6.39088C20.0435 6.63368 19.896 6.85425 19.71 7.04L19.65 7.1C19.4195 7.33568 19.2648 7.63502 19.206 7.95941C19.1472 8.28381 19.1869 8.61838 19.32 8.92V9C19.4468 9.29577 19.6572 9.54802 19.9255 9.72569C20.1938 9.90337 20.5082 9.99872 20.83 10H21C21.5304 10 22.0391 10.2107 22.4142 10.5858C22.7893 10.9609 23 11.4696 23 12C23 12.5304 22.7893 13.0391 22.4142 13.4142C22.0391 13.7893 21.5304 14 21 14H20.91C20.5882 14.0013 20.2738 14.0966 20.0055 14.2743C19.7372 14.452 19.5268 14.7042 19.4 15Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            抽奖模式
-          </h3>
-          
-          <div class="grid grid-cols-1 gap-4">
-            <div 
-              v-for="mode in drawModes" 
-              :key="mode.value" 
-              class="relative flex items-center p-4 rounded-lg cursor-pointer transition-all border-2"
-              :class="settings.drawMode === mode.value ? 
-                'bg-purple-100 border-purple-400 shadow-sm' : 
-                'bg-white border-gray-200 hover:border-purple-300'"
-              @click="updateDrawMode(mode.value)"
+      <h2 class="text-3xl font-bold mb-6 text-center text-purple-700">系统设置</h2>
+
+      <!-- 左侧导航栏 -->
+      <div class="flex flex-grow overflow-hidden">
+        <div class="w-64 bg-gray-50 rounded-xl mr-6 p-4 shadow-sm">
+          <div class="text-lg font-bold text-gray-700 mb-4">设置菜单</div>
+          <ul class="space-y-1">
+            <li 
+              v-for="section in settingSections" 
+              :key="section.id"
+              @click="activeSection = section.id"
+              class="px-4 py-3 rounded-lg cursor-pointer transition-all flex items-center"
+              :class="activeSection === section.id ? 'bg-purple-100 text-purple-700' : 'hover:bg-gray-100 text-gray-600'"
             >
-              <span class="mr-3 text-2xl">{{ mode.icon }}</span>
-              <div class="flex-grow">
-                <h4 class="font-bold text-gray-800">{{ mode.name }}</h4>
-                <p class="text-sm text-gray-600">{{ mode.description }}</p>
-              </div>
-              <div 
-                class="w-6 h-6 rounded-full flex items-center justify-center border-2"
-                :class="settings.drawMode === mode.value ? 
-                  'bg-purple-500 border-purple-500' : 
-                  'border-gray-300'"
-              >
-                <svg v-if="settings.drawMode === mode.value" class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </div>
-            </div>
-          </div>
+              <component :is="section.icon" class="w-5 h-5 mr-2" />
+              <span>{{ section.name }}</span>
+            </li>
+          </ul>
         </div>
-        
-        <!-- 奖品设置 -->
-        <div class="bg-blue-50 rounded-xl p-5 border border-blue-200 shadow-sm">
-          <h3 class="text-xl font-bold mb-4 text-blue-700 flex items-center">
-            <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M19 14V22H5V14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M21 9H3V14H21V9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M12 22V9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M12 9H7.5C6.83696 9 6.20107 8.73661 5.73223 8.26777C5.26339 7.79893 5 7.16304 5 6.5C5 5.83696 5.26339 5.20107 5.73223 4.73223C6.20107 4.26339 6.83696 4 7.5 4C11 4 12 9 12 9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M12 9H16.5C17.163 9 17.7989 8.73661 18.2678 8.26777C18.7366 7.79893 19 7.16304 19 6.5C19 5.83696 18.7366 5.20107 18.2678 4.73223C17.7989 4.26339 17.163 4 16.5 4C13 4 12 9 12 9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            奖品设置
-          </h3>
-          
-          <div class="mb-4">
-            <div class="flex items-center mb-2">
-              <label class="text-gray-700 font-medium flex-grow">抽完后锁定转盘</label>
-              <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
-                <input 
-                  type="checkbox" 
-                  :checked="settings.lockAfterComplete" 
-                  @change="toggleLockAfterComplete" 
-                  class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
-                />
-                <label 
-                  class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"
-                  :class="settings.lockAfterComplete ? 'bg-blue-500' : ''"
-                ></label>
+
+        <!-- 右侧设置内容 -->
+        <div class="flex-grow bg-gray-50 rounded-xl p-6 overflow-y-auto">
+          <!-- 系统外观设置 -->
+          <div v-if="activeSection === 'appearance'" class="space-y-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">系统外观设置</h3>
+            
+            <!-- 主题色调 -->
+            <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+              <h4 class="text-lg font-medium text-gray-700 mb-3">主题色调</h4>
+              <div class="grid grid-cols-2 gap-4">
+                <div 
+                  v-for="theme in themes" 
+                  :key="theme.id"
+                  @click="updateTheme(theme.id)"
+                  class="relative rounded-lg overflow-hidden border-2 cursor-pointer transition-all"
+                  :class="systemSettings.theme === theme.id ? 'border-purple-500 shadow-md' : 'border-transparent hover:border-gray-300'"
+                >
+                  <div class="h-20" :style="{background: theme.gradient}"></div>
+                  <div class="p-3 bg-white">
+                    <div class="font-medium">{{ theme.name }}</div>
+                    <div class="text-xs text-gray-500">{{ theme.description }}</div>
+                  </div>
+                  <div 
+                    v-if="systemSettings.theme === theme.id"
+                    class="absolute top-2 right-2 bg-purple-500 text-white rounded-full p-1"
+                  >
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                </div>
               </div>
             </div>
-            <p class="text-sm text-gray-500">
-              {{ settings.lockAfterComplete ? 
-                '抽完所有奖品后将锁定转盘，不能继续抽取' : 
-                '抽完后仍可继续抽取谢谢惠顾' }}
-            </p>
-          </div>
-          
-          <div class="mb-4">
-            <label class="block text-gray-700 font-medium mb-2">普通奖品最多抽取次数</label>
-            <div class="flex items-center">
-              <button 
-                @click="decreaseMaxDraws" 
-                class="px-3 py-1 bg-blue-100 text-blue-700 rounded-l border border-blue-300"
-                :disabled="settings.maxDraws <= 1"
-              >-</button>
-              <span class="px-4 py-1 bg-white border-t border-b border-blue-300">{{ settings.maxDraws }}</span>
-              <button 
-                @click="increaseMaxDraws" 
-                class="px-3 py-1 bg-blue-100 text-blue-700 rounded-r border border-blue-300"
-                :disabled="settings.maxDraws >= 5"
-              >+</button>
+            
+            <!-- 字体设置 -->
+            <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+              <h4 class="text-lg font-medium text-gray-700 mb-3">字体设置</h4>
+              <div class="grid grid-cols-1 gap-4">
+                <div>
+                  <label class="block text-gray-600 mb-2">字体大小</label>
+                  <div class="flex items-center">
+                    <button 
+                      @click="decreaseFontSize" 
+                      class="px-3 py-1 bg-gray-100 text-gray-700 rounded-l border border-gray-300"
+                      :disabled="systemSettings.fontSize <= 12"
+                    >-</button>
+                    <span class="px-4 py-1 bg-white border-t border-b border-gray-300">{{ systemSettings.fontSize }}px</span>
+                    <button 
+                      @click="increaseFontSize" 
+                      class="px-3 py-1 bg-gray-100 text-gray-700 rounded-r border border-gray-300"
+                      :disabled="systemSettings.fontSize >= 20"
+                    >+</button>
+                  </div>
+                </div>
+                
+                <div>
+                  <label class="block text-gray-600 mb-2">字体样式</label>
+                  <div class="grid grid-cols-3 gap-2">
+                    <div 
+                      v-for="font in fonts" 
+                      :key="font.id"
+                      @click="updateFont(font.id)"
+                      class="px-3 py-2 rounded border cursor-pointer text-center"
+                      :class="systemSettings.font === font.id ? 'bg-purple-50 border-purple-300 text-purple-700' : 'bg-white border-gray-200 hover:border-gray-300'"
+                      :style="{fontFamily: font.family}"
+                    >
+                      {{ font.name }}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <p class="mt-1 text-sm text-gray-500">每个奖品最多可以被抽中的次数</p>
+            
+            <!-- 界面模式 -->
+            <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+              <h4 class="text-lg font-medium text-gray-700 mb-3">界面模式</h4>
+              <div class="flex items-center space-x-4">
+                <div 
+                  @click="updateMode('light')" 
+                  class="flex-1 p-4 rounded-lg border-2 cursor-pointer text-center"
+                  :class="systemSettings.mode === 'light' ? 'bg-orange-50 border-orange-300' : 'bg-white border-gray-200 hover:border-gray-300'"
+                >
+                  <div class="text-2xl mb-1">☀️</div>
+                  <div class="font-medium">浅色模式</div>
+                </div>
+                <div 
+                  @click="updateMode('dark')" 
+                  class="flex-1 p-4 rounded-lg border-2 cursor-pointer text-center"
+                  :class="systemSettings.mode === 'dark' ? 'bg-indigo-50 border-indigo-300' : 'bg-white border-gray-200 hover:border-gray-300'"
+                >
+                  <div class="text-2xl mb-1">🌙</div>
+                  <div class="font-medium">深色模式</div>
+                </div>
+                <div 
+                  @click="updateMode('auto')" 
+                  class="flex-1 p-4 rounded-lg border-2 cursor-pointer text-center"
+                  :class="systemSettings.mode === 'auto' ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200 hover:border-gray-300'"
+                >
+                  <div class="text-2xl mb-1">🔄</div>
+                  <div class="font-medium">自动模式</div>
+                </div>
+              </div>
+              <p class="mt-2 text-sm text-gray-500">自动模式将根据系统设置自动切换浅色/深色模式</p>
+            </div>
+            
+            <!-- 动画效果 -->
+            <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="text-lg font-medium text-gray-700">界面动画</h4>
+                <div class="relative inline-block w-12 align-middle select-none transition duration-200 ease-in">
+                  <input 
+                    type="checkbox" 
+                    :checked="systemSettings.animations" 
+                    @change="toggleAnimations" 
+                    class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
+                  />
+                  <label 
+                    class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"
+                    :class="systemSettings.animations ? 'bg-green-500' : ''"
+                  ></label>
+                </div>
+              </div>
+              <p class="text-sm text-gray-500">启用或禁用系统界面过渡动画效果</p>
+            </div>
           </div>
           
-          <button 
-            @click="resetSettings" 
-            class="mt-4 px-4 py-2 bg-red-100 text-red-600 rounded-md border border-red-200 hover:bg-red-200 transition-colors"
-          >
-            恢复默认设置
-          </button>
-        </div>
-      </div>
-      
-      <!-- 设置说明 -->
-      <div class="mt-6 bg-yellow-50 rounded-xl p-5 border border-yellow-200">
-        <h3 class="text-xl font-bold mb-2 text-yellow-700 flex items-center">
-          <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 16V12M12 8H12.01M22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          设置说明
-        </h3>
-        <div class="space-y-2 text-gray-700">
-          <p><strong>有序模式</strong>：每个普通奖品都会被抽一次，抽完后只能抽到"谢谢惠顾"。适合确保每个奖品都被抽到的活动。</p>
-          <p><strong>随机模式</strong>：奖品和谢谢惠顾完全随机抽取，抽到哪个是哪个，抽完的扇形将变灰。适合随机性更高的活动。</p>
-          <p><strong>注意</strong>：如果设置普通奖品抽取次数大于1，在随机模式下每个奖品可以被抽中多次。</p>
-          <p><strong>提示</strong>：设置修改后将立即生效，并保存至下次使用。</p>
+          <!-- AI设置 -->
+          <div v-if="activeSection === 'ai'" class="space-y-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">AI助手设置</h3>
+            
+            <!-- AI模型选择 -->
+            <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+              <h4 class="text-lg font-medium text-gray-700 mb-3">AI模型</h4>
+              <div class="space-y-3">
+                <div 
+                  v-for="model in aiModels" 
+                  :key="model.id"
+                  @click="updateAiModel(model.id)"
+                  class="relative flex items-center p-4 rounded-lg border-2 cursor-pointer transition-all"
+                  :class="aiSettings.model === model.id ? 'bg-blue-50 border-blue-300 shadow-sm' : 'bg-white border-gray-200 hover:border-gray-300'"
+                >
+                  <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center mr-4 text-blue-600">
+                    {{ model.icon }}
+                  </div>
+                  <div class="flex-grow">
+                    <div class="font-medium">{{ model.name }}</div>
+                    <div class="text-sm text-gray-500">{{ model.description }}</div>
+                  </div>
+                  <div 
+                    class="w-6 h-6 rounded-full flex items-center justify-center border-2"
+                    :class="aiSettings.model === model.id ? 'bg-blue-500 border-blue-500' : 'border-gray-300'"
+                  >
+                    <svg v-if="aiSettings.model === model.id" class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              <p class="mt-2 text-sm text-gray-500">选择不同的AI模型将影响智能助手的能力和速度</p>
+            </div>
+            
+            <!-- AI语言设置 -->
+            <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+              <h4 class="text-lg font-medium text-gray-700 mb-3">AI语言偏好</h4>
+              <div class="flex items-center mb-4">
+                <label class="flex-grow text-gray-600">AI回答语言</label>
+                <select 
+                  v-model="aiSettings.language" 
+                  class="py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="zh">中文</option>
+                  <option value="en">英文</option>
+                  <option value="auto">自动检测</option>
+                </select>
+              </div>
+              
+              <div class="mt-4">
+                <label class="text-gray-600 block mb-2">响应详细程度</label>
+                <div class="flex items-center justify-between">
+                  <span class="text-sm text-gray-500">简洁</span>
+                  <input 
+                    type="range" 
+                    v-model="aiSettings.verbosity" 
+                    min="1" 
+                    max="5" 
+                    class="w-2/3 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <span class="text-sm text-gray-500">详细</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- AI功能设置 -->
+            <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+              <h4 class="text-lg font-medium text-gray-700 mb-3">AI功能设置</h4>
+              <div class="space-y-3">
+                <div class="flex items-center">
+                  <label class="flex-grow text-gray-600">自动建议</label>
+                  <div class="relative inline-block w-12 align-middle select-none transition duration-200 ease-in">
+                    <input 
+                      type="checkbox" 
+                      :checked="aiSettings.autoSuggestions" 
+                      @change="toggleAutoSuggestions" 
+                      class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
+                    />
+                    <label 
+                      class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"
+                      :class="aiSettings.autoSuggestions ? 'bg-blue-500' : ''"
+                    ></label>
+                  </div>
+                </div>
+                <p class="text-sm text-gray-500 ml-0">启用后，AI将在适当时机提供智能建议</p>
+                
+                <div class="flex items-center mt-4">
+                  <label class="flex-grow text-gray-600">学习数据收集</label>
+                  <div class="relative inline-block w-12 align-middle select-none transition duration-200 ease-in">
+                    <input 
+                      type="checkbox" 
+                      :checked="aiSettings.dataCollection" 
+                      @change="toggleDataCollection" 
+                      class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
+                    />
+                    <label 
+                      class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"
+                      :class="aiSettings.dataCollection ? 'bg-blue-500' : ''"
+                    ></label>
+                  </div>
+                </div>
+                <p class="text-sm text-gray-500 ml-0">允许系统收集使用数据以改进AI功能（不包含个人信息）</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 转盘设置 -->
+          <div v-if="activeSection === 'wheel'" class="space-y-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">英语转盘设置</h3>
+            
+            <!-- 抽奖模式设置 -->
+            <div class="bg-purple-50 rounded-xl p-5 border border-purple-200 shadow-sm">
+              <h4 class="text-lg font-medium text-purple-700 mb-3">抽奖模式</h4>
+              <div class="grid grid-cols-1 gap-4">
+                <div 
+                  v-for="mode in drawModes" 
+                  :key="mode.value" 
+                  class="relative flex items-center p-4 rounded-lg cursor-pointer transition-all border-2"
+                  :class="settings.drawMode === mode.value ? 
+                    'bg-purple-100 border-purple-400 shadow-sm' : 
+                    'bg-white border-gray-200 hover:border-purple-300'"
+                  @click="updateDrawMode(mode.value)"
+                >
+                  <span class="mr-3 text-2xl">{{ mode.icon }}</span>
+                  <div class="flex-grow">
+                    <h4 class="font-bold text-gray-800">{{ mode.name }}</h4>
+                    <p class="text-sm text-gray-600">{{ mode.description }}</p>
+                  </div>
+                  <div 
+                    class="w-6 h-6 rounded-full flex items-center justify-center border-2"
+                    :class="settings.drawMode === mode.value ? 
+                      'bg-purple-500 border-purple-500' : 
+                      'border-gray-300'"
+                  >
+                    <svg v-if="settings.drawMode === mode.value" class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-4">
+                <div class="flex items-center mb-2">
+                  <label class="text-gray-700 font-medium flex-grow">抽完后锁定转盘</label>
+                  <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                    <input 
+                      type="checkbox" 
+                      :checked="settings.lockAfterComplete" 
+                      @change="toggleLockAfterComplete" 
+                      class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
+                    />
+                    <label 
+                      class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"
+                      :class="settings.lockAfterComplete ? 'bg-purple-500' : ''"
+                    ></label>
+                  </div>
+                </div>
+                <p class="text-sm text-gray-500">
+                  {{ settings.lockAfterComplete ? 
+                    '抽完所有奖品后将锁定转盘，不能继续抽取' : 
+                    '抽完后仍可继续抽取谢谢惠顾' }}
+                </p>
+              </div>
+            </div>
+            
+            <!-- 英语转盘特殊设置 -->
+            <div class="bg-indigo-50 rounded-xl p-5 border border-indigo-200 shadow-sm">
+              <h4 class="text-lg font-medium text-indigo-700 mb-3">英语转盘特殊设置</h4>
+              <div class="mb-4">
+              </div>
+
+           
+              <div class="mt-4">
+                <label class="block text-gray-700 font-medium mb-2">普通奖品最多抽取次数</label>
+                <div class="flex items-center">
+                  <button 
+                    @click="decreaseMaxDraws" 
+                    class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-l border border-indigo-300"
+                    :disabled="settings.maxDraws <= 1"
+                  >-</button>
+                  <span class="px-4 py-1 bg-white border-t border-b border-indigo-300">{{ settings.maxDraws }}</span>
+                  <button 
+                    @click="increaseMaxDraws" 
+                    class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-r border border-indigo-300"
+                    :disabled="settings.maxDraws >= 5"
+                  >+</button>
+                </div>
+                <p class="mt-1 text-sm text-gray-500">每个奖品最多可以被抽中的次数</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 关于系统 -->
+          <div v-if="activeSection === 'about'" class="space-y-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">关于系统</h3>
+            
+            <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+              <div class="flex items-center justify-center mb-6">
+                <div class="w-24 h-24 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                  YRY
+                </div>
+              </div>
+              
+              <div class="text-center mb-6">
+                <h4 class="text-xl font-bold text-gray-800">英语大转盘系统</h4>
+                <p class="text-gray-500">版本 1.0.0</p>
+              </div>
+              
+              <div class="space-y-4 text-center">
+                <p class="text-gray-600">本系统旨在提供交互式的英语学习体验，通过游戏化的方式激发学习兴趣。</p>
+                <p class="text-gray-600">Copyright © 2023 YRY教育科技</p>
+                <button class="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition-colors">
+                  检查更新
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -126,17 +372,191 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, reactive, markRaw, h } from 'vue';
 import { useWheelSettings, DrawMode } from '../utils/wheelSettings';
 
-// 获取全局设置
+// 获取转盘设置
 const { 
   settings, 
   updateDrawMode, 
   updateLockAfterComplete,
-  updateMaxDraws,
-  resetSettings
+  updateMaxDraws
 } = useWheelSettings();
+
+// 定义设置分类图标
+const AppearanceIcon = markRaw({
+  render() {
+    return h('svg', {
+      xmlns: "http://www.w3.org/2000/svg",
+      fill: "none",
+      viewBox: "0 0 24 24",
+      stroke: "currentColor"
+    }, [
+      h('path', {
+        'stroke-linecap': "round",
+        'stroke-linejoin': "round",
+        'stroke-width': "2",
+        d: "M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
+      })
+    ]);
+  }
+});
+
+const AiIcon = markRaw({
+  render() {
+    return h('svg', {
+      xmlns: "http://www.w3.org/2000/svg",
+      fill: "none",
+      viewBox: "0 0 24 24",
+      stroke: "currentColor"
+    }, [
+      h('path', {
+        'stroke-linecap': "round",
+        'stroke-linejoin': "round",
+        'stroke-width': "2",
+        d: "M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+      })
+    ]);
+  }
+});
+
+const WheelIcon = markRaw({
+  render() {
+    return h('svg', {
+      xmlns: "http://www.w3.org/2000/svg",
+      fill: "none",
+      viewBox: "0 0 24 24",
+      stroke: "currentColor"
+    }, [
+      h('path', {
+        'stroke-linecap': "round",
+        'stroke-linejoin': "round",
+        'stroke-width': "2",
+        d: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+      })
+    ]);
+  }
+});
+
+const AboutIcon = markRaw({
+  render() {
+    return h('svg', {
+      xmlns: "http://www.w3.org/2000/svg",
+      fill: "none",
+      viewBox: "0 0 24 24",
+      stroke: "currentColor"
+    }, [
+      h('path', {
+        'stroke-linecap': "round",
+        'stroke-linejoin': "round",
+        'stroke-width': "2",
+        d: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+      })
+    ]);
+  }
+});
+
+// 设置分类列表
+const settingSections = [
+  // { id: 'appearance', name: '系统外观', icon: AppearanceIcon },
+  // { id: 'ai', name: 'AI助手设置', icon: AiIcon },
+  { id: 'wheel', name: '英语转盘设置', icon: WheelIcon },
+  // { id: 'about', name: '关于系统', icon: AboutIcon }
+];
+
+// 当前激活的设置分类
+const activeSection = ref('appearance');
+
+// 系统外观设置
+interface SystemSettings {
+  theme: string;
+  fontSize: number;
+  font: string;
+  mode: 'light' | 'dark' | 'auto';
+  animations: boolean;
+}
+
+const systemSettings = reactive<SystemSettings>({
+  theme: 'purple',
+  fontSize: 14,
+  font: 'default',
+  mode: 'light',
+  animations: true
+});
+
+// 主题选项
+const themes = [
+  { 
+    id: 'purple', 
+    name: '梦幻紫', 
+    description: '明亮活泼的紫色主题',
+    gradient: 'linear-gradient(135deg, #a78bfa, #7c3aed)'
+  },
+  { 
+    id: 'blue', 
+    name: '海洋蓝', 
+    description: '清新稳重的蓝色主题',
+    gradient: 'linear-gradient(135deg, #93c5fd, #3b82f6)'
+  },
+  { 
+    id: 'green', 
+    name: '自然绿', 
+    description: '舒适平和的绿色主题',
+    gradient: 'linear-gradient(135deg, #6ee7b7, #059669)'
+  },
+  { 
+    id: 'orange', 
+    name: '活力橙', 
+    description: '充满活力的橙色主题',
+    gradient: 'linear-gradient(135deg, #fdba74, #ea580c)'
+  }
+];
+
+// 字体选项
+const fonts = [
+  { id: 'default', name: '默认', family: 'system-ui, -apple-system, sans-serif' },
+  { id: 'serif', name: '衬线体', family: 'serif' },
+  { id: 'mono', name: '等宽体', family: 'monospace' }
+];
+
+// AI设置
+interface AiSettings {
+  model: string;
+  language: string;
+  verbosity: number;
+  autoSuggestions: boolean;
+  dataCollection: boolean;
+}
+
+const aiSettings = reactive<AiSettings>({
+  model: 'default',
+  language: 'zh',
+  verbosity: 3,
+  autoSuggestions: true,
+  dataCollection: false
+});
+
+// AI模型选项
+const aiModels = [
+  { 
+    id: 'default', 
+    name: '通用模型', 
+    description: '平衡性能与速度的基础模型',
+    icon: '🤖'
+  },
+  { 
+    id: 'education', 
+    name: '教育专用模型', 
+    description: '针对教育场景优化的专业模型',
+    icon: '📚'
+  },
+  { 
+    id: 'advanced', 
+    name: '高级模型', 
+    description: '更强大的理解和生成能力，但速度较慢',
+    icon: '🧠'
+  }
+];
 
 // 抽奖模式列表
 const drawModes = [
@@ -154,23 +574,104 @@ const drawModes = [
   }
 ];
 
-// 切换是否抽完后锁定
-function toggleLockAfterComplete() {
-  updateLockAfterComplete(!settings.lockAfterComplete);
+// 英语转盘特殊设置
+interface EnglishSettings {
+  wordLevel: 'elementary' | 'intermediate' | 'advanced';
+  displayMode: 'word' | 'phonetic' | 'both';
+  autoPronounciation: boolean;
 }
 
-// 增加最大抽奖次数
-function increaseMaxDraws() {
-  if (settings.maxDraws < 5) {
-    updateMaxDraws(settings.maxDraws + 1);
+const englishSettings = reactive<EnglishSettings>({
+  wordLevel: 'elementary',
+  displayMode: 'both',
+  autoPronounciation: true
+});
+
+const wordLevels = [
+  { name: '初级', value: 'elementary' as const },
+  { name: '中级', value: 'intermediate' as const },
+  { name: '高级', value: 'advanced' as const }
+];
+
+const wordDisplayModes = [
+  { name: '仅单词', value: 'word' as const },
+  { name: '仅音标', value: 'phonetic' as const },
+  { name: '单词和音标', value: 'both' as const }
+];
+
+// 系统外观设置相关函数
+function updateTheme(themeId: string): void {
+  systemSettings.theme = themeId;
+}
+
+function increaseFontSize(): void {
+  if (systemSettings.fontSize < 20) {
+    systemSettings.fontSize += 1;
   }
 }
 
-// 减少最大抽奖次数
-function decreaseMaxDraws() {
-  if (settings.maxDraws > 1) {
-    updateMaxDraws(settings.maxDraws - 1);
+function decreaseFontSize(): void {
+  if (systemSettings.fontSize > 12) {
+    systemSettings.fontSize -= 1;
   }
+}
+
+function updateFont(fontId: string): void {
+  systemSettings.font = fontId;
+}
+
+function updateMode(mode: 'light' | 'dark' | 'auto'): void {
+  systemSettings.mode = mode;
+}
+
+function toggleAnimations(): void {
+  systemSettings.animations = !systemSettings.animations;
+}
+
+// AI设置相关函数
+function updateAiModel(modelId: string): void {
+  aiSettings.model = modelId;
+}
+
+function toggleAutoSuggestions(): void {
+  aiSettings.autoSuggestions = !aiSettings.autoSuggestions;
+}
+
+function toggleDataCollection(): void {
+  aiSettings.dataCollection = !aiSettings.dataCollection;
+}
+
+// 转盘设置相关函数
+function toggleLockAfterComplete(): void {
+  const currentSetting = settings.lockAfterComplete;
+  updateLockAfterComplete(!currentSetting);
+}
+
+function increaseMaxDraws(): void {
+  const currentMaxDraws = settings.maxDraws;
+  if (currentMaxDraws < 5) {
+    updateMaxDraws(currentMaxDraws + 1);
+  }
+}
+
+function decreaseMaxDraws(): void {
+  const currentMaxDraws = settings.maxDraws;
+  if (currentMaxDraws > 1) {
+    updateMaxDraws(currentMaxDraws - 1);
+  }
+}
+
+// 英语转盘特殊设置相关函数
+function updateWordLevel(level: EnglishSettings['wordLevel']): void {
+  englishSettings.wordLevel = level;
+}
+
+function updateWordDisplayMode(mode: EnglishSettings['displayMode']): void {
+  englishSettings.displayMode = mode;
+}
+
+function toggleAutoPronounciation(): void {
+  englishSettings.autoPronounciation = !englishSettings.autoPronounciation;
 }
 </script>
 
@@ -190,5 +691,23 @@ function decreaseMaxDraws() {
 
 .toggle-label {
   transition: background-color 0.2s ease-in;
+}
+
+/* 滑块样式 */
+input[type=range] {
+  height: 6px;
+  -webkit-appearance: none;
+  margin: 10px 0;
+  background: #edf2f7;
+  border-radius: 5px;
+}
+
+input[type=range]::-webkit-slider-thumb {
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+  -webkit-appearance: none;
 }
 </style>
