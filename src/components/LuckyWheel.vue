@@ -218,29 +218,28 @@ export default {
   opacity: 1;
   pointer-events: all; /* 可见时捕获点击 */
   z-index: 20; /* 显示时更高的z-index */
-  background-color: rgba(255, 255, 255, 0.95); /* 半透明背景 */
 }
 
 .prize-image {
   position: relative;
   cursor: pointer;
-  background-color: white;
+  background-color: transparent; /* Changed from white to transparent */
   border-radius: 15px;
   padding: 10px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: none; /* Remove shadow for better transparency effect */
   transition: all 0.3s ease;
   max-width: 150px;
   text-align: center;
 }
 
-.prize-image.enlarged {
-  transform: scale(1); /* 重置初始缩放 */
-  width: 80%; /* 设置为父容器的80% */
-  max-width: 80%;
-  z-index: 30;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-}
 
+.prize-image.enlarged {
+  transform: scale(1.2); /* Slightly increase base scale */
+  width: 95%; /* Increase from 80% to 95% */
+  max-width: 95%; /* Increase from 80% to 95% */
+  z-index: 30;
+  box-shadow: none; /* Keep consistent with the transparent look */
+}
 .prize-image img {
   width: 100%;
   height: auto;
