@@ -7,16 +7,12 @@
     <div class="bubble absolute bottom-5 left-40" style="animation-delay: 3s;"></div>
 
     <div class="p-4">
-      <div class="user-profile flex items-center mb-8">
-        <div class="relative">
-          <img src="https://via.placeholder.com/50" alt="用户头像" class="rounded-full w-12 h-12 border-4 border-white">
-          <div class="absolute -top-2 -right-2 bg-yellow-400 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs shadow-md">
-            👶
-          </div>
+      <div class="logo-container flex flex-col items-center justify-center mb-8">
+        <div class="logo-circle w-20 h-20 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center shadow-lg mb-2 border-4 border-white">
+          <div class="text-3xl font-bold">🎡</div>
         </div>
-        <div class="ml-3">
-          <div class="font-bold">小朋友</div>
-          <div class="text-sm text-gray-200">幸运星</div>
+        <div class="logo-text text-center">
+          <div class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-yellow-300 to-pink-300">AiMat</div>
         </div>
       </div>
       
