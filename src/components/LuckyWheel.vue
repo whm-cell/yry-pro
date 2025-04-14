@@ -70,13 +70,18 @@
     </div>
     
     <!-- 添加抽奖记录展示 -->
-    <div class="prize-records">
+    <div class="prize-records" :style="{ display: 'block', opacity: 1 }">
       <h3>抽奖记录</h3>
       <div class="records-list">
         <div v-for="(count, name) in prizeRecords" :key="name" class="record-item">
           <span>{{ name }}:</span>
           <span>{{ count }}次</span>
         </div>
+      </div>
+      <!-- 添加调试信息 -->
+      <div class="debug-info">
+        <p>记录数: {{ Object.keys(prizeRecords).length }}</p>
+        <button @click="forceUpdateRecords">刷新记录</button>
       </div>
     </div>
     
@@ -97,8 +102,6 @@ import dogPng from './ct-converted.png'
 import starPng from './ct-converted.png'
 import crownPng from './ct-converted.png'
 
-// 导入抽奖逻辑管理器
-import createLuckyWheel from '../utils/luckyWheelLogic';
 // 导入设置钩子和类型
 import { useWheelSettings, DrawMode } from '../utils/wheelSettings';
 
@@ -245,8 +248,12 @@ const buttons = [{
   ]
 }];
 
-// 抽奖管理器
-let wheelManager: any;
+// 抽奖记录
+const prizeRecordsRaw = ref<Record<string, number>>({});
+// 标记是否所有奖品都至少抽中一次
+const allPrizesDrawnOnce = ref(false);
+// 标记是否已完成抽奖
+const isCompletedFlag = ref(false);
 
 // 初始化
 onMounted(() => {
@@ -258,42 +265,143 @@ onMounted(() => {
     }
   }
   
-  // 初始化抽奖管理器
-  initializeWheelManager();
+  // 初始化抽奖记录
+  initializePrizeRecords();
   
   // 标记已初始化
   isInitialized.value = true;
 });
 
-// 初始化抽奖管理器
-function initializeWheelManager() {
-  wheelManager = createLuckyWheel(prizes.value, {
-    drawMode: settings.drawMode,
-    lockAfterComplete: settings.lockAfterComplete,
-    maxDraws: settings.maxDraws || 2
+// 手动初始化奖品记录
+function initializePrizeRecords() {
+  const records: Record<string, number> = {};
+  prizes.value.forEach(prize => {
+    if (prize.prizeInfo && prize.prizeInfo.name) {
+      records[prize.prizeInfo.name] = 0;
+    }
   });
+  prizeRecordsRaw.value = records;
 }
 
-// 显示工具提示
-function showTip(text: string, duration: number = 2000): void {
-  tooltipText.value = text;
-  showTooltip.value = true;
+// 检查是否所有普通奖品都至少抽中一次
+function checkAllPrizesDrawnOnce(): boolean {
+  const prizeNames = Object.keys(prizeRecordsRaw.value).filter(name => name !== "谢谢惠顾");
+  allPrizesDrawnOnce.value = prizeNames.every(name => prizeRecordsRaw.value[name] > 0);
+  return allPrizesDrawnOnce.value;
+}
+
+// 检查是否所有普通奖品都已经抽中最大次数
+function areAllPrizesDrawnToMax(): boolean {
+  const maxDraws = settings.maxDraws || 2;
+  const prizeNames = Object.keys(prizeRecordsRaw.value).filter(name => name !== "谢谢惠顾");
+  return prizeNames.every(name => prizeRecordsRaw.value[name] >= maxDraws);
+}
+
+// 获取下一个奖品索引
+function getNextPrizeIndex(): number {
+  // 检查是否所有普通奖品都至少抽中一次
+  checkAllPrizesDrawnOnce();
   
-  // 清除之前的定时器
-  if (tooltipTimer) {
-    clearTimeout(tooltipTimer);
+  // 如果抽奖已完成并且锁定，则不允许继续抽奖
+  if (isCompletedFlag.value && lockAfterComplete.value) {
+    // 返回"谢谢惠顾"的索引
+    return getThanksIndex();
   }
   
-  // 设置自动关闭
-  tooltipTimer = window.setTimeout(() => {
-    showTooltip.value = false;
-  }, duration);
+  // 如果所有奖品都已经达到最大抽取次数，则返回"谢谢惠顾"的索引
+  if (areAllPrizesDrawnToMax()) {
+    // 标记抽奖已完成
+    isCompletedFlag.value = true;
+    return getThanksIndex();
+  }
+  
+  // 随机选择一个奖品
+  // 这里简化了逻辑，实际应用可能需要根据不同模式有不同的逻辑
+  const availablePrizes = getAvailablePrizeIndices();
+  if (availablePrizes.length > 0) {
+    const randomIndex = Math.floor(Math.random() * availablePrizes.length);
+    return availablePrizes[randomIndex];
+  }
+  
+  // 如果没有可用奖品，返回"谢谢惠顾"
+  isCompletedFlag.value = true;
+  return getThanksIndex();
+}
+
+// 获取"谢谢惠顾"的索引
+function getThanksIndex(): number {
+  const thanksIndex = prizes.value.findIndex(prize => 
+    prize.prizeInfo && prize.prizeInfo.name === "谢谢惠顾");
+  return thanksIndex >= 0 ? thanksIndex : prizes.value.length - 1; // 默认最后一个是"谢谢惠顾"
+}
+
+// 获取未抽中过的奖品索引
+function getUndrawnPrizeIndices(): number[] {
+  const undrawnIndices: number[] = [];
+  // 只检查非"谢谢惠顾"的普通奖品
+  prizes.value.forEach((prize, index) => {
+    if (prize.prizeInfo && prize.prizeInfo.name !== "谢谢惠顾" && 
+        prizeRecordsRaw.value[prize.prizeInfo.name] === 0) {
+      undrawnIndices.push(index);
+    }
+  });
+  return undrawnIndices;
+}
+
+// 获取可选的奖品索引（次数小于最大抽取次数的奖品）
+function getAvailablePrizeIndices(): number[] {
+  const availableIndices: number[] = [];
+  const maxDraws = settings.maxDraws || 2;
+  
+  // 检查非"谢谢惠顾"的普通奖品
+  prizes.value.forEach((prize, index) => {
+    if (prize.prizeInfo && prize.prizeInfo.name !== "谢谢惠顾" && 
+        prizeRecordsRaw.value[prize.prizeInfo.name] < maxDraws) {
+      availableIndices.push(index);
+    }
+  });
+  return availableIndices;
+}
+
+// 更新奖品抽中记录
+function updatePrizeRecord(prizeIndex: number) {
+  if (prizeIndex >= 0 && prizeIndex < prizes.value.length) {
+    const prizeName = prizes.value[prizeIndex].prizeInfo.name;
+    if (prizeRecordsRaw.value[prizeName] !== undefined) {
+      prizeRecordsRaw.value[prizeName]++;
+      
+      // 检查是否所有奖品都至少抽中一次
+      checkAllPrizesDrawnOnce();
+      
+      // 检查是否抽完（所有普通奖品都抽中最大次数）
+      if (areAllPrizesDrawnToMax()) {
+        isCompletedFlag.value = true;
+      }
+      
+      return {
+        prize: prizes.value[prizeIndex],
+        name: prizeName,
+        count: prizeRecordsRaw.value[prizeName]
+      };
+    }
+  }
+  return null;
+}
+
+// 重置抽奖记录
+function resetRecords(): void {
+  for (const key in prizeRecordsRaw.value) {
+    prizeRecordsRaw.value[key] = 0;
+  }
+  allPrizesDrawnOnce.value = false;
+  isCompletedFlag.value = false;
+  showTip('抽奖记录已重置，可以重新开始抽奖！', 3000);
 }
 
 // 开始转动回调
 function startCallback(): void {
   // 如果抽奖已完成并且锁定，显示提示而不启动转盘
-  if (wheelManager.isCompleted() && lockAfterComplete.value) {
+  if (isCompletedFlag.value && lockAfterComplete.value) {
     alert("抽奖已完成，请点击重置按钮重新开始");
     return;
   }
@@ -304,7 +412,7 @@ function startCallback(): void {
     
     // 根据规则选择抽奖结果
     setTimeout(() => {
-      const selectedIndex = wheelManager.getNextPrizeIndex();
+      const selectedIndex = getNextPrizeIndex();
       if (myLucky.value) {
         (myLucky.value as any).stop(selectedIndex);
       }
@@ -320,7 +428,7 @@ function endCallback(prize: any): void {
   
   if (prizeIndex !== -1) {
     // 更新抽奖记录
-    const result = wheelManager.updatePrizeRecord(prizeIndex);
+    const result = updatePrizeRecord(prizeIndex);
     
     if (result) {
       // 设置选中的奖品显示
@@ -330,7 +438,7 @@ function endCallback(prize: any): void {
       
       // 显示抽奖结果提示
       const isPrizeThanks = prizes.value[prizeIndex].prizeInfo.name === "谢谢惠顾";
-      const count = wheelManager.getPrizeRecords()[prizes.value[prizeIndex].prizeInfo.name];
+      const count = prizeRecordsRaw.value[prizes.value[prizeIndex].prizeInfo.name];
       
       if (isPrizeThanks) {
         showTip('本次抽中: 谢谢惠顾', 1500);
@@ -338,12 +446,10 @@ function endCallback(prize: any): void {
         showTip(`恭喜！抽中 ${prizes.value[prizeIndex].prizeInfo.name} (第${count}次)`, 1500);
       }
       
-      console.log('抽奖记录:', wheelManager.getPrizeRecords());
-      console.log('是否所有奖品都至少抽中一次:', wheelManager.allPrizesDrawnOnce);
-      console.log('抽奖是否已完成:', wheelManager.isCompleted());
+      console.log('抽奖记录:', prizeRecordsRaw.value);
       
       // 如果抽奖已完成并且锁定，显示提示
-      if (wheelManager.isCompleted() && lockAfterComplete.value) {
+      if (isCompletedFlag.value && lockAfterComplete.value) {
         setTimeout(() => {
           showTip("所有奖品已抽完，点击重置按钮重新开始", 5000);
         }, 2000);
@@ -368,26 +474,36 @@ function toggleImageSize(): void {
   }
 }
 
-// 重置抽奖记录
-function resetRecords(): void {
-  wheelManager.resetRecords();
-  showTip('抽奖记录已重置，可以重新开始抽奖！', 3000);
-}
-
 // 计算属性：获取抽奖记录
 const prizeRecords = computed(() => {
-  return wheelManager ? wheelManager.getPrizeRecords() : {};
-});
-
-// 计算属性：判断是否所有奖品都已抽中一次
-const allPrizesDrawnOnce = computed(() => {
-  return wheelManager ? wheelManager.allPrizesDrawnOnce : false;
+  return prizeRecordsRaw.value;
 });
 
 // 计算属性：判断是否已完成抽奖
 const isCompleted = computed(() => {
-  return wheelManager ? wheelManager.isCompleted() : false;
+  return isCompletedFlag.value;
 });
+
+// 强制更新记录
+function forceUpdateRecords(): void {
+  console.log('当前记录:', prizeRecordsRaw.value);
+}
+
+// 显示工具提示
+function showTip(text: string, duration: number = 2000): void {
+  tooltipText.value = text;
+  showTooltip.value = true;
+  
+  // 清除之前的定时器
+  if (tooltipTimer) {
+    clearTimeout(tooltipTimer);
+  }
+  
+  // 设置自动关闭
+  tooltipTimer = window.setTimeout(() => {
+    showTooltip.value = false;
+  }, duration);
+}
 </script>
 
 <style scoped>
