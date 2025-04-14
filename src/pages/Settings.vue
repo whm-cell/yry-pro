@@ -115,10 +115,10 @@
           设置说明
         </h3>
         <div class="space-y-2 text-gray-700">
-          <p><strong>单次模式</strong>：每个普通奖品最多只能抽中一次，抽完后只能抽到"谢谢惠顾"。适合每人限抽一次的活动。</p>
-          <p><strong>标准模式</strong>：每个普通奖品最多抽中设定的次数，超过次数的奖品将不再出现，转为抽取"谢谢惠顾"。</p>
-          <p><strong>顺序模式</strong>：会先抽完所有普通奖品，每种最多抽中设定的次数，所有奖品抽完后才会出现"谢谢惠顾"。</p>
-          <p><strong>注意</strong>：设置修改后将立即生效，并保存至下次使用。</p>
+          <p><strong>有序模式</strong>：每个普通奖品都会被抽一次，抽完后只能抽到"谢谢惠顾"。适合确保每个奖品都被抽到的活动。</p>
+          <p><strong>随机模式</strong>：奖品和谢谢惠顾完全随机抽取，抽到哪个是哪个，抽完的扇形将变灰。适合随机性更高的活动。</p>
+          <p><strong>注意</strong>：如果设置普通奖品抽取次数大于1，在随机模式下每个奖品可以被抽中多次。</p>
+          <p><strong>提示</strong>：设置修改后将立即生效，并保存至下次使用。</p>
         </div>
       </div>
     </div>
@@ -141,22 +141,16 @@ const {
 // 抽奖模式列表
 const drawModes = [
   { 
-    name: '单次模式', 
-    value: DrawMode.SINGLE, 
-    icon: '🎯',
-    description: '每个奖品最多抽中一次，适合每人限抽一次的场景'
-  },
-  { 
-    name: '标准模式', 
-    value: DrawMode.STANDARD, 
-    icon: '🎲',
-    description: '每个奖品最多抽中指定次数，超过则抽谢谢惠顾'
-  },
-  { 
-    name: '顺序模式', 
-    value: DrawMode.SEQUENCE, 
+    name: '有序模式', 
+    value: DrawMode.ORDERLY, 
     icon: '📋',
-    description: '先抽完所有奖品，然后才抽谢谢惠顾'
+    description: '每个奖品都要抽一次，抽完后只能抽到谢谢惠顾'
+  },
+  { 
+    name: '随机模式', 
+    value: DrawMode.RANDOM, 
+    icon: '🎲',
+    description: '奖品和谢谢惠顾完全随机，抽到哪个是哪个'
   }
 ];
 
@@ -182,6 +176,12 @@ function decreaseMaxDraws() {
 
 <style scoped>
 /* 开关样式 */
+.toggle-checkbox {
+  right: 0;
+  border-color: #d1d5db;
+  z-index: 10;
+}
+
 .toggle-checkbox:checked {
   right: 0;
   transform: translateX(100%);

@@ -45,14 +45,12 @@ export type PrizeRecords = Record<string, number>;
 
 /**
  * 抽奖模式枚举
- * STANDARD - 标准模式：普通奖品最多抽中两次，之后只抽"谢谢惠顾"
- * SEQUENCE - 顺序模式：先抽完所有普通奖品，每种最多两次，然后才抽"谢谢惠顾"
- * SINGLE - 单次模式：每个奖品最多只能抽中一次
+ * ORDERLY - 有序模式：每个奖品都要抽一次，最大是1次，最后可以抽到谢谢惠顾
+ * RANDOM - 随机模式：奖品和谢谢惠顾完全随机，抽到哪个是哪个，抽完后对应扇形变灰色
  */
 export enum DrawMode {
-  STANDARD = 'standard',
-  SEQUENCE = 'sequence',
-  SINGLE = 'single'
+  ORDERLY = 'orderly',
+  RANDOM = 'random'
 }
 
 // 存储奖品配置和记录的类
@@ -86,10 +84,10 @@ export class LuckyWheelManager {
     this.prizes = prizes;
     this.prizeRecords = {};
     this.allPrizesDrawnOnce = false;
-    this.drawMode = options.drawMode || DrawMode.STANDARD;
+    this.drawMode = options.drawMode || DrawMode.ORDERLY;
     this.lockAfterComplete = options.lockAfterComplete !== undefined ? options.lockAfterComplete : false;
     this._isCompleted = false;
-    this.maxDraws = options.maxDraws || 2; // 默认每种奖品最多抽中2次
+    this.maxDraws = options.maxDraws || 1; // 默认每种奖品最多抽中1次
     
     // 初始化记录
     this._initPrizeRecords();
@@ -139,73 +137,30 @@ export class LuckyWheelManager {
     // 检查是否所有普通奖品都至少抽中一次
     this.checkAllPrizesDrawnOnce();
     
-    // 获取"谢谢惠顾"的索引
-    const thanksIndex = this.getThanksIndex();
-    
-    // 如果所有奖品都已经达到最大抽取次数，则返回"谢谢惠顾"的索引
-    if (this.areAllPrizesDrawnToMax()) {
-      // 标记抽奖已完成
-      this._isCompleted = true;
-      return thanksIndex;
-    }
-    
     // 根据不同模式处理抽奖逻辑
-    if (this.drawMode === DrawMode.SEQUENCE) {
-      // 顺序模式：先抽完所有普通奖品，再抽"谢谢惠顾"
+    if (this.drawMode === DrawMode.ORDERLY) {
+      // 有序模式：先抽每个奖品一次，然后抽"谢谢惠顾"
       
-      // 获取可选的奖品索引（次数小于最大抽取次数的奖品）
-      const availablePrizes = this.getAvailablePrizeIndices();
-      
-      // 如果还有可抽的普通奖品，就抽普通奖品
-      if (availablePrizes.length > 0) {
-        // 如果未抽过的奖品，优先抽未抽过的
-        const undrawnPrizes = this.getUndrawnPrizeIndices();
-        if (undrawnPrizes.length > 0) {
-          const randomIndex = Math.floor(Math.random() * undrawnPrizes.length);
-          return undrawnPrizes[randomIndex];
-        }
-        
-        // 否则随机抽一个未达到上限的
-        const randomIndex = Math.floor(Math.random() * availablePrizes.length);
-        return availablePrizes[randomIndex];
-      }
-      
-      // 如果没有可抽的普通奖品，抽"谢谢惠顾"
-      this._isCompleted = true;
-      return thanksIndex;
-    } else {
-      // 标准模式：普通奖品和"谢谢惠顾"混合抽取
-      
-      // 获取可选的奖品索引
-      const availablePrizes = this.getAvailablePrizeIndices();
-      
-      // 如果已经所有奖品都抽过一次，那么随机选择一个未达到最大抽取次数的奖品
-      if (this.allPrizesDrawnOnce) {
-        if (availablePrizes.length > 0) {
-          const randomIndex = Math.floor(Math.random() * availablePrizes.length);
-          return availablePrizes[randomIndex];
-        } else {
-          this._isCompleted = true;
-          return thanksIndex; // 如果没有可选奖品，返回"谢谢惠顾"
-        }
-      }
-      
-      // 如果还有未抽中过的奖品，优先选择它们
+      // 获取未抽中过的奖品索引
       const undrawnPrizes = this.getUndrawnPrizeIndices();
+      
+      // 如果还有未抽中的普通奖品，就从中随机选择一个
       if (undrawnPrizes.length > 0) {
         const randomIndex = Math.floor(Math.random() * undrawnPrizes.length);
         return undrawnPrizes[randomIndex];
       }
       
-      // 如果所有奖品都抽过，随机选择一个未达到上限的奖品
-      if (availablePrizes.length > 0) {
-        const randomIndex = Math.floor(Math.random() * availablePrizes.length);
-        return availablePrizes[randomIndex];
-      }
-      
-      // 如果没有可用奖品，返回"谢谢惠顾"
+      // 如果所有奖品都抽过一次，返回"谢谢惠顾"
       this._isCompleted = true;
-      return thanksIndex;
+      return this.getThanksIndex();
+    } else {
+      // 随机模式：完全随机抽取，包括"谢谢惠顾"
+      
+      // 获取所有可用奖品（包括"谢谢惠顾"）
+      const allPrizes = this.prizes.length;
+      
+      // 随机选择一个奖品索引
+      return Math.floor(Math.random() * allPrizes);
     }
   }
   

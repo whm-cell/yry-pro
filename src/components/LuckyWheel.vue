@@ -34,8 +34,6 @@
           <div class="star star-1">★</div>
           <div class="star star-2">★</div>
           <div class="star star-3">✦</div>
-          <!-- 添加祝贺文字 -->
-          <div class="congratulation-text">恭喜抽中</div>
         </div>
         <div class="prize-content">
           <img :src="selectedPrize.imgSrc" :alt="selectedPrize.name">
@@ -308,24 +306,38 @@ function getNextPrizeIndex(): number {
     return getThanksIndex();
   }
   
-  // 如果所有奖品都已经达到最大抽取次数，则返回"谢谢惠顾"的索引
-  if (areAllPrizesDrawnToMax()) {
-    // 标记抽奖已完成
+  // 获取当前抽奖模式
+  const drawMode = settings.drawMode;
+  
+  if (drawMode === 'orderly') {
+    // 有序模式：每个奖品都要抽一次，最大是1次，抽完后只能抽到谢谢惠顾
+    
+    // 获取未抽中过的奖品索引
+    const undrawnPrizes = getUndrawnPrizeIndices();
+    
+    // 如果还有未抽中的普通奖品，从中随机选择一个
+    if (undrawnPrizes.length > 0) {
+      const randomIndex = Math.floor(Math.random() * undrawnPrizes.length);
+      return undrawnPrizes[randomIndex];
+    }
+    
+    // 如果所有奖品都抽过一次，返回"谢谢惠顾"
     isCompletedFlag.value = true;
     return getThanksIndex();
+  } else {
+    // 随机模式：奖品和谢谢惠顾完全随机
+    
+    // 所有奖品的索引（包括"谢谢惠顾"）
+    const allPrizes = prizes.value.length;
+    
+    // 如果所有普通奖品都已经抽中最大次数，标记为完成
+    if (areAllPrizesDrawnToMax()) {
+      isCompletedFlag.value = true;
+    }
+    
+    // 随机选择一个奖品索引
+    return Math.floor(Math.random() * allPrizes);
   }
-  
-  // 随机选择一个奖品
-  // 这里简化了逻辑，实际应用可能需要根据不同模式有不同的逻辑
-  const availablePrizes = getAvailablePrizeIndices();
-  if (availablePrizes.length > 0) {
-    const randomIndex = Math.floor(Math.random() * availablePrizes.length);
-    return availablePrizes[randomIndex];
-  }
-  
-  // 如果没有可用奖品，返回"谢谢惠顾"
-  isCompletedFlag.value = true;
-  return getThanksIndex();
 }
 
 // 获取"谢谢惠顾"的索引
@@ -367,8 +379,25 @@ function getAvailablePrizeIndices(): number[] {
 function updatePrizeRecord(prizeIndex: number) {
   if (prizeIndex >= 0 && prizeIndex < prizes.value.length) {
     const prizeName = prizes.value[prizeIndex].prizeInfo.name;
+    
     if (prizeRecordsRaw.value[prizeName] !== undefined) {
       prizeRecordsRaw.value[prizeName]++;
+      
+      // 在随机模式下，将抽中的奖品扇形设置为灰色
+      if (settings.drawMode === 'random' && prizeName !== "谢谢惠顾") {
+        const originalBackground = prizes.value[prizeIndex].background;
+        
+        // 仅当抽中次数达到最大值时才变灰
+        if (prizeRecordsRaw.value[prizeName] >= settings.maxDraws) {
+          // 将颜色变为灰色，但保持50%的原始颜色
+          prizes.value[prizeIndex].background = `linear-gradient(rgba(200, 200, 200, 0.7), rgba(200, 200, 200, 0.7)), ${originalBackground}`;
+          
+          // 字体颜色也调整为深灰色
+          prizes.value[prizeIndex].fonts.forEach(font => {
+            font.fontColor = '#666666';
+          });
+        }
+      }
       
       // 检查是否所有奖品都至少抽中一次
       checkAllPrizesDrawnOnce();
@@ -390,9 +419,26 @@ function updatePrizeRecord(prizeIndex: number) {
 
 // 重置抽奖记录
 function resetRecords(): void {
+  // 重置记录
   for (const key in prizeRecordsRaw.value) {
     prizeRecordsRaw.value[key] = 0;
   }
+  
+  // 重置奖品颜色（如果在随机模式下变灰过）
+  prizes.value.forEach(prize => {
+    // 移除灰色滤镜
+    if (prize.background.includes('linear-gradient')) {
+      // 提取原始颜色
+      const originalColor = prize.background.split('), ')[1];
+      prize.background = originalColor;
+      
+      // 恢复字体颜色
+      prize.fonts.forEach(font => {
+        font.fontColor = '#2d3436';
+      });
+    }
+  });
+  
   allPrizesDrawnOnce.value = false;
   isCompletedFlag.value = false;
   showTip('抽奖记录已重置，可以重新开始抽奖！', 3000);
