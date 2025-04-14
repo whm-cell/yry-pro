@@ -24,21 +24,10 @@
         :class="{ 'enlarged': isEnlarged }"
         @click="toggleImageSize"
       >
-        <div class="heart-background">
-          <div class="heart-shape"></div>
-          <!-- 添加云朵装饰 -->
-          <div class="cloud cloud-1"></div>
-          <div class="cloud cloud-2"></div>
-          <div class="cloud cloud-3"></div>
-          <!-- 添加星星装饰 -->
-          <div class="star star-1">★</div>
-          <div class="star star-2">★</div>
-          <div class="star star-3">✦</div>
-        </div>
+       
         <div class="prize-content">
-          <img :src="selectedPrize.imgSrc" :alt="selectedPrize.name">
-          <div class="prize-name">{{ selectedPrize.name }}</div>
-          <div class="tap-to-close">点击关闭</div>
+          <img  :src="selectedPrize.imgSrc" :alt="selectedPrize.name" 
+         >
         </div>
       </div>
     </div>
@@ -229,21 +218,21 @@ const blocks = [
 ];
 // 中心按钮
 const buttons = [{
-  radius: '35%',
+  radius: '25%',
   background: '#ff7675',
   pointer: true,
   fonts: [
     { 
       text: '转一转', 
-      top: '35%',
+      // top: '35%',
       fontColor: '#fff',
       fontSize: '18px',
       fontWeight: 'bold'
     }
   ],
-  imgs: [
-    { src: crownPng, width: '25px', top: '10%' }
-  ]
+  // imgs: [
+  //   { src: crownPng, width: '25px', top: '10%' }
+  // ]
 }];
 
 // 抽奖记录
@@ -383,22 +372,6 @@ function updatePrizeRecord(prizeIndex: number) {
     if (prizeRecordsRaw.value[prizeName] !== undefined) {
       prizeRecordsRaw.value[prizeName]++;
       
-      // 在随机模式下，将抽中的奖品扇形设置为灰色
-      if (settings.drawMode === 'random' && prizeName !== "谢谢惠顾") {
-        const originalBackground = prizes.value[prizeIndex].background;
-        
-        // 仅当抽中次数达到最大值时才变灰
-        if (prizeRecordsRaw.value[prizeName] >= settings.maxDraws) {
-          // 将颜色变为灰色，但保持50%的原始颜色
-          prizes.value[prizeIndex].background = `linear-gradient(rgba(200, 200, 200, 0.7), rgba(200, 200, 200, 0.7)), ${originalBackground}`;
-          
-          // 字体颜色也调整为深灰色
-          prizes.value[prizeIndex].fonts.forEach(font => {
-            font.fontColor = '#666666';
-          });
-        }
-      }
-      
       // 检查是否所有奖品都至少抽中一次
       checkAllPrizesDrawnOnce();
       
@@ -424,7 +397,8 @@ function resetRecords(): void {
     prizeRecordsRaw.value[key] = 0;
   }
   
-  // 重置奖品颜色（如果在随机模式下变灰过）
+  // 这部分代码也可以移除，因为我们不再改变扇形颜色
+  // 但为了保险起见，保留这段代码以确保任何可能的颜色变化都被重置
   prizes.value.forEach(prize => {
     // 移除灰色滤镜
     if (prize.background.includes('linear-gradient')) {
@@ -689,8 +663,8 @@ function showTip(text: string, duration: number = 2000): void {
 
 .prize-image {
   position: relative;
-  width: 300px;
-  height: 300px;
+  width: 500px;
+  height: 500px;
   transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   cursor: pointer;
   transform-origin: center;
@@ -732,8 +706,8 @@ function showTip(text: string, duration: number = 2000): void {
 }
 
 .prize-content img {
-  width: 120px;
-  height: 120px;
+  width: 500px;
+  height: 500px;
   object-fit: contain;
   margin-bottom: 15px;
   filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.3));
