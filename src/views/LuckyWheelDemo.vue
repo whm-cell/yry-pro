@@ -1,181 +1,154 @@
 <template>
-  <div class="lucky-wheel-demo min-h-screen bg-gradient-to-br from-indigo-100 to-purple-100 py-8 px-4">
-    <div class="max-w-4xl mx-auto">
-      <h1 class="text-3xl font-bold text-center text-purple-800 mb-8">幸运单词转盘</h1>
-      
-      <div class="bg-white rounded-2xl shadow-xl p-6 mb-8">
-        <div class="flex flex-col md:flex-row">
-          <!-- 左侧：转盘组件 -->
-          <div class="md:w-2/3 flex items-center justify-center">
-            <LuckyWheel 
-              ref="wheelRef"
-              :initial-words="words"
-              :spin-on-click="true"
-              @spin-start="handleSpinStart"
-              @spin-end="handleSpinEnd"
-            />
-          </div>
-          
-          <!-- 右侧：控制面板 -->
-          <div class="md:w-1/3 mt-8 md:mt-0 md:ml-8">
-            <div class="bg-purple-50 rounded-xl p-4 shadow-inner">
-              <h2 class="text-xl font-bold text-purple-700 mb-4">控制面板</h2>
-              
-              <!-- 单词设置 -->
-              <div class="mb-6">
-                <h3 class="font-bold text-gray-700 mb-2">自定义单词</h3>
-                <div class="space-y-2">
-                  <div v-for="(word, index) in customWords" :key="index" class="flex space-x-2">
-                    <input 
-                      v-model="word.en" 
-                      placeholder="英文单词" 
-                      class="px-3 py-2 border border-gray-300 rounded text-sm flex-1" 
-                    />
-                    <input 
-                      v-model="word.cn" 
-                      placeholder="中文含义" 
-                      class="px-3 py-2 border border-gray-300 rounded text-sm flex-1" 
-                    />
-                  </div>
-                </div>
-                
-                <button 
-                  @click="updateWords"
-                  class="mt-3 w-full py-2 bg-purple-600 text-white font-medium rounded hover:bg-purple-700 transition"
-                >
-                  更新单词
-                </button>
-              </div>
-              
-              <!-- 转盘控制 -->
-              <div>
-                <button 
-                  @click="spinWheel"
-                  :disabled="isSpinning"
-                  class="w-full py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold rounded-lg shadow-lg hover:from-yellow-600 hover:to-orange-600 transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {{ isSpinning ? '旋转中...' : '转动转盘!' }}
-                </button>
-                
-                <div class="mt-4 text-center text-gray-600 text-sm">
-                  <p>{{ statusMessage }}</p>
-                </div>
-              </div>
-            </div>
-            
-            <!-- 历史记录 -->
-            <div class="mt-6 bg-blue-50 rounded-xl p-4 shadow-inner">
-              <h3 class="font-bold text-blue-700 mb-2">历史结果</h3>
-              <div class="max-h-40 overflow-y-auto">
-                <div v-if="history.length === 0" class="text-gray-500 text-center py-2">
-                  暂无历史记录
-                </div>
-                <div v-for="(item, index) in history" :key="index" class="py-2 border-b border-blue-100 last:border-0">
-                  <div class="flex justify-between">
-                    <span class="font-medium">{{ item.textEN }}</span>
-                    <span :style="{ color: item.color }">{{ item.text }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- 说明信息 -->
-      <div class="text-center text-gray-600 text-sm">
-        <p>点击转盘或使用转动按钮都可以启动。自定义单词会在转盘上更新。</p>
-        <p class="mt-2">&copy; 2023 LuckyWheel 幸运转盘组件</p>
-      </div>
+  <div class="demo-container">
+    <h1>抽奖转盘演示</h1>
+    
+    <div class="wheel-container">
+      <LuckyWheel ref="luckyWheel" />
+    </div>
+    
+    <div class="controls">
+      <button @click="resetGame" class="control-button">重置抽奖</button>
+      <button @click="startGame" class="control-button primary">开始抽奖</button>
+    </div>
+    
+    <div class="description">
+      <h2>使用说明</h2>
+      <p>1. 点击"开始抽奖"按钮或直接点击转盘开始抽奖</p>
+      <p>2. 每个普通奖品最多抽中两次</p>
+      <p>3. 所有奖品都抽中一次后，优先抽取未达到两次的奖品</p>
+      <p>4. 所有普通奖品都抽中两次后，只能抽中"谢谢惠顾"</p>
+      <p>5. 点击"重置抽奖"可以清空抽奖记录，重新开始</p>
+    </div>
+    
+    <div class="code-example">
+      <h2>如何在其他组件中使用抽奖逻辑</h2>
+      <pre><code>
+import { createLuckyWheel, Prize } from '../utils/luckyWheelLogic';
+
+// 创建抽奖管理器
+const wheelManager = createLuckyWheel(prizes);
+
+// 获取下一个奖品索引
+const nextPrizeIndex = wheelManager.getNextPrizeIndex();
+
+// 更新抽奖记录
+wheelManager.updatePrizeRecord(prizeIndex);
+
+// 重置抽奖记录
+wheelManager.resetRecords();
+
+// 获取当前抽奖记录
+const records = wheelManager.getPrizeRecords();
+      </code></pre>
     </div>
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, onMounted, reactive } from 'vue';
+<script lang="ts">
+import { defineComponent } from 'vue';
 import LuckyWheel from '../components/LuckyWheel.vue';
-import { WheelSection, WordPair } from '../utils/wheelUtils';
 
-// 定义LuckyWheel实例类型，包含公开的方法
-interface WheelInstance {
-  spin: () => boolean;
-  setCustomWords: (words: WordPair[]) => void;
-  closeWinnerPopup: () => void;
+interface LuckyWheelInstance {
+  startCallback: () => void;
+  resetRecords: () => void;
 }
 
-// 转盘引用
-const wheelRef = ref<WheelInstance | null>(null);
-
-// 转盘状态
-const isSpinning = ref(false);
-const statusMessage = ref('点击转盘或按钮开始');
-
-// 单词配置
-const words = ref<WordPair[]>([
-  { cn: '苹果', en: 'Apple' },
-  { cn: '香蕉', en: 'Banana' },
-  { cn: '太阳', en: 'Sun' },
-  { cn: '月亮', en: 'Moon' }
-]);
-
-// 自定义单词编辑区
-const customWords = reactive<WordPair[]>([
-  { cn: '苹果', en: 'Apple' },
-  { cn: '香蕉', en: 'Banana' },
-  { cn: '太阳', en: 'Sun' },
-  { cn: '月亮', en: 'Moon' }
-]);
-
-// 历史记录
-const history = reactive<WheelSection[]>([]);
-
-// 转动转盘
-const spinWheel = () => {
-  if (wheelRef.value && !isSpinning.value) {
-    wheelRef.value.spin();
+export default defineComponent({
+  components: {
+    LuckyWheel
+  },
+  methods: {
+    // 开始抽奖
+    startGame(): void {
+      // 通过引用调用组件的方法
+      (this.$refs.luckyWheel as LuckyWheelInstance).startCallback();
+    },
+    
+    // 重置抽奖
+    resetGame(): void {
+      // 通过引用调用组件的方法
+      (this.$refs.luckyWheel as LuckyWheelInstance).resetRecords();
+      // 显示提示
+      alert('抽奖记录已重置');
+    }
   }
-};
-
-// 更新单词
-const updateWords = () => {
-  // 创建新数组以避免直接修改引用
-  const newWords = customWords.map(word => ({ ...word }));
-  words.value = newWords;
-  
-  // 更新转盘组件中的单词
-  if (wheelRef.value) {
-    wheelRef.value.setCustomWords(newWords);
-  }
-  
-  statusMessage.value = '单词已更新';
-};
-
-// 转盘事件处理
-const handleSpinStart = () => {
-  isSpinning.value = true;
-  statusMessage.value = '转盘旋转中...';
-};
-
-const handleSpinEnd = (section: WheelSection) => {
-  isSpinning.value = false;
-  
-  // 添加到历史记录
-  history.unshift(section);
-  
-  // 保持历史记录最多10项
-  if (history.length > 10) {
-    history.pop();
-  }
-  
-  statusMessage.value = `停在了 ${section.textEN} (${section.text})`;
-};
-
-// 页面加载时
-onMounted(() => {
-  // 可以进行一些初始化操作
 });
 </script>
 
 <style scoped>
-/* 添加自定义样式 */
+.demo-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: 'Arial', sans-serif;
+}
+
+h1 {
+  text-align: center;
+  color: #ff6b81;
+  margin-bottom: 30px;
+}
+
+.wheel-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 30px;
+  position: relative;
+  min-height: 600px;
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.control-button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background-color: #f1f2f6;
+  color: #333;
+}
+
+.control-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.control-button.primary {
+  background-color: #ff6b81;
+  color: white;
+}
+
+.description, .code-example {
+  background-color: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 30px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+}
+
+h2 {
+  color: #ff6b81;
+  margin-top: 0;
+  margin-bottom: 15px;
+}
+
+pre {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+code {
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  color: #333;
+}
 </style> 
