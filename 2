@@ -65,7 +65,7 @@
           { padding: '2px', background: '#ffffff'}
         ],
         
-        // 五个格子：四个英语单词和一个谢谢惠顾
+        // 五个格子：四个英语单词和一个魔法小礼袋
         prizes: [
           { 
             background: '#badc58', 
@@ -123,11 +123,11 @@
           { 
             background: '#fab1a0', 
             fonts: [
-              { text: '谢谢惠顾', top: '40%', fontColor: '#2d3436', fontSize: '20px', fontWeight: 'bold' }
+              { text: '魔法小礼袋', top: '40%', fontColor: '#2d3436', fontSize: '20px', fontWeight: 'bold' }
             ],
             imgs: [{ src: starPng, width: '60px', top: '10%' }],
             prizeInfo: {
-              name: "谢谢惠顾",
+              name: "魔法小礼袋",
               description: "再接再厉，下次一定能中奖哦！",
               imgSrc: starPng
             }
@@ -172,7 +172,7 @@
         if (prizeIndex !== -1) {
           const prizeData = this.prizes[prizeIndex];
           this.selectedPrize = prizeData.prizeInfo;
-          this.modalTitle = prize.fonts[0].text === '谢谢惠顾' ? 
+          this.modalTitle = prize.fonts[0].text === '魔法小礼袋' ? 
             '很遗憾' : '恭喜抽中';
           this.showModal = true;
         }

@@ -6,8 +6,8 @@ import { reactive, ref, watch } from 'vue';
 
 // 抽奖模式枚举
 export enum DrawMode {
-  ORDERLY = 'orderly',   // 模式1：每个奖品都要抽一次，最大是1次，最后可以抽到谢谢惠顾
-  RANDOM = 'random'      // 模式2：奖品和谢谢惠顾完全随机，抽到哪个是哪个，抽完后对应扇形变灰色
+  ORDERLY = 'orderly',   // 模式1：每个奖品都要抽一次，最大是1次，最后可以抽到魔法小礼袋
+  RANDOM = 'random'      // 模式2：奖品和魔法小礼袋完全随机，抽到哪个是哪个，抽完后对应扇形变灰色
 }
 
 // 定义设置类型
@@ -23,7 +23,7 @@ const STORAGE_KEY = 'lucky-wheel-settings';
 
 // 默认设置
 const defaultSettings: WheelSettings = {
-  drawMode: DrawMode.RANDOM,
+  drawMode: DrawMode.ORDERLY,
   lockAfterComplete: false,
   maxDraws: 1,
   prizes: [] // 奖品配置将保持为空，由组件初始化时提供

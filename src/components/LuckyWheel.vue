@@ -141,10 +141,10 @@ const defaultPrizes: Prize[] = [
   { 
     background: '#badc58', 
     fonts: [
-      { text: 'Apple', top: '35%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' },
-      { text: '苹果', top: '55%', fontColor: '#2d3436', fontSize: '14px' }
+      { text: 'Apple', top: '55%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' },
+      // { text: '苹果', top: '55%', fontColor: '#2d3436', fontSize: '14px' }
     ],
-    imgs: [{ src: applePng, width: '40px', top: '10%' }],
+    imgs: [{ src: applePng, width: '100px', top: '10%' }],
     // 额外信息
     prizeInfo: {
       name: "Apple / 苹果",
@@ -154,10 +154,10 @@ const defaultPrizes: Prize[] = [
   { 
     background: '#ff9ff3', 
     fonts: [
-      { text: 'Cat', top: '35%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' },
-      { text: '猫咪', top: '55%', fontColor: '#2d3436', fontSize: '14px' }
+      { text: 'Cat', top: '55%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' },
+      // { text: '猫咪', top: '55%', fontColor: '#2d3436', fontSize: '14px' }
     ],
-    imgs: [{ src: catPng, width: '40px', top: '10%' }],
+    imgs: [{ src: catPng, width: '100px', top: '10%' }],
     prizeInfo: {
       name: "Cat / 猫咪",
       imgSrc: catPng
@@ -166,10 +166,10 @@ const defaultPrizes: Prize[] = [
   { 
     background: '#ffeaa7', 
     fonts: [
-      { text: 'Ball', top: '35%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' },
-      { text: '球', top: '55%', fontColor: '#2d3436', fontSize: '14px' }
+      { text: 'Ball', top: '55%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' },
+      // { text: '球', top: '55%', fontColor: '#2d3436', fontSize: '14px' }
     ],
-    imgs: [{ src: ballPng, width: '40px', top: '10%' }],
+    imgs: [{ src: ballPng, width: '100px', top: '10%' }],
     prizeInfo: {
       name: "Ball / 球",
       imgSrc: ballPng
@@ -178,10 +178,10 @@ const defaultPrizes: Prize[] = [
   { 
     background: '#74b9ff', 
     fonts: [
-      { text: 'Dog', top: '35%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' },
-      { text: '小狗', top: '55%', fontColor: '#2d3436', fontSize: '14px' }
+      { text: 'Dog', top: '55%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' },
+      // { text: '小狗', top: '55%', fontColor: '#2d3436', fontSize: '14px' }
     ],
-    imgs: [{ src: dogPng, width: '40px', top: '10%' }],
+    imgs: [{ src: dogPng, width: '100px', top: '10%' }],
     prizeInfo: {
       name: "Dog / 小狗",
       imgSrc: dogPng
@@ -190,11 +190,11 @@ const defaultPrizes: Prize[] = [
   { 
     background: '#fab1a0', 
     fonts: [
-      { text: '谢谢惠顾', top: '40%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' }
+      { text: '魔法小礼袋', top: '55%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' }
     ],
-    imgs: [{ src: starPng, width: '40px', top: '10%' }],
+    imgs: [{ src: starPng, width: '100px', top: '10%' }],
     prizeInfo: {
-      name: "谢谢惠顾",
+      name: "魔法小礼袋",
       imgSrc: starPng
     }
   }
@@ -272,7 +272,7 @@ function initializePrizeRecords() {
 
 // 检查是否所有普通奖品都至少抽中一次
 function checkAllPrizesDrawnOnce(): boolean {
-  const prizeNames = Object.keys(prizeRecordsRaw.value).filter(name => name !== "谢谢惠顾");
+  const prizeNames = Object.keys(prizeRecordsRaw.value).filter(name => name !== "魔法小礼袋");
   allPrizesDrawnOnce.value = prizeNames.every(name => prizeRecordsRaw.value[name] > 0);
   return allPrizesDrawnOnce.value;
 }
@@ -280,7 +280,7 @@ function checkAllPrizesDrawnOnce(): boolean {
 // 检查是否所有普通奖品都已经抽中最大次数
 function areAllPrizesDrawnToMax(): boolean {
   const maxDraws = settings.maxDraws || 2;
-  const prizeNames = Object.keys(prizeRecordsRaw.value).filter(name => name !== "谢谢惠顾");
+  const prizeNames = Object.keys(prizeRecordsRaw.value).filter(name => name !== "魔法小礼袋");
   return prizeNames.every(name => prizeRecordsRaw.value[name] >= maxDraws);
 }
 
@@ -291,7 +291,7 @@ function getNextPrizeIndex(): number {
   
   // 如果抽奖已完成并且锁定，则不允许继续抽奖
   if (isCompletedFlag.value && lockAfterComplete.value) {
-    // 返回"谢谢惠顾"的索引
+    // 返回"魔法小礼袋"的索引
     return getThanksIndex();
   }
   
@@ -299,7 +299,7 @@ function getNextPrizeIndex(): number {
   const drawMode = settings.drawMode;
   
   if (drawMode === 'orderly') {
-    // 有序模式：每个奖品都要抽一次，最大是1次，抽完后只能抽到谢谢惠顾
+    // 有序模式：每个奖品都要抽一次，最大是1次，抽完后只能抽到魔法小礼袋
     
     // 获取未抽中过的奖品索引
     const undrawnPrizes = getUndrawnPrizeIndices();
@@ -310,13 +310,13 @@ function getNextPrizeIndex(): number {
       return undrawnPrizes[randomIndex];
     }
     
-    // 如果所有奖品都抽过一次，返回"谢谢惠顾"
+    // 如果所有奖品都抽过一次，返回"魔法小礼袋"
     isCompletedFlag.value = true;
     return getThanksIndex();
   } else {
-    // 随机模式：奖品和谢谢惠顾完全随机
+    // 随机模式：奖品和魔法小礼袋完全随机
     
-    // 所有奖品的索引（包括"谢谢惠顾"）
+    // 所有奖品的索引（包括"魔法小礼袋"）
     const allPrizes = prizes.value.length;
     
     // 如果所有普通奖品都已经抽中最大次数，标记为完成
@@ -329,19 +329,19 @@ function getNextPrizeIndex(): number {
   }
 }
 
-// 获取"谢谢惠顾"的索引
+// 获取"魔法小礼袋"的索引
 function getThanksIndex(): number {
   const thanksIndex = prizes.value.findIndex(prize => 
-    prize.prizeInfo && prize.prizeInfo.name === "谢谢惠顾");
-  return thanksIndex >= 0 ? thanksIndex : prizes.value.length - 1; // 默认最后一个是"谢谢惠顾"
+    prize.prizeInfo && prize.prizeInfo.name === "魔法小礼袋");
+  return thanksIndex >= 0 ? thanksIndex : prizes.value.length - 1; // 默认最后一个是"魔法小礼袋"
 }
 
 // 获取未抽中过的奖品索引
 function getUndrawnPrizeIndices(): number[] {
   const undrawnIndices: number[] = [];
-  // 只检查非"谢谢惠顾"的普通奖品
+  // 只检查非"魔法小礼袋"的普通奖品
   prizes.value.forEach((prize, index) => {
-    if (prize.prizeInfo && prize.prizeInfo.name !== "谢谢惠顾" && 
+    if (prize.prizeInfo && prize.prizeInfo.name !== "魔法小礼袋" && 
         prizeRecordsRaw.value[prize.prizeInfo.name] === 0) {
       undrawnIndices.push(index);
     }
@@ -354,9 +354,9 @@ function getAvailablePrizeIndices(): number[] {
   const availableIndices: number[] = [];
   const maxDraws = settings.maxDraws || 2;
   
-  // 检查非"谢谢惠顾"的普通奖品
+  // 检查非"魔法小礼袋"的普通奖品
   prizes.value.forEach((prize, index) => {
-    if (prize.prizeInfo && prize.prizeInfo.name !== "谢谢惠顾" && 
+    if (prize.prizeInfo && prize.prizeInfo.name !== "魔法小礼袋" && 
         prizeRecordsRaw.value[prize.prizeInfo.name] < maxDraws) {
       availableIndices.push(index);
     }
@@ -457,11 +457,11 @@ function endCallback(prize: any): void {
       showImageDisplay.value = true; // 显示图片
       
       // 显示抽奖结果提示
-      const isPrizeThanks = prizes.value[prizeIndex].prizeInfo.name === "谢谢惠顾";
+      const isPrizeThanks = prizes.value[prizeIndex].prizeInfo.name === "魔法小礼袋";
       const count = prizeRecordsRaw.value[prizes.value[prizeIndex].prizeInfo.name];
       
       if (isPrizeThanks) {
-        showTip('本次抽中: 谢谢惠顾', 1500);
+        showTip('本次抽中: 魔法小礼袋', 1500);
       } else {
         showTip(`恭喜！抽中 ${prizes.value[prizeIndex].prizeInfo.name} (第${count}次)`, 1500);
       }
@@ -537,7 +537,6 @@ function showTip(text: string, duration: number = 2000): void {
   height: 100%;
   width: 100%;
   overflow: visible;
-  margin-top: 50px;
 }
 
 /* 抽奖记录 */

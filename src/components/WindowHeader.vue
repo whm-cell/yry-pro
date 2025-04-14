@@ -2,7 +2,7 @@
   <div class="window-header px-4 py-2 flex justify-between items-center relative">
     <div class="flex items-center">
       <i class="fas fa-gift mr-2 text-xl"></i>
-      <h1 class="text-lg font-bold text-white">幼儿园抽奖大转盘</h1>
+      <h1 class="text-lg font-bold text-white">Aimat</h1>
     </div>
     <div class="absolute left-1/2 transform -translate-x-1/2 flex space-x-1">
       <div class="w-3 h-3 rounded-full bg-yellow-300 opacity-70"></div>

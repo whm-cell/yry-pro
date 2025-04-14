@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
+// WindowHeader 组件可能不存在，暂时注释掉相关代码
 // import WindowHeader from "./components/WindowHeader.vue";
 import Sidebar from "./components/Sidebar.vue";
 import EnglishWordLottery from "./pages/EnglishWordLottery.vue";
@@ -8,9 +9,17 @@ import Settings from "./pages/Settings.vue";
 // 当前活动页面
 const activePage = ref('englishWordLottery');
 
+// 侧边栏折叠状态
+const sidebarCollapsed = ref(true);
+
 // 切换页面
 const changePage = (page: string) => {
   activePage.value = page;
+};
+
+// 切换侧边栏折叠状态
+const toggleSidebar = () => {
+  sidebarCollapsed.value = !sidebarCollapsed.value;
 };
 
 // 背景装饰
@@ -41,15 +50,24 @@ const decorations = [
     </div>
     
     <!-- 顶部标题栏 -->
-    <WindowHeader />
+    <!-- WindowHeader 组件可能不存在，暂时注释掉 -->
+    <!-- <WindowHeader /> -->
     
     <!-- 主内容区域 -->
     <div class="flex flex-1 overflow-hidden">
       <!-- 侧边栏导航 -->
-      <Sidebar :active-page="activePage" @change-page="changePage" />
+      <Sidebar 
+        :active-page="activePage" 
+        :collapsed="sidebarCollapsed" 
+        @change-page="changePage" 
+        @toggle-sidebar="toggleSidebar" 
+      />
       
       <!-- 页面内容区域 -->
-      <div class="content-container flex-1 overflow-hidden relative bg-white bg-opacity-80 rounded-tl-3xl">
+      <div 
+        class="content-container flex-1 overflow-hidden relative bg-white bg-opacity-80 transition-all duration-300"
+        :class="{'rounded-tl-3xl': !sidebarCollapsed, 'rounded-l-3xl': sidebarCollapsed}"
+      >
         <!-- 彩带装饰 -->
         <div class="absolute top-0 right-0 w-full h-6 bg-gradient-to-r from-red-300 via-yellow-300 to-green-300 opacity-70"></div>
         
@@ -83,5 +101,33 @@ const decorations = [
 
 * {
   font-family: 'Comic Neue', 'Comic Sans MS', cursive, 'Microsoft YaHei', sans-serif;
+}
+
+/* 添加动画 */
+.star {
+  animation: twinkle 3s infinite ease-in-out;
+}
+
+.float {
+  animation: float 6s infinite ease-in-out;
+}
+
+.bounce {
+  animation: bounce 2s infinite ease-in-out;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
 }
 </style>
