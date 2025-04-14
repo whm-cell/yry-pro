@@ -25,8 +25,21 @@
         :class="{ 'enlarged': isEnlarged }"
         @click="toggleImageSize"
       >
-        <img :src="selectedPrize.imgSrc" :alt="selectedPrize.name">
-        <div class="prize-name">{{ selectedPrize.name }}</div>
+        <div class="heart-background">
+          <div class="heart-shape"></div>
+          <!-- 添加云朵装饰 -->
+          <div class="cloud cloud-1"></div>
+          <div class="cloud cloud-2"></div>
+          <div class="cloud cloud-3"></div>
+          <!-- 添加星星装饰 -->
+          <div class="star star-1">★</div>
+          <div class="star star-2">★</div>
+          <div class="star star-3">✦</div>
+        </div>
+        <div class="prize-content">
+          <img :src="selectedPrize.imgSrc" :alt="selectedPrize.name">
+          <div class="prize-name">{{ selectedPrize.name }}</div>
+        </div>
       </div>
     </div>
   </div>
@@ -223,55 +236,207 @@ export default {
 .prize-image {
   position: relative;
   cursor: pointer;
-  background-color: transparent; /* Changed from white to transparent */
+  background-color: transparent;
   border-radius: 15px;
   padding: 10px;
-  box-shadow: none; /* Remove shadow for better transparency effect */
+  box-shadow: none;
   transition: all 0.3s ease;
-  max-width: 150px;
+  max-width: 300px; /* 增加一点空间给心形背景 */
   text-align: center;
+  z-index: 1;
 }
 
+.heart-background {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: visible;
+}
+
+.heart-shape {
+  position: relative;
+  width: 100%;
+  height: 90%;
+  background-color: #FFB6C1; /* 浅粉色 */
+  transform: scale(1.1);
+  border-radius: 50%;
+  border: 4px dashed #FF69B4; /* 深粉色虚线边框 */
+  box-shadow: 0 0 15px rgba(255, 182, 193, 0.6);
+}
+
+.heart-shape:before,
+.heart-shape:after {
+  content: "";
+  position: absolute;
+  width: 70%;
+  height: 70%;
+  background-color: #FFB6C1; /* 浅粉色 */
+  border-radius: 50%;
+  border: 4px dashed #FF69B4; /* 深粉色虚线边框 */
+}
+
+.heart-shape:before {
+  top: -35%;
+  left: 15%;
+}
+
+.heart-shape:after {
+  top: -35%;
+  right: 15%;
+  background: linear-gradient(to right, #ff9a9e, #fad0c4, #a18cd1, #fbc2eb);
+  border: none;
+  opacity: 0.3;
+  mix-blend-mode: screen;
+}
+
+/* 添加小云朵装饰 */
+.heart-background .cloud {
+  position: absolute;
+  background-color: white;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(255,255,255,0.8);
+  z-index: 1;
+}
+
+.heart-background .cloud-1 {
+  width: 40px;
+  height: 40px;
+  top: -5%;
+  left: 20%;
+}
+
+.heart-background .cloud-2 {
+  width: 30px;
+  height: 30px;
+  top: -2%;
+  left: 30%;
+}
+
+.heart-background .cloud-3 {
+  width: 25px;
+  height: 25px;
+  top: 0%;
+  left: 40%;
+}
+
+/* 星星装饰 */
+.heart-background .star {
+  position: absolute;
+  font-size: 25px;
+  color: #FFD700; /* 金黄色 */
+  text-shadow: 0 0 5px #FF69B4;
+  animation: twinkle 2s infinite alternate;
+  z-index: 2;
+}
+
+.heart-background .star-1 {
+  top: 5%;
+  left: 15%;
+  font-size: 30px;
+}
+
+.heart-background .star-2 {
+  bottom: 10%;
+  right: 15%;
+  font-size: 25px;
+  animation-delay: 0.5s;
+}
+
+.heart-background .star-3 {
+  top: 15%;
+  right: 20%;
+  font-size: 20px;
+  animation-delay: 1s;
+}
+
+@keyframes twinkle {
+  from { opacity: 0.3; transform: scale(0.8) rotate(0deg); }
+  to { opacity: 1; transform: scale(1.1) rotate(15deg); }
+}
+
+.prize-content {
+  position: relative;
+  z-index: 2;
+  padding: 15px;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+  100% { transform: translateY(0px); }
+}
 
 .prize-image.enlarged {
-  transform: scale(1.2); /* Slightly increase base scale */
-  width: 95%; /* Increase from 80% to 95% */
-  max-width: 95%; /* Increase from 80% to 95% */
+  transform: scale(1.2);
+  width: 95%;
+  max-width: 350px; /* 放大后的最大宽度 */
   z-index: 30;
-  box-shadow: none; /* Keep consistent with the transparent look */
 }
+
+.prize-image.enlarged .heart-shape {
+  box-shadow: 0 0 20px rgba(255, 182, 193, 0.7); /* 粉色阴影 */
+  animation: heartbeat 1.5s infinite alternate; /* 心跳动画 */
+}
+
+@keyframes heartbeat {
+  from { transform: scale(1.1); }
+  to { transform: scale(1.2); }
+}
+
 .prize-image img {
-  width: 100%;
+  width: 75%;
   height: auto;
   transition: all 0.3s ease;
+  border-radius: 12px;
+  padding: 8px;
+  background-color: white;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  border: 3px solid #FFC0CB; /* 粉色边框 */
 }
 
 .prize-name {
-  margin-top: 10px;
-  font-size: 14px;
-  color: #2d3436;
+  margin-top: 15px;
+  font-size: 18px;
+  color: #ff6b81;
   font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+  font-family: 'KidFont', sans-serif;
+  letter-spacing: 1px;
+  background: linear-gradient(45deg, #ff9a9e 0%, #fad0c4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(1px 1px 1px rgba(255,255,255,0.8));
 }
 
 /* 提示文本 */
 .prize-image::after {
-  content: '点击可以隐藏/显示';
+  content: '';
   position: absolute;
   bottom: -25px;
   left: 0;
   right: 0;
-  font-size: 12px;
-  color: #7f8c8d;
+  font-size: 14px;
+  color: #ff6b81;
   opacity: 0.8;
+  font-family: 'KidFont', sans-serif;
+  animation: bounce 1s infinite alternate;
+}
+
+@keyframes bounce {
+  from { transform: translateY(0); }
+  to { transform: translateY(-5px); }
 }
 
 @font-face {
   font-family: 'KidFont';
   src: url('./assets/kid-font.woff2') format('woff2');
-}
-
-.prize-name {
-  font-family: 'KidFont', sans-serif;
 }
 
 /* 添加响应式布局 */
