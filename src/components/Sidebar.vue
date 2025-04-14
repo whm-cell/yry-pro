@@ -29,18 +29,6 @@
             </a>
           </li>
           <li class="mb-2">
-            <a href="#" class="nav-item flex items-center p-3 rounded-lg" :class="{ 'bg-white bg-opacity-20': activePage === 'profile', 'hover:bg-white hover:bg-opacity-10': activePage !== 'profile' }" @click.prevent="changePage('profile')">
-              <i class="fas fa-user w-6 text-lg"></i>
-              <span class="font-semibold">小朋友资料</span>
-            </a>
-          </li>
-          <li class="mb-2">
-            <a href="#" class="nav-item flex items-center p-3 rounded-lg" :class="{ 'bg-white bg-opacity-20': activePage === 'results', 'hover:bg-white hover:bg-opacity-10': activePage !== 'results' }" @click.prevent="changePage('results')">
-              <i class="fas fa-trophy w-6 text-lg"></i>
-              <span class="font-semibold">获奖记录</span>
-            </a>
-          </li>
-          <li class="mb-2">
             <a href="#" class="nav-item flex items-center p-3 rounded-lg" :class="{ 'bg-white bg-opacity-20': activePage === 'settings', 'hover:bg-white hover:bg-opacity-10': activePage !== 'settings' }" @click.prevent="changePage('settings')">
               <i class="fas fa-cog w-6 text-lg"></i>
               <span class="font-semibold">小设置</span>

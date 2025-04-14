@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import WindowHeader from "./components/WindowHeader.vue";
+// import WindowHeader from "./components/WindowHeader.vue";
 import Sidebar from "./components/Sidebar.vue";
 import Home from "./pages/Home.vue";
-import Profile from "./pages/Profile.vue";
-import Results from "./pages/Results.vue";
 import Settings from "./pages/Settings.vue";
 
 // 当前活动页面
