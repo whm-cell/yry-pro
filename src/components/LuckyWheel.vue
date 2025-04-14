@@ -3,15 +3,13 @@
     <!-- 转盘部分 -->
     <LuckyWheel
       ref="myLucky"
-      width="300px"
-      height="300px"
+      width="600px"
+      height="600px"
       :prizes="prizes"
       :blocks="blocks"
       :buttons="buttons"
       @start="startCallback"
       @end="endCallback"
-      :style="{transform: 'scale(2)'}"
-      style="scale-150"
     />
     
     <!-- 图片展示区域 -->
@@ -295,7 +293,7 @@ function showTip(text: string, duration: number = 2000): void {
 // 开始转动回调
 function startCallback(): void {
   // 如果抽奖已完成并且锁定，显示提示而不启动转盘
-  if (wheelManager.isCompleted?.() && lockAfterComplete.value) {
+  if (wheelManager.isCompleted() && lockAfterComplete.value) {
     alert("抽奖已完成，请点击重置按钮重新开始");
     return;
   }
@@ -342,10 +340,10 @@ function endCallback(prize: any): void {
       
       console.log('抽奖记录:', wheelManager.getPrizeRecords());
       console.log('是否所有奖品都至少抽中一次:', wheelManager.allPrizesDrawnOnce);
-      console.log('抽奖是否已完成:', wheelManager.isCompleted?.());
+      console.log('抽奖是否已完成:', wheelManager.isCompleted());
       
       // 如果抽奖已完成并且锁定，显示提示
-      if (wheelManager.isCompleted?.() && lockAfterComplete.value) {
+      if (wheelManager.isCompleted() && lockAfterComplete.value) {
         setTimeout(() => {
           showTip("所有奖品已抽完，点击重置按钮重新开始", 5000);
         }, 2000);
@@ -388,20 +386,22 @@ const allPrizesDrawnOnce = computed(() => {
 
 // 计算属性：判断是否已完成抽奖
 const isCompleted = computed(() => {
-  return wheelManager ? wheelManager.isCompleted?.() : false;
+  return wheelManager ? wheelManager.isCompleted() : false;
 });
 </script>
 
 <style scoped>
 .lucky-container {
-  /* position: relative; */
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   padding: 20px;
   height: 100%;
   width: 100%;
-  overflow: hidden;
+  overflow: visible;
+  margin-top: 50px;
 }
 
 /* 抽奖记录 */
