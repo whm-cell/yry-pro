@@ -2,11 +2,11 @@
 import { ref } from "vue";
 // import WindowHeader from "./components/WindowHeader.vue";
 import Sidebar from "./components/Sidebar.vue";
-import Home from "./pages/Home.vue";
+import EnglishWordLottery from "./pages/EnglishWordLottery.vue";
 import Settings from "./pages/Settings.vue";
 
 // 当前活动页面
-const activePage = ref('home');
+const activePage = ref('englishWordLottery');
 
 // 切换页面
 const changePage = (page: string) => {
@@ -55,9 +55,7 @@ const decorations = [
         
         <!-- 页面内容 -->
         <div class="h-full overflow-auto pt-8 pb-4 px-2">
-          <Home v-if="activePage === 'home'" />
-          <Profile v-else-if="activePage === 'profile'" />
-          <Results v-else-if="activePage === 'results'" />
+          <EnglishWordLottery v-if="activePage === 'englishWordLottery'" />
           <Settings v-else-if="activePage === 'settings'" />
         </div>
       </div>

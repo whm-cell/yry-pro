@@ -23,13 +23,14 @@
       <nav>
         <ul>
           <li class="mb-2">
-            <a href="#" class="nav-item flex items-center p-3 rounded-lg" :class="{ 'bg-white bg-opacity-20': activePage === 'home', 'hover:bg-white hover:bg-opacity-10': activePage !== 'home' }" @click.prevent="changePage('home')">
-              <i class="fas fa-home w-6 text-lg"></i>
-              <span class="font-semibold">首页</span>
+            <a href="#" class="nav-item flex items-center p-3 rounded-lg" :class="{ ' bg-blue-400 bg-opacity-20': activePage === 'englishWordLottery', 'hover:bg-white hover:bg-opacity-10': activePage !== 'englishWordLottery' }" @click.prevent="changePage('englishWordLottery')">
+              <i class="fas fa-spinner w-6 text-lg"></i>
+<span class="font-semibold">英语小转盘</span>
+
             </a>
           </li>
           <li class="mb-2">
-            <a href="#" class="nav-item flex items-center p-3 rounded-lg" :class="{ 'bg-white bg-opacity-20': activePage === 'settings', 'hover:bg-white hover:bg-opacity-10': activePage !== 'settings' }" @click.prevent="changePage('settings')">
+            <a href="#" class="nav-item flex items-center p-3 rounded-lg" :class="{ 'bg-blue-400 bg-opacity-20': activePage === 'settings', 'hover:bg-white hover:bg-opacity-10': activePage !== 'settings' }" @click.prevent="changePage('settings')">
               <i class="fas fa-cog w-6 text-lg"></i>
               <span class="font-semibold">小设置</span>
             </a>

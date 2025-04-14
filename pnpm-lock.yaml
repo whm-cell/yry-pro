@@ -27,6 +27,9 @@ importers:
         specifier: ^3.5.13
         version: 3.5.13(typescript@5.6.3)
     devDependencies:
+      '@iconify-json/fluent-color':
+        specifier: ^1.2.11
+        version: 1.2.11
       '@tauri-apps/cli':
         specifier: ^2
         version: 2.4.1
@@ -331,6 +334,12 @@ packages:
   '@humanwhocodes/retry@0.4.2':
     resolution: {integrity: sha512-xeO57FpIu4p1Ri3Jq/EXq4ClRm86dVF2z/+kvFnyqVYRavTZmaFaUBbWCOuuTh0o/g7DSsk6kc2vrS4Vl5oPOQ==}
     engines: {node: '>=18.18'}
+
+  '@iconify-json/fluent-color@1.2.11':
+    resolution: {integrity: sha512-9MZ5JjT6DjAjegBBc2PATaCfcYIHpObbLkMy/lNPyp/bkXr86U8tyLBUwlSnP6BTsRswtrMyW3knpq7mIU15pg==}
+
+  '@iconify/types@2.0.0':
+    resolution: {integrity: sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg==}
 
   '@jridgewell/sourcemap-codec@1.5.0':
     resolution: {integrity: sha512-gv3ZRaISU3fjPAgNsriBRqGWQL6quFx04YMPW/zD8XMLsU32mhCCbfbO6KZFLjvYpCZ8zyDEgqsgf+PwPaM7GQ==}
@@ -1681,6 +1690,12 @@ snapshots:
   '@humanwhocodes/retry@0.3.1': {}
 
   '@humanwhocodes/retry@0.4.2': {}
+
+  '@iconify-json/fluent-color@1.2.11':
+    dependencies:
+      '@iconify/types': 2.0.0
+
+  '@iconify/types@2.0.0': {}
 
   '@jridgewell/sourcemap-codec@1.5.0': {}
 
