@@ -15,7 +15,7 @@
     <!-- 图片展示区域 -->
     <div 
       class="image-display" 
-      :class="{ 'active': showImageDisplay }"
+      :class="{ 'active': showImageDisplay, 'sliding': isSliding }"
       @click.self="toggleImageSize"
     >
       <div 
@@ -443,17 +443,26 @@ function resetRecords(): void {
   
   // 隐藏图片显示
   if (showImageDisplay.value) {
+    // 检查是否正在滑动
+    const isInSlidingAnimation = isSliding.value;
+    
+    // 如果正在执行滑动动画，取消滑动
+    if (isInSlidingAnimation) {
+      isSliding.value = false;
+    }
+    
+    // 直接关闭显示
     showImageDisplay.value = false;
     
     // 等待过渡完成后再重置其他状态
     setTimeout(() => {
       isEnlarged.value = false;
-      isSliding.value = false;
+      autoCloseSecondsLeft.value = 5; // 重置倒计时
       selectedPrize.value = null; // 完全清除选中的奖品，避免下次显示时再次从右侧滑入
       
       // 释放过渡锁
       isTransitioning.value = false;
-    }, 1000); // 等待足够长的时间让过渡效果完成
+    }, 1000); // 简单使用1秒延迟，因为滑动被取消了
   } else {
     // 如果没有显示图片，直接释放锁
     isTransitioning.value = false;
@@ -613,22 +622,25 @@ function autoSlideImage(): void {
   
   // 如果当前正在显示图片，则触发滑出动画
   if (showImageDisplay.value && isEnlarged.value && isMagicBag) {
+    // 停止倒计时
+    autoCloseSecondsLeft.value = 0;
+    
     // 开始向左滑动
     isSliding.value = true;
     
     // 等待滑动动画完成后再隐藏
     setTimeout(() => {
       showImageDisplay.value = false;
+      isSliding.value = false; // 重置滑动状态
       
       // 重置状态
       setTimeout(() => {
         isEnlarged.value = false;
-        isSliding.value = false;
         autoCloseSecondsLeft.value = 5; // 重置倒计时
         selectedPrize.value = null; // 完全清除选中的奖品，避免下次显示时再次从右侧滑入
         isTransitioning.value = false; // 释放过渡锁
       }, 100);
-    }, 800);
+    }, 15000); // 等待15秒，与CSS动画时间一致
   } else if (showImageDisplay.value && isEnlarged.value) {
     // 非魔法小礼袋直接关闭
     showImageDisplay.value = false;
@@ -704,16 +716,16 @@ function toggleImageSize(): void {
       // 等待滑动动画完成后再隐藏
       setTimeout(() => {
         showImageDisplay.value = false;
+        isSliding.value = false; // 重置滑动状态
         
         // 重置状态
         setTimeout(() => {
           isEnlarged.value = false;
-          isSliding.value = false;
           autoCloseSecondsLeft.value = 5; // 重置倒计时
           selectedPrize.value = null; // 完全清除选中的奖品，避免下次显示时再次从右侧滑入
           isTransitioning.value = false; // 释放过渡锁
         }, 100);
-      }, 800); // 增加等待时间，让动画更完整
+      }, 15000); // 与CSS动画时间一致
     } else {
       // 设置过渡锁
       isTransitioning.value = true;
@@ -917,8 +929,8 @@ function showTip(text: string, duration: number = 2000): void {
   z-index: 50;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 1s ease, visibility 0s 1s; /* 重要：确保visibility在opacity完全消失后再变化 */
-  will-change: opacity; /* 提示浏览器优化动画性能 */
+  transition: opacity 1s ease, visibility 0s 1s; /* 确保visibility在opacity完全消失后再变化 */
+  will-change: opacity, transform; /* 提示浏览器优化动画性能 */
   overflow: hidden; /* 确保内容不会溢出 */
   pointer-events: auto; /* 确保在过渡期间仍然可以捕获点击事件 */
 }
@@ -927,6 +939,12 @@ function showTip(text: string, duration: number = 2000): void {
   opacity: 1;
   visibility: visible;
   transition: opacity 1s ease, visibility 0s; /* 显示时立即改变visibility */
+}
+
+/* 添加整体滑动效果 */
+.image-display.sliding {
+  transform: translateX(-120vw);
+  transition: transform 4s cubic-bezier(0.12, 0.25, 0.1, 1), opacity 1s ease 4s, visibility 0s 4s;
 }
 
 .prize-image {
@@ -950,11 +968,12 @@ function showTip(text: string, duration: number = 2000): void {
   opacity: 1; /* 显示 */
 }
 
+/* 移除个别滑动效果，使用整体滑动 */
 .prize-image.sliding {
-  transform: translateX(-120vw) scale(1); /* 向左滑出屏幕 */
-  opacity: 0;
-  transition: transform 15s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 1s ease 0.5s; /* 增加滑动时间到15秒，使效果更慢 */
+  opacity: 1; /* 保持可见 */
+  transform: translateX(0) scale(1); /* 保持位置和大小不变 */
   pointer-events: none; /* 防止在滑动时被点击 */
+  transition: none; /* 移除过渡效果，跟随父容器移动 */
 }
 
 /* 确保图片顺利显示，不要使用中间状态 */
@@ -984,9 +1003,8 @@ function showTip(text: string, duration: number = 2000): void {
     transform: translateX(0) scale(0.8); /* 初始位置在中央 */
   }
   
-  .prize-image.sliding {
-    transform: translateX(-150vw) scale(1); /* 小屏幕可能需要更大的移动距离 */
-    transition: transform 15s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 1s ease 0.5s; /* 确保小屏幕也使用相同的过渡时间 */
+  .image-display.sliding {
+    transform: translateX(-150vw); /* 小屏幕可能需要更大的移动距离 */
   }
 }
 
