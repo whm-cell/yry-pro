@@ -152,6 +152,7 @@ const selectedPrize = ref<PrizeInfo | null>(null);
 const isEnlarged = ref(false);
 const showImageDisplay = ref(false);
 const isSliding = ref(false);
+const isTransitioning = ref(false); // 添加过渡状态锁，防止在过渡期间触发其他操作
 let autoSlideTimer: number | null = null; // 添加自动滑动计时器
 let autoCloseInterval: number | null = null; // 添加进度条更新计时器
 
@@ -415,6 +416,14 @@ function updatePrizeRecord(prizeIndex: number) {
 
 // 重置抽奖记录
 function resetRecords(): void {
+  // 如果当前正在过渡中，不执行任何操作
+  if (isTransitioning.value) {
+    return;
+  }
+
+  // 设置过渡锁
+  isTransitioning.value = true;
+  
   // 清除自动滑动定时器
   if (autoSlideTimer) {
     clearTimeout(autoSlideTimer);
@@ -435,9 +444,19 @@ function resetRecords(): void {
   // 隐藏图片显示
   if (showImageDisplay.value) {
     showImageDisplay.value = false;
-    isEnlarged.value = false;
-    isSliding.value = false;
-    selectedPrize.value = null; // 完全清除选中的奖品，避免下次显示时再次从右侧滑入
+    
+    // 等待过渡完成后再重置其他状态
+    setTimeout(() => {
+      isEnlarged.value = false;
+      isSliding.value = false;
+      selectedPrize.value = null; // 完全清除选中的奖品，避免下次显示时再次从右侧滑入
+      
+      // 释放过渡锁
+      isTransitioning.value = false;
+    }, 1000); // 等待足够长的时间让过渡效果完成
+  } else {
+    // 如果没有显示图片，直接释放锁
+    isTransitioning.value = false;
   }
   
   // 这部分代码也可以移除，因为我们不再改变扇形颜色
@@ -481,6 +500,11 @@ onBeforeUnmount(() => {
 
 // 开始转动回调
 function startCallback(): void {
+  // 如果当前正在过渡中，不执行任何操作
+  if (isTransitioning.value) {
+    return;
+  }
+  
   // 清除自动滑动定时器
   if (autoSlideTimer) {
     clearTimeout(autoSlideTimer);
@@ -570,6 +594,14 @@ function endCallback(prize: any): void {
 
 // 添加自动滑动图片函数
 function autoSlideImage(): void {
+  // 如果当前正在过渡中，不执行任何操作
+  if (isTransitioning.value) {
+    return;
+  }
+  
+  // 设置过渡锁
+  isTransitioning.value = true;
+  
   // 清除自动关闭计时器
   if (autoCloseInterval) {
     clearInterval(autoCloseInterval);
@@ -594,6 +626,7 @@ function autoSlideImage(): void {
         isSliding.value = false;
         autoCloseSecondsLeft.value = 5; // 重置倒计时
         selectedPrize.value = null; // 完全清除选中的奖品，避免下次显示时再次从右侧滑入
+        isTransitioning.value = false; // 释放过渡锁
       }, 100);
     }, 800);
   } else if (showImageDisplay.value && isEnlarged.value) {
@@ -605,7 +638,11 @@ function autoSlideImage(): void {
       isEnlarged.value = false;
       autoCloseSecondsLeft.value = 5;
       selectedPrize.value = null;
-    }, 500);
+      isTransitioning.value = false; // 释放过渡锁
+    }, 1000);
+  } else {
+    // 如果不满足条件，直接释放锁
+    isTransitioning.value = false;
   }
 }
 
@@ -635,6 +672,11 @@ function startAutoCloseCountdown(): void {
 
 // 点击切换图片显示
 function toggleImageSize(): void {
+  // 如果当前正在过渡中，不执行任何操作
+  if (isTransitioning.value) {
+    return;
+  }
+  
   // 清除自动滑动定时器
   if (autoSlideTimer) {
     clearTimeout(autoSlideTimer);
@@ -653,6 +695,9 @@ function toggleImageSize(): void {
   if (isEnlarged.value) {
     // 如果已经放大，根据奖品类型决定如何关闭
     if (isMagicBag) {
+      // 设置过渡锁
+      isTransitioning.value = true;
+      
       // 魔法小礼袋使用滑动效果
       isSliding.value = true;
       
@@ -666,9 +711,13 @@ function toggleImageSize(): void {
           isSliding.value = false;
           autoCloseSecondsLeft.value = 5; // 重置倒计时
           selectedPrize.value = null; // 完全清除选中的奖品，避免下次显示时再次从右侧滑入
+          isTransitioning.value = false; // 释放过渡锁
         }, 100);
       }, 800); // 增加等待时间，让动画更完整
     } else {
+      // 设置过渡锁
+      isTransitioning.value = true;
+      
       // 普通奖品直接淡出
       showImageDisplay.value = false;
       
@@ -677,9 +726,13 @@ function toggleImageSize(): void {
         isEnlarged.value = false;
         autoCloseSecondsLeft.value = 5;
         selectedPrize.value = null;
-      }, 500);
+        isTransitioning.value = false; // 释放过渡锁
+      }, 1000); // 增加等待时间以匹配CSS过渡时间
     }
   } else {
+    // 设置过渡锁
+    isTransitioning.value = true;
+    
     // 如果没有放大，直接显示并放大
     showImageDisplay.value = true;
     
@@ -697,6 +750,11 @@ function toggleImageSize(): void {
           autoSlideImage();
         }, 5000);
       }
+      
+      // 释放过渡锁
+      setTimeout(() => {
+        isTransitioning.value = false;
+      }, 800);
     }, 50);
   }
 }
@@ -859,14 +917,16 @@ function showTip(text: string, duration: number = 2000): void {
   z-index: 50;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.8s ease, visibility 0.8s ease;
+  transition: opacity 1s ease, visibility 0s 1s; /* 重要：确保visibility在opacity完全消失后再变化 */
   will-change: opacity; /* 提示浏览器优化动画性能 */
   overflow: hidden; /* 确保内容不会溢出 */
+  pointer-events: auto; /* 确保在过渡期间仍然可以捕获点击事件 */
 }
 
 .image-display.active {
   opacity: 1;
   visibility: visible;
+  transition: opacity 1s ease, visibility 0s; /* 显示时立即改变visibility */
 }
 
 .prize-image {
@@ -893,7 +953,7 @@ function showTip(text: string, duration: number = 2000): void {
 .prize-image.sliding {
   transform: translateX(-120vw) scale(1); /* 向左滑出屏幕 */
   opacity: 0;
-  transition: transform 8s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 1s ease 0.5s; /* 增加滑动时间到8秒，使效果更慢 */
+  transition: transform 15s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 1s ease 0.5s; /* 增加滑动时间到15秒，使效果更慢 */
   pointer-events: none; /* 防止在滑动时被点击 */
 }
 
@@ -926,6 +986,7 @@ function showTip(text: string, duration: number = 2000): void {
   
   .prize-image.sliding {
     transform: translateX(-150vw) scale(1); /* 小屏幕可能需要更大的移动距离 */
+    transition: transform 15s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 1s ease 0.5s; /* 确保小屏幕也使用相同的过渡时间 */
   }
 }
 
