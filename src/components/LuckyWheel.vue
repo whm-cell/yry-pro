@@ -21,7 +21,7 @@
       <div 
         v-if="selectedPrize"
         class="prize-image" 
-        :class="{ 'enlarged': isEnlarged }"
+        :class="{ 'enlarged': isEnlarged, 'sliding': isSliding }"
         @click="toggleImageSize"
       >
        
@@ -135,6 +135,7 @@ const myLucky = ref(null);
 const selectedPrize = ref<PrizeInfo | null>(null);
 const isEnlarged = ref(false);
 const showImageDisplay = ref(false);
+const isSliding = ref(false);
 
 // 定义默认奖品数据
 const defaultPrizes: Prize[] = [
@@ -453,8 +454,14 @@ function endCallback(prize: any): void {
     if (result) {
       // 设置选中的奖品显示
       selectedPrize.value = prizes.value[prizeIndex].prizeInfo;
-      isEnlarged.value = true; // 初始状态为放大
+      isSliding.value = true; // 首先设置为滑动状态，从右侧开始
       showImageDisplay.value = true; // 显示图片
+      
+      // 确保DOM已更新
+      setTimeout(() => {
+        isSliding.value = false; // 触发滑入动画
+        isEnlarged.value = true; // 放大图片 
+      }, 50);
       
       // 显示抽奖结果提示
       const isPrizeThanks = prizes.value[prizeIndex].prizeInfo.name === "魔法小礼袋";
@@ -481,16 +488,29 @@ function endCallback(prize: any): void {
 // 点击切换图片显示
 function toggleImageSize(): void {
   if (isEnlarged.value) {
-    // 如果已经放大，隐藏图片展示
-    showImageDisplay.value = false;
-    // 添加小延迟重置属性
+    // 如果已经放大，开始向左滑动
+    isSliding.value = true;
+    
+    // 等待滑动动画完成后再隐藏
     setTimeout(() => {
-      isEnlarged.value = false;
-    }, 300); // 匹配过渡动画持续时间
+      showImageDisplay.value = false;
+      
+      // 重置状态
+      setTimeout(() => {
+        isEnlarged.value = false;
+        isSliding.value = false;
+      }, 100);
+    }, 800); // 增加等待时间，让动画更完整
   } else {
     // 如果没有放大，显示并放大
+    isSliding.value = true; // 首先设置为滑动状态，从右侧开始
     showImageDisplay.value = true;
-    isEnlarged.value = true;
+    
+    // 给一个短暂延迟，让CSS过渡开始
+    setTimeout(() => {
+      isSliding.value = false; // 取消滑动状态，触发从右向左的滑入
+      isEnlarged.value = true; // 放大
+    }, 50);
   }
 }
 
@@ -652,7 +672,9 @@ function showTip(text: string, duration: number = 2000): void {
   z-index: 50;
   opacity: 0;
   visibility: hidden;
-  transition: all 0.3s ease;
+  transition: opacity 0.8s ease, visibility 0.8s ease;
+  will-change: opacity; /* 提示浏览器优化动画性能 */
+  overflow: hidden; /* 确保内容不会溢出 */
 }
 
 .image-display.active {
@@ -664,14 +686,53 @@ function showTip(text: string, duration: number = 2000): void {
   position: relative;
   width: 500px;
   height: 500px;
-  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.8s ease; /* 分离transform和opacity的过渡效果 */
   cursor: pointer;
   transform-origin: center;
-  transform: scale(0.8);
+  transform: translateX(120vw) scale(0.8); /* 初始位置在屏幕右侧 */
+  will-change: transform, opacity; /* 提示浏览器优化动画性能 */
 }
 
 .prize-image.enlarged {
-  transform: scale(1);
+  transform: translateX(0) scale(1); /* 放大并移动到中央 */
+}
+
+.prize-image.sliding {
+  transform: translateX(-120vw) scale(1); /* 向左滑出屏幕 */
+  opacity: 0;
+  transition: transform 0.8s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.6s ease 0.2s; /* 先移动后淡出 */
+}
+
+/* 确保从右侧滑入的过程中图片保持可见 */
+.image-display.active .prize-image:not(.enlarged):not(.sliding) {
+  transform: translateX(0) scale(0.8); /* 移动到中央但不放大 */
+}
+
+/* 为移动设备优化显示和动画 */
+@media (max-width: 768px) {
+  .prize-image {
+    width: 90vw; /* 使用视口宽度的百分比 */
+    height: auto; /* 高度自适应 */
+    max-height: 80vh; /* 最大高度不超过视口高度的80% */
+  }
+  
+  .prize-content img {
+    width: 100%;
+    height: auto;
+    max-height: 70vh;
+    object-fit: contain;
+  }
+}
+
+/* 为特小屏幕设备优化动画 */
+@media (max-width: 320px) {
+  .prize-image {
+    transform: translateX(150vw) scale(0.8); /* 初始位置在屏幕右侧，和滑出距离保持一致 */
+  }
+  
+  .prize-image.sliding {
+    transform: translateX(-150vw) scale(1); /* 小屏幕可能需要更大的移动距离 */
+  }
 }
 
 .heart-background {
