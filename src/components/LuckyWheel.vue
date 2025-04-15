@@ -96,17 +96,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 // 直接导入图片
 import applePng from './ct-converted.png'  // 使用@别名指向src目录
 import catPng from './ct-converted.png'
 import ballPng from './ct-converted.png'
 import dogPng from './ct-converted.png'
 import starPng from './ct-converted.png'
-import crownPng from './ct-converted.png'
 
 // 导入设置钩子和类型
-import { useWheelSettings, DrawMode } from '../utils/wheelSettings';
+import { useWheelSettings } from '../utils/wheelSettings';
 
 // 奖品信息类型
 interface PrizeInfo {
@@ -371,21 +370,6 @@ function getUndrawnPrizeIndices(): number[] {
     }
   });
   return undrawnIndices;
-}
-
-// 获取可选的奖品索引（次数小于最大抽取次数的奖品）
-function getAvailablePrizeIndices(): number[] {
-  const availableIndices: number[] = [];
-  const maxDraws = settings.maxDraws || 2;
-  
-  // 检查非"魔法小礼袋"的普通奖品
-  prizes.value.forEach((prize, index) => {
-    if (prize.prizeInfo && prize.prizeInfo.name !== "魔法小礼袋" && 
-        prizeRecordsRaw.value[prize.prizeInfo.name] < maxDraws) {
-      availableIndices.push(index);
-    }
-  });
-  return availableIndices;
 }
 
 // 更新奖品抽中记录

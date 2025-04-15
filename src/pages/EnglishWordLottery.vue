@@ -39,61 +39,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, defineComponent, watch } from 'vue';
 import LuckyWheelComp from '../components/LuckyWheel.vue';
-
-// 学生数据
-const students = [
-  { name: '小明', class: '向日葵班', avatar: '👦', color: '#ff6b6b' },
-  { name: '小红', class: '向日葵班', avatar: '👧', color: '#4ecdc4' },
-  { name: '小刚', class: '蒲公英班', avatar: '👦', color: '#ff9f1c' },
-  { name: '小丽', class: '蒲公英班', avatar: '👧', color: '#a78bfa' },
-  { name: '小华', class: '星星班', avatar: '👦', color: '#ffbe0b' },
-  { name: '小美', class: '星星班', avatar: '👧', color: '#fb5607' },
-  { name: '小亮', class: '彩虹班', avatar: '👦', color: '#8ecae6' },
-  { name: '小芳', class: '彩虹班', avatar: '👧', color: '#8ac926' }
-];
-
-// 转盘引用
-const isSpinning = ref(false);
-
-// 自定义单词
-const wordList = ref<{cn: string, en: string}[]>([
-  { cn: '苹果', en: 'Apple' },
-  { cn: '香蕉', en: 'Banana' },
-  { cn: '太阳', en: 'Sun' },
-  { cn: '月亮', en: 'Moon' }
-]);
-const newWordCN = ref('');
-const newWordEN = ref('');
-const selectedWordIndex = ref(0);
-const updateStatus = ref('');
-
-// 更新自定义单词
-const updateWord = () => {
-  if (newWordEN.value.trim() && newWordCN.value.trim()) {
-    wordList.value[selectedWordIndex.value] = {
-      en: newWordEN.value.trim(),
-      cn: newWordCN.value.trim()
-    };
-    
-    newWordEN.value = '';
-    newWordCN.value = '';
-  }
-};
-
-// 重置单词
-const resetWords = () => {
-  wordList.value = [
-    { cn: '苹果', en: 'Apple' },
-    { cn: '香蕉', en: 'Banana' },
-    { cn: '太阳', en: 'Sun' },
-    { cn: '月亮', en: 'Moon' }
-  ];
-  
-  newWordEN.value = '';
-  newWordCN.value = '';
-};
 </script>
 
 <style scoped>

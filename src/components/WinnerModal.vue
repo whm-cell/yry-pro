@@ -35,8 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, defineProps, defineEmits } from 'vue';
-import gsap from 'gsap';
+import {  watch, defineProps, defineEmits } from 'vue';
 
 interface Winner {
   name: string;

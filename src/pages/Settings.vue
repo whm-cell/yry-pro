@@ -384,41 +384,41 @@ const {
 } = useWheelSettings();
 
 // 定义设置分类图标
-const AppearanceIcon = markRaw({
-  render() {
-    return h('svg', {
-      xmlns: "http://www.w3.org/2000/svg",
-      fill: "none",
-      viewBox: "0 0 24 24",
-      stroke: "currentColor"
-    }, [
-      h('path', {
-        'stroke-linecap': "round",
-        'stroke-linejoin': "round",
-        'stroke-width': "2",
-        d: "M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
-      })
-    ]);
-  }
-});
+// const AppearanceIcon = markRaw({
+//   render() {
+//     return h('svg', {
+//       xmlns: "http://www.w3.org/2000/svg",
+//       fill: "none",
+//       viewBox: "0 0 24 24",
+//       stroke: "currentColor"
+//     }, [
+//       h('path', {
+//         'stroke-linecap': "round",
+//         'stroke-linejoin': "round",
+//         'stroke-width': "2",
+//         d: "M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
+//       })
+//     ]);
+//   }
+// });
 
-const AiIcon = markRaw({
-  render() {
-    return h('svg', {
-      xmlns: "http://www.w3.org/2000/svg",
-      fill: "none",
-      viewBox: "0 0 24 24",
-      stroke: "currentColor"
-    }, [
-      h('path', {
-        'stroke-linecap': "round",
-        'stroke-linejoin': "round",
-        'stroke-width': "2",
-        d: "M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-      })
-    ]);
-  }
-});
+// const AiIcon = markRaw({
+//   render() {
+//     return h('svg', {
+//       xmlns: "http://www.w3.org/2000/svg",
+//       fill: "none",
+//       viewBox: "0 0 24 24",
+//       stroke: "currentColor"
+//     }, [
+//       h('path', {
+//         'stroke-linecap': "round",
+//         'stroke-linejoin': "round",
+//         'stroke-width': "2",
+//         d: "M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+//       })
+//     ]);
+//   }
+// });
 
 const WheelIcon = markRaw({
   render() {
@@ -433,24 +433,6 @@ const WheelIcon = markRaw({
         'stroke-linejoin': "round",
         'stroke-width': "2",
         d: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-      })
-    ]);
-  }
-});
-
-const AboutIcon = markRaw({
-  render() {
-    return h('svg', {
-      xmlns: "http://www.w3.org/2000/svg",
-      fill: "none",
-      viewBox: "0 0 24 24",
-      stroke: "currentColor"
-    }, [
-      h('path', {
-        'stroke-linecap': "round",
-        'stroke-linejoin': "round",
-        'stroke-width': "2",
-        d: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
       })
     ]);
   }
@@ -574,31 +556,6 @@ const drawModes = [
   }
 ];
 
-// 英语转盘特殊设置
-interface EnglishSettings {
-  wordLevel: 'elementary' | 'intermediate' | 'advanced';
-  displayMode: 'word' | 'phonetic' | 'both';
-  autoPronounciation: boolean;
-}
-
-const englishSettings = reactive<EnglishSettings>({
-  wordLevel: 'elementary',
-  displayMode: 'both',
-  autoPronounciation: true
-});
-
-const wordLevels = [
-  { name: '初级', value: 'elementary' as const },
-  { name: '中级', value: 'intermediate' as const },
-  { name: '高级', value: 'advanced' as const }
-];
-
-const wordDisplayModes = [
-  { name: '仅单词', value: 'word' as const },
-  { name: '仅音标', value: 'phonetic' as const },
-  { name: '单词和音标', value: 'both' as const }
-];
-
 // 系统外观设置相关函数
 function updateTheme(themeId: string): void {
   systemSettings.theme = themeId;
@@ -661,18 +618,6 @@ function decreaseMaxDraws(): void {
   }
 }
 
-// 英语转盘特殊设置相关函数
-function updateWordLevel(level: EnglishSettings['wordLevel']): void {
-  englishSettings.wordLevel = level;
-}
-
-function updateWordDisplayMode(mode: EnglishSettings['displayMode']): void {
-  englishSettings.displayMode = mode;
-}
-
-function toggleAutoPronounciation(): void {
-  englishSettings.autoPronounciation = !englishSettings.autoPronounciation;
-}
 </script>
 
 <style scoped>
