@@ -61,16 +61,6 @@
       <span>重置转盘</span>
     </div>
     
-    <!-- 上传图片按钮 -->
-    <div class="upload-button" @click="openImageUploader">
-      <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-        <polyline points="17 8 12 3 7 8"></polyline>
-        <line x1="12" y1="3" x2="12" y2="15"></line>
-      </svg>
-      <span>上传图片</span>
-    </div>
-    
     <!-- 完成抽奖提示 -->
     <div class="completion-tip" v-if="isCompleted && lockAfterComplete">
       <div class="completion-message">
@@ -101,24 +91,6 @@
     <!-- 增加悬浮提示 -->
     <div class="tooltip" :class="{ 'active': showTooltip }">
       {{ tooltipText }}
-    </div>
-    
-    <!-- 图片上传对话框 -->
-    <div class="modal-overlay" v-if="showImageUploader" @click.self="closeImageUploader">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>上传图片</h3>
-          <button class="close-button" @click="closeImageUploader">
-            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-        </div>
-        <div class="modal-body">
-          <ImageUploader @image-selected="onImageSelected" />
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -902,52 +874,6 @@ function showTip(text: string, duration: number = 2000): void {
   tooltipTimer = window.setTimeout(() => {
     showTooltip.value = false;
   }, duration);
-}
-
-// 打开图片上传对话框
-function openImageUploader() {
-  showImageUploader.value = true;
-}
-
-// 关闭图片上传对话框
-function closeImageUploader() {
-  showImageUploader.value = false;
-  selectedWordIndex.value = null;
-}
-
-// 处理图片选择完成
-function onImageSelected(imageData: { name: string, url: string }) {
-  // 更新当前选中的单词的图片
-  if (selectedWordIndex.value !== null && prizes.value.length > selectedWordIndex.value) {
-    // 更新转盘奖品的图片
-    const prize = prizes.value[selectedWordIndex.value];
-    if (prize.imgs && prize.imgs.length > 0) {
-      prize.imgs[0].src = imageData.url;
-    } else {
-      prize.imgs = [{ src: imageData.url, width: '100px', top: '10%' }];
-    }
-    
-    // 更新prizeInfo
-    prize.prizeInfo.imgSrc = imageData.url;
-    
-    // 通知转盘刷新
-    if (myLucky.value) {
-      // @ts-ignore - 调用第三方组件的刷新方法
-      myLucky.value.lucky.prizes = prizes.value;
-      // @ts-ignore
-      myLucky.value.lucky.init();
-    }
-    
-    // 关闭对话框
-    closeImageUploader();
-  }
-}
-
-// 添加右键菜单事件处理
-function handleContextMenu(event: MouseEvent, index: number) {
-  event.preventDefault();
-  selectedWordIndex.value = index;
-  openImageUploader();
 }
 </script>
 

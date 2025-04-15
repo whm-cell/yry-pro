@@ -1224,27 +1224,109 @@ function onImageDrop(event: DragEvent) {
 
 // 检查是否是图片文件
 function isImageFile(file: File): boolean {
+  // 通过MIME类型检查
   const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
-  return validTypes.includes(file.type);
+  if (!validTypes.includes(file.type)) return false;
+  
+  // 通过文件扩展名检查
+  const validExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
+  const fileName = file.name.toLowerCase();
+  return validExtensions.some(ext => fileName.endsWith(ext));
 }
 
 // 处理图片文件
 async function handleImageFile(file: File) {
   try {
+    // 检查文件大小限制 (5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      alert(`图片大小不能超过5MB，当前大小：${(file.size / (1024 * 1024)).toFixed(2)}MB`);
+      return;
+    }
+
     // 读取文件为base64
     const reader = new FileReader();
+    
+    // 添加加载中的提示
+    const loadingMsg = document.createElement('div');
+    loadingMsg.textContent = '图片处理中...';
+    loadingMsg.style.position = 'absolute';
+    loadingMsg.style.padding = '5px 10px';
+    loadingMsg.style.background = 'rgba(0,0,0,0.7)';
+    loadingMsg.style.color = 'white';
+    loadingMsg.style.borderRadius = '4px';
+    loadingMsg.style.zIndex = '1000';
+    document.body.appendChild(loadingMsg);
+    
     reader.onload = (e) => {
       if (e.target?.result) {
         // 设置图片src为base64数据
-        editingWord.imgSrc = e.target.result as string;
-        previewImgError.value = false;
+        const base64String = e.target.result as string;
+        
+        // 可选：压缩大图片
+        if (file.size > 1024 * 1024) { // 如果大于1MB
+          compressImage(base64String, 800, 800, 0.8).then(compressedImage => {
+            editingWord.imgSrc = compressedImage;
+            previewImgError.value = false;
+            document.body.removeChild(loadingMsg);
+          }).catch(err => {
+            console.error('图片压缩失败:', err);
+            editingWord.imgSrc = base64String;
+            previewImgError.value = false;
+            document.body.removeChild(loadingMsg);
+          });
+        } else {
+          editingWord.imgSrc = base64String;
+          previewImgError.value = false;
+          document.body.removeChild(loadingMsg);
+        }
       }
     };
+    
+    reader.onerror = () => {
+      document.body.removeChild(loadingMsg);
+      alert('读取图片失败，请重试');
+    };
+    
     reader.readAsDataURL(file);
   } catch (error) {
     console.error('图片处理失败:', error);
     alert('图片处理失败，请重试');
   }
+}
+
+// 压缩图片函数
+function compressImage(base64: string, maxWidth: number, maxHeight: number, quality: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.src = base64;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+      
+      // 计算缩放比例
+      if (width > maxWidth || height > maxHeight) {
+        const ratio = Math.min(maxWidth / width, maxHeight / height);
+        width = width * ratio;
+        height = height * ratio;
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        reject(new Error('无法创建Canvas上下文'));
+        return;
+      }
+      
+      ctx.drawImage(img, 0, 0, width, height);
+      const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+      resolve(compressedBase64);
+    };
+    img.onerror = () => reject(new Error('图片加载失败'));
+  });
 }
 
 // 重置图片预览
