@@ -20,9 +20,27 @@
         <!-- 右侧转盘 -->
         <div class="w-full flex flex-col items-center justify-center animate-fadeIn-delay">
           <!-- 转盘组件 -->
-          <LuckyWheelComp ref="wheelRef" />
+          <luck-wheel 
+            ref="wheelRef"
+            width="400px"
+            height="400px"
+            :prizes="prizes"
+            :blocks="blocks"
+            :buttons="buttons"
+            @start="onStart"
+            @end="onEnd"
+          />
           
-          
+          <!-- 添加启动按钮，点击后开始转盘 -->
+          <button 
+            @click="startLottery" 
+            class="mt-6 px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-full shadow-lg hover:shadow-xl transition transform hover:-translate-y-1 active:translate-y-0 flex items-center"
+            :disabled="isSpinning"
+          >
+            <span v-if="!isSpinning">开始抽取单词</span>
+            <span v-else>抽取中...</span>
+            <span class="ml-2 text-xl">🎮</span>
+          </button>
         </div>
       </div>
       
@@ -40,7 +58,58 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
-import LuckyWheelComp from '../components/LuckyWheelExport';
+// 导入默认占位图
+const placeholder = '/images/placeholder.png';
+
+// 转盘设计元素
+const blocks = ref([
+  { padding: '15px', background: 'linear-gradient(to right, #ff7979, #ffbe76)' },
+  { padding: '2px', background: '#ffffff' }
+]);
+
+// 中心按钮
+const buttons = ref([{
+  radius: '35%',
+  background: '#ff7675',
+  pointer: true,
+  fonts: [{ 
+    text: '开始', 
+    fontColor: '#fff',
+    fontSize: '18px',
+    fontWeight: 'bold'
+  }]
+}]);
+
+// 奖品数据
+const prizes = ref([
+  { 
+    background: '#badc58', 
+    fonts: [{ text: 'Apple', top: '55%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' }],
+    imgs: [{ src: placeholder, width: '60px', top: '10%' }]
+  },
+  { 
+    background: '#ff9ff3', 
+    fonts: [{ text: 'Cat', top: '55%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' }],
+    imgs: [{ src: placeholder, width: '60px', top: '10%' }]
+  },
+  { 
+    background: '#ffeaa7', 
+    fonts: [{ text: 'Ball', top: '55%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' }],
+    imgs: [{ src: placeholder, width: '60px', top: '10%' }]
+  },
+  { 
+    background: '#74b9ff', 
+    fonts: [{ text: 'Dog', top: '55%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' }],
+    imgs: [{ src: placeholder, width: '60px', top: '10%' }]
+  }
+]);
+
+// 转盘引用 - 使用适当的类型
+interface LuckyWheel {
+  play: () => void;
+  stop: (index: number) => void;
+}
+const wheelRef = ref<LuckyWheel | null>(null);
 
 // 学生数据
 const students = [
@@ -54,8 +123,6 @@ const students = [
   { name: '小芳', class: '彩虹班', avatar: '👧', color: '#8ac926' }
 ];
 
-// 转盘引用
-const wheelRef = ref(null);
 const isSpinning = ref(false);
 
 // 自定义单词
@@ -95,6 +162,38 @@ const resetWords = () => {
   newWordEN.value = '';
   newWordCN.value = '';
 };
+
+// 开始抽奖
+const startLottery = () => {
+  if (wheelRef.value && !isSpinning.value) {
+    isSpinning.value = true;
+    wheelRef.value.play();
+    setTimeout(() => {
+      if (wheelRef.value) {
+        const index = Math.floor(Math.random() * prizes.value.length);
+        wheelRef.value.stop(index);
+      }
+    }, 2500);
+  }
+};
+
+// 转盘开始回调
+const onStart = () => {
+  isSpinning.value = true;
+  console.log('转盘开始旋转');
+};
+
+// 转盘结束回调
+const onEnd = (prize: any) => {
+  isSpinning.value = false;
+  console.log('抽中了:', prize);
+};
+
+// 组件挂载
+onMounted(() => {
+  // 设置转盘初始状态
+  console.log('转盘组件已加载');
+});
 </script>
 
 <style scoped>

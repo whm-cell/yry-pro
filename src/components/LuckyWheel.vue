@@ -1,7 +1,7 @@
 <template>
   <div class="lucky-container">
     <!-- 转盘部分 -->
-    <LuckyWheel
+    <LuckyWheelCanvas
       ref="myLucky"
       width="600px"
       height="600px"
@@ -112,10 +112,10 @@ const crownPng = '/images/placeholder.png';
 // 导入设置钩子和类型
 import { useWheelSettings, DrawMode } from '../utils/wheelSettings';
 
-// 为组件添加导出
-const LuckyWheel = {
-  name: 'LuckyWheel'
-};
+// 不需要此处的定义，因为LuckyWheel已经由插件注册全局组件
+// const LuckyWheel = {
+//   name: 'LuckyWheel'
+// };
 
 // 暴露组件API
 defineExpose({
@@ -493,9 +493,18 @@ function endCallback(prize: any): void {
     if (result) {
       // 设置选中的奖品显示
       selectedPrize.value = prizes.value[prizeIndex].prizeInfo;
-      showImageDisplay.value = true; // 显示图片层
-      isEnlarged.value = true; // 放大图片
       isSlideOut.value = false; // 确保初始状态不是滑出
+      isEnlarged.value = false; // 先确保不是放大状态
+      
+      // 使用下一帧来确保状态更新
+      requestAnimationFrame(() => {
+        showImageDisplay.value = true; // 显示图片层
+        
+        // 确保图层显示后再设置放大状态
+        setTimeout(() => {
+          isEnlarged.value = true; // 放大图片
+        }, 50);
+      });
       
       // 显示抽奖结果提示
       const isPrizeThanks = prizes.value[prizeIndex].prizeInfo.name === "魔法小礼袋";
@@ -518,19 +527,24 @@ function endCallback(prize: any): void {
       setTimeout(() => {
         isSlideOut.value = true; // 触发滑出动画
         
-        // 等待动画完成后处理状态
-        // 注意：slideOutLeft动画持续2秒，这里设置2.1秒确保动画完全结束
+        // 动画完全结束后再隐藏图层 (slideOutLeft动画为2秒)
+        // 这里不再直接隐藏图层，而是通过CSS的延迟过渡来处理
+        // 在CSS中我们设置了2秒后再淡出整个图层
+        
+        // 确保在动画完全结束后重置所有状态
         setTimeout(() => {
-          // 使用一个统一的延迟操作来避免闪烁
-          // 首先隐藏图层，然后重置其他状态变量
-          showImageDisplay.value = false; // 隐藏整个图层
-          
-          // 在下一帧中重置其他状态
+          // 使用requestAnimationFrame确保在下一帧渲染周期中执行
           requestAnimationFrame(() => {
+            // 动画已经完成，可以重置状态
             isSlideOut.value = false;
             isEnlarged.value = false;
+            
+            // 最后一步，在下一帧完全隐藏图层
+            requestAnimationFrame(() => {
+              showImageDisplay.value = false;
+            });
           });
-        }, 2100); // 比动画时长稍长一点
+        }, 2500); // 延迟比动画时间更长一些
       }, 2000);
     }
   }
@@ -713,7 +727,11 @@ function showTip(text: string, duration: number = 2000): void {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transition: opacity 0.5s ease;
+  transition: opacity 0.5s ease, visibility 0.5s, background-color 0.5s;
+  /* 添加硬件加速 */
+  will-change: opacity, visibility;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .image-display.active {
@@ -725,7 +743,8 @@ function showTip(text: string, duration: number = 2000): void {
 .image-display.slide-out {
   background-color: transparent;
   pointer-events: none;
-  transition: background-color 0.5s ease;
+  /* 增加过渡延迟，等待子元素动画完成 */
+  transition: background-color 0.5s ease, opacity 0.1s linear 2s, visibility 0.1s linear 2s;
 }
 
 .prize-image {
@@ -953,12 +972,15 @@ function showTip(text: string, duration: number = 2000): void {
 /* 添加滑出动画相关样式 */
 .image-display.slide-out .prize-image {
   animation: slideOutLeft 2s cubic-bezier(0.25, 0.1, 0.25, 1.0) forwards;
-  will-change: transform;
+  will-change: transform, opacity;
   pointer-events: none;
   opacity: 1 !important;
   visibility: visible !important;
   position: absolute;
   z-index: 100;
+  /* 添加硬件加速属性 */
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 @keyframes slideOutLeft {
@@ -983,6 +1005,7 @@ function showTip(text: string, duration: number = 2000): void {
   height: 100%;
   pointer-events: none;
   z-index: 10;
+  will-change: contents;
 }
 
 .slide-star, 
@@ -996,6 +1019,10 @@ function showTip(text: string, duration: number = 2000): void {
   visibility: hidden;
   transform: translateX(0);
   filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.7));
+  /* 硬件加速 */
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 .active-decoration {
@@ -1175,6 +1202,11 @@ function showTip(text: string, duration: number = 2000): void {
 @keyframes followImage {
   0% {
     transform: translateX(0);
+    opacity: 1;
+    visibility: visible;
+  }
+  90% {
+    opacity: 1;
   }
   100% {
     transform: translateX(-150vw);
