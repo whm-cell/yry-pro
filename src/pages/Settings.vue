@@ -342,7 +342,11 @@
             <!-- 单词配置模块 -->
             <div class="bg-emerald-50 rounded-xl p-5 border border-emerald-200 shadow-sm">
               <div class="flex justify-between items-center mb-3">
-                <h4 class="text-lg font-medium text-emerald-700">转盘单词配置</h4>
+                <h4 class="text-lg font-medium text-emerald-700">转盘单词配置
+
+                  <input type="file" @change="uploadFile" />
+
+                </h4>
                 <button 
                   @click="addNewWord" 
                   class="px-4 py-1.5 bg-emerald-500 text-white rounded-md hover:bg-emerald-600 transition-colors flex items-center text-sm"
@@ -574,7 +578,7 @@
 <script setup lang="ts">
 import { ref, reactive, markRaw, h, computed } from 'vue';
 import { useWheelSettings, DrawMode, WordConfig } from '../utils/wheelSettings';
-
+import * as fs from '@tauri-apps/plugin-fs';
 // 获取转盘设置
 const { 
   settings, 
@@ -583,6 +587,26 @@ const {
   updateMaxDraws,
   updatePrizeWords
 } = useWheelSettings();
+
+// 文件上传
+const uploadFile = async (event: Event) => {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file) return
+
+  const exists = await fs.exists(file.name, { baseDir: fs.BaseDirectory.AppData });
+  if (exists) {
+    await fs.remove(file.name, { baseDir: fs.BaseDirectory.AppData });
+  }
+
+  // 保存文件
+  await fs.writeFile(file.name, file.stream(), { baseDir: fs.BaseDirectory.AppData });
+
+  console.log(file.name);
+
+};
+
+
+
 
 // 当前编辑的单词
 const editingWord = reactive<WordConfig>({
@@ -724,43 +748,6 @@ function handleImgError(event: Event, index: number) {
 function saveWordsToSettings() {
   updatePrizeWords(wordsList.value);
 }
-
-// 定义设置分类图标
-// const AppearanceIcon = markRaw({
-//   render() {
-//     return h('svg', {
-//       xmlns: "http://www.w3.org/2000/svg",
-//       fill: "none",
-//       viewBox: "0 0 24 24",
-//       stroke: "currentColor"
-//     }, [
-//       h('path', {
-//         'stroke-linecap': "round",
-//         'stroke-linejoin': "round",
-//         'stroke-width': "2",
-//         d: "M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
-//       })
-//     ]);
-//   }
-// });
-
-// const AiIcon = markRaw({
-//   render() {
-//     return h('svg', {
-//       xmlns: "http://www.w3.org/2000/svg",
-//       fill: "none",
-//       viewBox: "0 0 24 24",
-//       stroke: "currentColor"
-//     }, [
-//       h('path', {
-//         'stroke-linecap': "round",
-//         'stroke-linejoin': "round",
-//         'stroke-width': "2",
-//         d: "M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-//       })
-//     ]);
-//   }
-// });
 
 const WheelIcon = markRaw({
   render() {
@@ -959,6 +946,8 @@ function decreaseMaxDraws(): void {
     updateMaxDraws(currentMaxDraws - 1);
   }
 }
+
+
 
 // 组件初始化
 initWordsList();

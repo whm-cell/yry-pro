@@ -10,7 +10,8 @@
     "opener:default",
     {
       "identifier": "fs:scope",
-      "permissions": ["fs:scope:default"]
-    }
+      "permissions": ["fs:scope:app"]
+    },
+    "fs:allow-exists"
   ]
 }
