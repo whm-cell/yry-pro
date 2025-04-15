@@ -61,6 +61,16 @@
       <span>重置转盘</span>
     </div>
     
+    <!-- 上传图片按钮 -->
+    <div class="upload-button" @click="openImageUploader">
+      <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="17 8 12 3 7 8"></polyline>
+        <line x1="12" y1="3" x2="12" y2="15"></line>
+      </svg>
+      <span>上传图片</span>
+    </div>
+    
     <!-- 完成抽奖提示 -->
     <div class="completion-tip" v-if="isCompleted && lockAfterComplete">
       <div class="completion-message">
@@ -92,11 +102,32 @@
     <div class="tooltip" :class="{ 'active': showTooltip }">
       {{ tooltipText }}
     </div>
+    
+    <!-- 图片上传对话框 -->
+    <div class="modal-overlay" v-if="showImageUploader" @click.self="closeImageUploader">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>上传图片</h3>
+          <button class="close-button" @click="closeImageUploader">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <ImageUploader @image-selected="onImageSelected" />
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+// 导入图片上传组件
+import ImageUploader from './ImageUploader.vue';
+
 // 直接导入图片
 import applePng from './ct-converted.png'  // 使用@别名指向src目录
 import catPng from './ct-converted.png'
@@ -154,6 +185,11 @@ const isSliding = ref(false);
 const isTransitioning = ref(false); // 添加过渡状态锁，防止在过渡期间触发其他操作
 let autoSlideTimer: number | null = null; // 添加自动滑动计时器
 let autoCloseInterval: number | null = null; // 添加进度条更新计时器
+
+// 图片上传对话框状态
+const showImageUploader = ref(false);
+// 图片上传选择的单词索引
+const selectedWordIndex = ref<number | null>(null);
 
 // 自动关闭倒计时
 const autoCloseSecondsLeft = ref(5);
@@ -246,12 +282,11 @@ function convertWordsToLuckyPrizes(words: WordConfig[]): Prize[] {
       background: word.bgColor,
       fonts: [
         { text: word.english, top: '55%', fontColor: word.fontColor, fontSize: '16px', fontWeight: 'bold' },
-        // { text: word.translation, top: '75%', fontColor: word.fontColor, fontSize: '14px' }
       ],
-      imgs: [{ src: word.imgSrc, width: '100px', top: '10%' }],
+      imgs: [{ src: word.imgSrc || applePng, width: '100px', top: '10%' }],
       prizeInfo: {
         name: `${word.english} / ${word.translation}`,
-        imgSrc: word.imgSrc
+        imgSrc: word.imgSrc || applePng
       }
     });
   });
@@ -868,6 +903,52 @@ function showTip(text: string, duration: number = 2000): void {
     showTooltip.value = false;
   }, duration);
 }
+
+// 打开图片上传对话框
+function openImageUploader() {
+  showImageUploader.value = true;
+}
+
+// 关闭图片上传对话框
+function closeImageUploader() {
+  showImageUploader.value = false;
+  selectedWordIndex.value = null;
+}
+
+// 处理图片选择完成
+function onImageSelected(imageData: { name: string, url: string }) {
+  // 更新当前选中的单词的图片
+  if (selectedWordIndex.value !== null && prizes.value.length > selectedWordIndex.value) {
+    // 更新转盘奖品的图片
+    const prize = prizes.value[selectedWordIndex.value];
+    if (prize.imgs && prize.imgs.length > 0) {
+      prize.imgs[0].src = imageData.url;
+    } else {
+      prize.imgs = [{ src: imageData.url, width: '100px', top: '10%' }];
+    }
+    
+    // 更新prizeInfo
+    prize.prizeInfo.imgSrc = imageData.url;
+    
+    // 通知转盘刷新
+    if (myLucky.value) {
+      // @ts-ignore - 调用第三方组件的刷新方法
+      myLucky.value.lucky.prizes = prizes.value;
+      // @ts-ignore
+      myLucky.value.lucky.init();
+    }
+    
+    // 关闭对话框
+    closeImageUploader();
+  }
+}
+
+// 添加右键菜单事件处理
+function handleContextMenu(event: MouseEvent, index: number) {
+  event.preventDefault();
+  selectedWordIndex.value = index;
+  openImageUploader();
+}
 </script>
 
 <style scoped>
@@ -1326,5 +1407,91 @@ function showTip(text: string, duration: number = 2000): void {
   transform-origin: center;
   font-family: Arial, sans-serif;
   font-weight: bold;
+}
+
+/* 上传按钮样式 */
+.upload-button {
+  position: fixed;
+  bottom: 80px;
+  left: 20px;
+  padding: 10px 16px;
+  background-color: #60a5fa;
+  color: white;
+  border-radius: 30px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition: all 0.3s;
+  z-index: 100;
+}
+
+.upload-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
+  background-color: #4d94f9;
+}
+
+.upload-button:active {
+  transform: translateY(1px);
+}
+
+/* 图片上传对话框样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  width: 90%;
+  max-width: 600px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.modal-header {
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #374151;
+}
+
+.close-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 4px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.close-button:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.modal-body {
+  padding: 16px;
+  max-height: 80vh;
+  overflow-y: auto;
 }
 </style>

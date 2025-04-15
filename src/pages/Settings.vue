@@ -342,16 +342,48 @@
             <!-- 单词配置模块 -->
             <div class="bg-emerald-50 rounded-xl p-5 border border-emerald-200 shadow-sm">
               <div class="flex justify-between items-center mb-3">
-                <h4 class="text-lg font-medium text-emerald-700">转盘单词配置
-
-                  <input type="file" @change="uploadFile" />
-
-                </h4>
+                <h4 class="text-lg font-medium text-emerald-700">转盘单词配置</h4>
+                <div class="flex space-x-2">
+                  <button 
+                    @click="addNewWord" 
+                    class="px-4 py-1.5 bg-emerald-500 text-white rounded-md hover:bg-emerald-600 transition-colors flex items-center text-sm"
+                  >
+                    <span class="mr-1">+</span> 添加单词
+                  </button>
+                  <button 
+                    @click="triggerFileUpload" 
+                    class="px-4 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors flex items-center text-sm"
+                  >
+                    <span class="mr-1">📤</span> 导入单词
+                  </button>
+                </div>
+              </div>
+              
+              <!-- 文件上传组件 -->
+              <input 
+                type="file" 
+                ref="fileInput" 
+                @change="uploadFile" 
+                accept=".json,.csv"
+                class="hidden" 
+              />
+              
+              <!-- 上传状态通知 -->
+              <div 
+                v-if="uploadStatus.show" 
+                :class="[
+                  'mb-4 p-3 rounded-md flex items-center',
+                  uploadStatus.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                ]"
+              >
+                <span v-if="uploadStatus.type === 'success'" class="mr-2">✅</span>
+                <span v-else class="mr-2">❌</span>
+                <span>{{ uploadStatus.message }}</span>
                 <button 
-                  @click="addNewWord" 
-                  class="px-4 py-1.5 bg-emerald-500 text-white rounded-md hover:bg-emerald-600 transition-colors flex items-center text-sm"
+                  @click="uploadStatus.show = false" 
+                  class="ml-auto text-gray-500 hover:text-gray-700"
                 >
-                  <span class="mr-1">+</span> 添加单词
+                  ×
                 </button>
               </div>
               
@@ -422,6 +454,17 @@
                   <div class="text-sm text-gray-500">点击上方"添加单词"按钮开始配置转盘单词</div>
                 </div>
               </div>
+            </div>
+            
+            <!-- 导出按钮 -->
+            <div class="mt-6 flex justify-center">
+              <button 
+                @click="exportWords" 
+                class="px-6 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 transition-colors flex items-center text-sm shadow-sm"
+                :disabled="wordsList.length === 0"
+              >
+                <span class="mr-2">📥</span> 导出单词列表
+              </button>
             </div>
             
             <!-- 单词编辑弹窗 -->
@@ -576,7 +619,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, markRaw, h, computed } from 'vue';
+import { ref, reactive, markRaw, h, computed, onMounted } from 'vue';
 import { useWheelSettings, DrawMode, WordConfig } from '../utils/wheelSettings';
 import * as fs from '@tauri-apps/plugin-fs';
 // 获取转盘设置
@@ -588,25 +631,192 @@ const {
   updatePrizeWords
 } = useWheelSettings();
 
-// 文件上传
-const uploadFile = async (event: Event) => {
-  const file = (event.target as HTMLInputElement).files?.[0]
-  if (!file) return
+// 文件输入引用
+const fileInput = ref<HTMLInputElement | null>(null);
 
-  const exists = await fs.exists(file.name, { baseDir: fs.BaseDirectory.AppData });
-  if (exists) {
-    await fs.remove(file.name, { baseDir: fs.BaseDirectory.AppData });
-  }
+// 上传状态通知
+const uploadStatus = reactive({
+  show: false,
+  type: 'success',
+  message: ''
+});
 
-  // 保存文件
-  await fs.writeFile(file.name, file.stream(), { baseDir: fs.BaseDirectory.AppData });
-
-  console.log(file.name);
-
+// 触发文件选择对话框
+const triggerFileUpload = () => {
+  fileInput.value?.click();
 };
 
+// 文件上传
+const uploadFile = async (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
 
+  try {
+    // 显示上传状态
+    uploadStatus.show = true;
+    uploadStatus.type = 'success';
+    uploadStatus.message = '正在处理文件...';
 
+    // 根据文件类型处理
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    
+    // 读取文件内容
+    const fileContent = await file.text();
+    
+    if (fileExtension === 'json') {
+      // 解析JSON文件
+      try {
+        const jsonData = JSON.parse(fileContent);
+        
+        // 检查数据是否是数组且包含必要的字段
+        if (Array.isArray(jsonData) && jsonData.length > 0) {
+          // 验证数据结构
+          const validWords = jsonData.filter(item => 
+            item.english && 
+            item.translation && 
+            (item.bgColor || item.bgColor === '') && 
+            (item.fontColor || item.fontColor === '') &&
+            (item.imgSrc || item.imgSrc === '')
+          );
+          
+          if (validWords.length > 0) {
+            // 更新单词列表
+            wordsList.value = validWords;
+            saveWordsToSettings();
+            
+            uploadStatus.message = `成功导入 ${validWords.length} 个单词`;
+            
+            // 如果有无效数据
+            if (validWords.length < jsonData.length) {
+              uploadStatus.message += `，${jsonData.length - validWords.length} 个无效数据被忽略`;
+            }
+          } else {
+            throw new Error('文件中没有有效的单词数据');
+          }
+        } else {
+          throw new Error('JSON格式不正确，应为单词对象数组');
+        }
+      } catch (error) {
+        uploadStatus.type = 'error';
+        uploadStatus.message = `JSON解析错误: ${error instanceof Error ? error.message : '未知错误'}`;
+      }
+    } else if (fileExtension === 'csv') {
+      // 解析CSV文件
+      try {
+        // 简单的CSV解析（假设第一行是表头）
+        const lines = fileContent.split('\n');
+        if (lines.length < 2) {
+          throw new Error('CSV文件格式不正确，至少需要表头和一行数据');
+        }
+        
+        const headers = lines[0].split(',').map(h => h.trim());
+        
+        // 检查必要的列是否存在
+        const requiredColumns = ['english', 'translation', 'bgColor', 'fontColor', 'imgSrc'];
+        const headerMap: Record<string, number> = {};
+        
+        requiredColumns.forEach(col => {
+          const index = headers.indexOf(col);
+          if (index !== -1) {
+            headerMap[col] = index;
+          }
+        });
+        
+        if (!('english' in headerMap) || !('translation' in headerMap)) {
+          throw new Error('CSV必须包含english和translation列');
+        }
+        
+        // 处理数据行
+        const newWords: WordConfig[] = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+          
+          const columns = line.split(',').map(col => col.trim());
+          if (columns.length < Object.keys(headerMap).length) continue;
+          
+          const word: WordConfig = {
+            english: headerMap['english'] !== undefined ? columns[headerMap['english']] : '',
+            translation: headerMap['translation'] !== undefined ? columns[headerMap['translation']] : '',
+            bgColor: headerMap['bgColor'] !== undefined ? columns[headerMap['bgColor']] : '#badc58',
+            fontColor: headerMap['fontColor'] !== undefined ? columns[headerMap['fontColor']] : '#2d3436',
+            imgSrc: headerMap['imgSrc'] !== undefined ? columns[headerMap['imgSrc']] : ''
+          };
+          
+          if (word.english && word.translation) {
+            newWords.push(word);
+          }
+        }
+        
+        if (newWords.length > 0) {
+          wordsList.value = newWords;
+          saveWordsToSettings();
+          uploadStatus.message = `成功导入 ${newWords.length} 个单词`;
+        } else {
+          throw new Error('CSV文件中没有有效的单词数据');
+        }
+      } catch (error) {
+        uploadStatus.type = 'error';
+        uploadStatus.message = `CSV解析错误: ${error instanceof Error ? error.message : '未知错误'}`;
+      }
+    } else {
+      uploadStatus.type = 'error';
+      uploadStatus.message = '不支持的文件格式，请上传JSON或CSV文件';
+    }
+  } catch (error) {
+    uploadStatus.type = 'error';
+    uploadStatus.message = `文件处理错误: ${error instanceof Error ? error.message : '未知错误'}`;
+  }
+  
+  // 重置文件输入，以便可以再次选择同一文件
+  input.value = '';
+  
+  // 5秒后自动隐藏状态通知
+  setTimeout(() => {
+    uploadStatus.show = false;
+  }, 5000);
+};
+
+// 导出单词列表为JSON文件
+const exportWords = async () => {
+  try {
+    if (wordsList.value.length === 0) {
+      alert('没有单词可导出');
+      return;
+    }
+    
+    const jsonData = JSON.stringify(wordsList.value, null, 2);
+    
+    // 使用Tauri的对话框API保存文件
+    // 这里仅模拟
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const fileName = `words_export_${timestamp}.json`;
+    
+    // 将字符串转换为Uint8Array
+    const encoder = new TextEncoder();
+    const data = encoder.encode(jsonData);
+    
+    await fs.writeFile(fileName, data, { baseDir: fs.BaseDirectory.AppData });
+    
+    uploadStatus.show = true;
+    uploadStatus.type = 'success';
+    uploadStatus.message = `单词列表已导出到 ${fileName}`;
+    
+    setTimeout(() => {
+      uploadStatus.show = false;
+    }, 5000);
+  } catch (error) {
+    uploadStatus.show = true;
+    uploadStatus.type = 'error';
+    uploadStatus.message = `导出失败: ${error instanceof Error ? error.message : '未知错误'}`;
+    
+    setTimeout(() => {
+      uploadStatus.show = false;
+    }, 5000);
+  }
+};
 
 // 当前编辑的单词
 const editingWord = reactive<WordConfig>({
@@ -946,8 +1156,6 @@ function decreaseMaxDraws(): void {
     updateMaxDraws(currentMaxDraws - 1);
   }
 }
-
-
 
 // 组件初始化
 initWordsList();

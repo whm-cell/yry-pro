@@ -12,6 +12,10 @@
       "identifier": "fs:scope",
       "permissions": ["fs:scope:app"]
     },
-    "fs:allow-exists"
+    "fs:allow-exists",
+    "fs:allow-create",
+    "fs:allow-read",
+    "fs:allow-write",
+    "fs:allow-watch"
   ]
 }
