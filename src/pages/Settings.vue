@@ -538,33 +538,61 @@
                   
                   <!-- 图片地址 -->
                   <div>
-                    <label class="block text-gray-700 text-sm font-medium mb-1">图片地址</label>
-                    <input 
-                      v-model="editingWord.imgSrc" 
-                      type="text" 
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      placeholder="请输入图片URL"
-                    />
-                    <p class="text-xs text-gray-500 mt-1">支持外部链接或本地图片路径</p>
-                  </div>
-                  
-                  <!-- 图片预览 -->
-                  <div v-if="editingWord.imgSrc" class="mt-2">
-                    <label class="block text-gray-700 text-sm font-medium mb-1">图片预览</label>
-                    <div class="w-full h-40 bg-gray-100 rounded-md overflow-hidden">
-                      <img 
-                        :src="editingWord.imgSrc" 
-                        alt="预览" 
-                        class="w-full h-full object-contain"
-                        @error="previewImgError = true"
-                      />
-                      <div 
-                        v-if="previewImgError" 
-                        class="w-full h-full flex items-center justify-center text-red-500"
-                      >
-                        图片加载失败
+                    <label class="block text-gray-700 text-sm font-medium mb-1">图片设置</label>
+                    
+                    <!-- 图片上传区域 -->
+                    <div 
+                      class="w-full h-32 border-2 border-dashed border-gray-300 rounded-md mb-2 overflow-hidden flex items-center justify-center cursor-pointer hover:border-emerald-500 transition-all"
+                      @click="triggerImageUpload"
+                      @dragover.prevent 
+                      @drop.prevent="onImageDrop"
+                      @dragenter.prevent="isDragging = true"
+                      @dragleave.prevent="isDragging = false"
+                      :class="{'border-emerald-500 bg-emerald-50': isDragging}"
+                    >
+                      <template v-if="editingWord.imgSrc && !previewImgError">
+                        <img 
+                          :src="editingWord.imgSrc" 
+                          alt="预览" 
+                          class="w-full h-full object-contain"
+                          @error="previewImgError = true"
+                        />
+                      </template>
+                      <div v-else class="text-center p-4">
+                        <svg class="w-8 h-8 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <p class="mt-1 text-sm text-gray-500">点击或拖放图片到这里上传</p>
+                        <p class="text-xs text-gray-400">支持 JPG, PNG, GIF 格式</p>
                       </div>
                     </div>
+                    
+                    <!-- 隐藏的文件输入 -->
+                    <input 
+                      type="file"
+                      ref="imageInput"
+                      accept="image/*"
+                      class="hidden"
+                      @change="onImageSelected"
+                    />
+                    
+                    <!-- 图片URL输入 -->
+                    <div class="flex items-center">
+                      <input 
+                        v-model="editingWord.imgSrc" 
+                        type="text" 
+                        class="flex-grow px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        placeholder="或输入图片URL地址"
+                      />
+                      <button 
+                        type="button" 
+                        class="ml-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                        @click="resetImagePreview"
+                      >
+                        重置
+                      </button>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">支持外部链接或本地图片上传</p>
                   </div>
                 </div>
                 
@@ -826,6 +854,10 @@ const editingWord = reactive<WordConfig>({
   fontColor: '#2d3436',
   imgSrc: ''
 });
+
+// 图片上传相关
+const imageInput = ref<HTMLInputElement | null>(null);
+const isDragging = ref(false);
 
 // 单词列表
 const wordsList = ref<WordConfig[]>([]);
@@ -1155,6 +1187,70 @@ function decreaseMaxDraws(): void {
   if (currentMaxDraws > 1) {
     updateMaxDraws(currentMaxDraws - 1);
   }
+}
+
+// 触发图片上传对话框
+function triggerImageUpload() {
+  imageInput.value?.click();
+}
+
+// 图片选择处理
+function onImageSelected(event: Event) {
+  const input = event.target as HTMLInputElement;
+  if (input.files && input.files.length > 0) {
+    const file = input.files[0];
+    if (isImageFile(file)) {
+      handleImageFile(file);
+    } else {
+      alert('请选择有效的图片文件 (JPG, PNG, GIF)');
+    }
+    // 重置input，以便能够选择同一个文件
+    input.value = '';
+  }
+}
+
+// 图片拖放处理
+function onImageDrop(event: DragEvent) {
+  isDragging.value = false;
+  if (event.dataTransfer?.files && event.dataTransfer.files.length > 0) {
+    const file = event.dataTransfer.files[0];
+    if (isImageFile(file)) {
+      handleImageFile(file);
+    } else {
+      alert('请选择有效的图片文件 (JPG, PNG, GIF)');
+    }
+  }
+}
+
+// 检查是否是图片文件
+function isImageFile(file: File): boolean {
+  const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+  return validTypes.includes(file.type);
+}
+
+// 处理图片文件
+async function handleImageFile(file: File) {
+  try {
+    // 读取文件为base64
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        // 设置图片src为base64数据
+        editingWord.imgSrc = e.target.result as string;
+        previewImgError.value = false;
+      }
+    };
+    reader.readAsDataURL(file);
+  } catch (error) {
+    console.error('图片处理失败:', error);
+    alert('图片处理失败，请重试');
+  }
+}
+
+// 重置图片预览
+function resetImagePreview() {
+  editingWord.imgSrc = '';
+  previewImgError.value = false;
 }
 
 // 组件初始化

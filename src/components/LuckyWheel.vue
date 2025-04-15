@@ -125,8 +125,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
-// 导入图片上传组件
-import ImageUploader from './ImageUploader.vue';
+// 移除错误的导入
+// import { ImageUploader } from './ImageUploader.vue';
 
 // 直接导入图片
 import applePng from './ct-converted.png'  // 使用@别名指向src目录
