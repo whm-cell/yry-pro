@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "yry-pro",
+  "productName": "AiMate",
   "version": "0.1.0",
-  "identifier": "com.yry-pro.app",
+  "identifier": "com.AiMate.app",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "yry-pro",
+        "title": "AiMate",
         "width": 800,
         "height": 600
       }
