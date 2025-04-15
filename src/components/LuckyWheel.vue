@@ -518,16 +518,19 @@ function endCallback(prize: any): void {
       setTimeout(() => {
         isSlideOut.value = true; // 触发滑出动画
         
-        // 等待动画完成后，完全隐藏元素
+        // 等待动画完成后处理状态
+        // 注意：slideOutLeft动画持续2秒，这里设置2.1秒确保动画完全结束
         setTimeout(() => {
+          // 使用一个统一的延迟操作来避免闪烁
+          // 首先隐藏图层，然后重置其他状态变量
           showImageDisplay.value = false; // 隐藏整个图层
           
-          // 延迟一小段时间后重置所有状态
-          setTimeout(() => {
+          // 在下一帧中重置其他状态
+          requestAnimationFrame(() => {
             isSlideOut.value = false;
             isEnlarged.value = false;
-          }, 100);
-        }, 2000);
+          });
+        }, 2100); // 比动画时长稍长一点
       }, 2000);
     }
   }
@@ -722,6 +725,7 @@ function showTip(text: string, duration: number = 2000): void {
 .image-display.slide-out {
   background-color: transparent;
   pointer-events: none;
+  transition: background-color 0.5s ease;
 }
 
 .prize-image {
@@ -968,6 +972,7 @@ function showTip(text: string, duration: number = 2000): void {
   100% {
     transform: translateX(-150vw) scale(0.8) rotate(-5deg);
     opacity: 0;
+    visibility: hidden;
   }
 }
 
@@ -1173,6 +1178,8 @@ function showTip(text: string, duration: number = 2000): void {
   }
   100% {
     transform: translateX(-150vw);
+    opacity: 0;
+    visibility: hidden;
   }
 }
 
