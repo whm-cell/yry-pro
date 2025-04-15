@@ -39,8 +39,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, defineComponent, watch } from 'vue';
-import LuckyWheelComp from '../components/LuckyWheel.vue';
+import { ref, onMounted, watch } from 'vue';
+import LuckyWheelComp from '../components/LuckyWheelExport';
 
 // 学生数据
 const students = [
@@ -55,6 +55,7 @@ const students = [
 ];
 
 // 转盘引用
+const wheelRef = ref(null);
 const isSpinning = ref(false);
 
 // 自定义单词

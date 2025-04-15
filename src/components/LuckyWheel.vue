@@ -15,15 +15,35 @@
     <!-- 图片展示区域 -->
     <div 
       class="image-display" 
-      :class="{ 'active': showImageDisplay }"
+      :class="{ 'active': showImageDisplay, 'slide-out': isSlideOut }"
       @click.self="toggleImageSize"
     >
       <div 
         v-if="selectedPrize"
         class="prize-image" 
-        :class="{ 'enlarged': isEnlarged }"
+        :class="{ 'enlarged': isEnlarged, 'slide-out': isSlideOut }"
         @click="toggleImageSize"
       >
+        <!-- 添加星星点缀装饰 -->
+        <div class="slide-decorations">
+          <div class="slide-star star-1" :class="{ 'active-decoration': isSlideOut }">⭐</div>
+          <div class="slide-star star-2" :class="{ 'active-decoration': isSlideOut }">✨</div>
+          <div class="slide-star star-3" :class="{ 'active-decoration': isSlideOut }">⭐</div>
+          <div class="slide-star star-4" :class="{ 'active-decoration': isSlideOut }">✨</div>
+          <div class="slide-star star-5" :class="{ 'active-decoration': isSlideOut }">⭐</div>
+          <div class="slide-balloon balloon-1" :class="{ 'active-decoration': isSlideOut }">🎈</div>
+          <div class="slide-balloon balloon-2" :class="{ 'active-decoration': isSlideOut }">🎈</div>
+          <div class="slide-rainbow rainbow-1" :class="{ 'active-decoration': isSlideOut }">🌈</div>
+          <div class="slide-confetti confetti-1" :class="{ 'active-decoration': isSlideOut }">🎊</div>
+          <div class="slide-confetti confetti-2" :class="{ 'active-decoration': isSlideOut }">🎉</div>
+          <!-- 新增点缀 -->
+          <div class="slide-animal animal-1" :class="{ 'active-decoration': isSlideOut }">🦊</div>
+          <div class="slide-animal animal-2" :class="{ 'active-decoration': isSlideOut }">🦁</div>
+          <div class="slide-animal animal-3" :class="{ 'active-decoration': isSlideOut }">🐯</div>
+          <div class="slide-dots dots-1" :class="{ 'active-decoration': isSlideOut }">🔴</div>
+          <div class="slide-dots dots-2" :class="{ 'active-decoration': isSlideOut }">🟠</div>
+          <div class="slide-dots dots-3" :class="{ 'active-decoration': isSlideOut }">🟡</div>
+        </div>
        
         <div class="prize-content">
           <img  :src="selectedPrize.imgSrc" :alt="selectedPrize.name" 
@@ -81,16 +101,35 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue';
-// 直接导入图片
-import applePng from './ct-converted.png'  // 使用@别名指向src目录
-import catPng from './ct-converted.png'
-import ballPng from './ct-converted.png'
-import dogPng from './ct-converted.png'
-import starPng from './ct-converted.png'
-import crownPng from './ct-converted.png'
+// 直接导入图片 - 使用占位图片路径
+const applePng = '/images/placeholder.png';
+const catPng = '/images/placeholder.png';
+const ballPng = '/images/placeholder.png';
+const dogPng = '/images/placeholder.png';
+const starPng = '/images/placeholder.png';
+const crownPng = '/images/placeholder.png';
 
 // 导入设置钩子和类型
 import { useWheelSettings, DrawMode } from '../utils/wheelSettings';
+
+// 为组件添加导出
+const LuckyWheel = {
+  name: 'LuckyWheel'
+};
+
+// 暴露组件API
+defineExpose({
+  play: () => {
+    if (myLucky.value) {
+      (myLucky.value as any).play();
+    }
+  },
+  stop: (index: number) => {
+    if (myLucky.value) {
+      (myLucky.value as any).stop(index);
+    }
+  }
+});
 
 // 奖品信息类型
 interface PrizeInfo {
@@ -135,6 +174,7 @@ const myLucky = ref(null);
 const selectedPrize = ref<PrizeInfo | null>(null);
 const isEnlarged = ref(false);
 const showImageDisplay = ref(false);
+const isSlideOut = ref(false);
 
 // 定义默认奖品数据
 const defaultPrizes: Prize[] = [
@@ -453,8 +493,9 @@ function endCallback(prize: any): void {
     if (result) {
       // 设置选中的奖品显示
       selectedPrize.value = prizes.value[prizeIndex].prizeInfo;
-      isEnlarged.value = true; // 初始状态为放大
-      showImageDisplay.value = true; // 显示图片
+      showImageDisplay.value = true; // 显示图片层
+      isEnlarged.value = true; // 放大图片
+      isSlideOut.value = false; // 确保初始状态不是滑出
       
       // 显示抽奖结果提示
       const isPrizeThanks = prizes.value[prizeIndex].prizeInfo.name === "魔法小礼袋";
@@ -466,31 +507,47 @@ function endCallback(prize: any): void {
         showTip(`恭喜！抽中 ${prizes.value[prizeIndex].prizeInfo.name} (第${count}次)`, 1500);
       }
       
-      console.log('抽奖记录:', prizeRecordsRaw.value);
-      
       // 如果抽奖已完成并且锁定，显示提示
       if (isCompletedFlag.value && lockAfterComplete.value) {
         setTimeout(() => {
           showTip("所有奖品已抽完，点击重置按钮重新开始", 5000);
         }, 2000);
       }
+      
+      // 设置2秒后开始滑出动画
+      setTimeout(() => {
+        isSlideOut.value = true; // 触发滑出动画
+        
+        // 等待动画完成后，完全隐藏元素
+        setTimeout(() => {
+          showImageDisplay.value = false; // 隐藏整个图层
+          
+          // 延迟一小段时间后重置所有状态
+          setTimeout(() => {
+            isSlideOut.value = false;
+            isEnlarged.value = false;
+          }, 100);
+        }, 2000);
+      }, 2000);
     }
   }
 }
 
 // 点击切换图片显示
 function toggleImageSize(): void {
+  // 如果正在滑出动画中，不做任何操作
+  if (isSlideOut.value) return;
+  
   if (isEnlarged.value) {
-    // 如果已经放大，隐藏图片展示
+    // 如果已经放大，渐变隐藏
     showImageDisplay.value = false;
-    // 添加小延迟重置属性
     setTimeout(() => {
       isEnlarged.value = false;
-    }, 300); // 匹配过渡动画持续时间
+    }, 500);
   } else {
     // 如果没有放大，显示并放大
-    showImageDisplay.value = true;
     isEnlarged.value = true;
+    showImageDisplay.value = true;
   }
 }
 
@@ -652,12 +709,19 @@ function showTip(text: string, duration: number = 2000): void {
   z-index: 50;
   opacity: 0;
   visibility: hidden;
-  transition: all 0.3s ease;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
 }
 
 .image-display.active {
   opacity: 1;
   visibility: visible;
+  pointer-events: all;
+}
+
+.image-display.slide-out {
+  background-color: transparent;
+  pointer-events: none;
 }
 
 .prize-image {
@@ -672,6 +736,10 @@ function showTip(text: string, duration: number = 2000): void {
 
 .prize-image.enlarged {
   transform: scale(1);
+}
+
+.prize-image.slide-out {
+  transform: scale(0.8);
 }
 
 .heart-background {
@@ -702,6 +770,9 @@ function showTip(text: string, duration: number = 2000): void {
   justify-content: center;
   align-items: center;
   z-index: 2;
+  will-change: transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 .prize-content img {
@@ -711,6 +782,9 @@ function showTip(text: string, duration: number = 2000): void {
   margin-bottom: 15px;
   filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.3));
   animation: float 3s infinite ease-in-out;
+  will-change: transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 .prize-name {
@@ -871,4 +945,273 @@ function showTip(text: string, duration: number = 2000): void {
   border-style: solid;
   border-color: rgba(52, 73, 94, 0.9) transparent transparent;
 }
+
+/* 添加滑出动画相关样式 */
+.image-display.slide-out .prize-image {
+  animation: slideOutLeft 2s cubic-bezier(0.25, 0.1, 0.25, 1.0) forwards;
+  will-change: transform;
+  pointer-events: none;
+  opacity: 1 !important;
+  visibility: visible !important;
+  position: absolute;
+  z-index: 100;
+}
+
+@keyframes slideOutLeft {
+  0% {
+    transform: translateX(0) scale(1) rotate(0);
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }  
+  100% {
+    transform: translateX(-150vw) scale(0.8) rotate(-5deg);
+    opacity: 0;
+  }
+}
+
+/* 滑出时的星星和其他装饰点缀 */
+.slide-decorations {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.slide-star, 
+.slide-balloon, 
+.slide-rainbow, 
+.slide-confetti,
+.slide-animal,
+.slide-dots {
+  position: absolute;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(0);
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.7));
+}
+
+.active-decoration {
+  opacity: 1 !important;
+  visibility: visible !important;
+  z-index: 11;
+}
+
+.slide-star {
+  font-size: 28px;
+}
+
+.slide-star.active-decoration {
+  animation: twinkleFade 1s infinite alternate, followImage 1.5s ease-in-out forwards;
+}
+
+.star-1 {
+  top: 10%;
+  left: 20%;
+  animation-delay: 0.1s;
+}
+
+.star-2 {
+  top: 20%;
+  left: 70%;
+  animation-delay: 0.3s;
+  font-size: 32px;
+}
+
+.star-3 {
+  top: 60%;
+  left: 10%;
+  animation-delay: 0.2s;
+}
+
+.star-4 {
+  top: 75%;
+  left: 60%;
+  animation-delay: 0.4s;
+}
+
+.star-5 {
+  top: 40%;
+  left: 80%;
+  animation-delay: 0.5s;
+  font-size: 30px;
+}
+
+.slide-balloon {
+  font-size: 36px;
+}
+
+.slide-balloon.active-decoration {
+  animation: floatUp 3s ease-in-out infinite, followImage 1.5s ease-in-out forwards;
+}
+
+.balloon-1 {
+  top: 5%;
+  left: 85%;
+  animation-delay: 0.2s;
+}
+
+.balloon-2 {
+  top: 70%;
+  left: 5%;
+  animation-delay: 0.6s;
+}
+
+.slide-rainbow {
+  font-size: 40px;
+}
+
+.slide-rainbow.active-decoration {
+  animation: fadeInOut 2s ease-in-out infinite, followImage 1.5s ease-in-out forwards;
+}
+
+.rainbow-1 {
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.slide-confetti {
+  font-size: 30px;
+}
+
+.slide-confetti.active-decoration {
+  animation: spin 2s linear infinite, followImage 1.5s ease-in-out forwards;
+}
+
+.confetti-1 {
+  top: 15%;
+  left: 30%;
+  animation-delay: 0.1s;
+}
+
+.confetti-2 {
+  bottom: 15%;
+  right: 30%;
+  animation-delay: 0.4s;
+}
+
+/* 新增动物点缀 */
+.slide-animal {
+  font-size: 34px;
+}
+
+.slide-animal.active-decoration {
+  animation: bounce 1.5s infinite alternate, followImage 1.5s ease-in-out forwards;
+}
+
+.animal-1 {
+  top: 30%;
+  left: 15%;
+  animation-delay: 0.2s;
+}
+
+.animal-2 {
+  bottom: 30%;
+  left: 35%;
+  animation-delay: 0.3s;
+}
+
+.animal-3 {
+  top: 50%;
+  right: 20%;
+  animation-delay: 0.4s;
+}
+
+/* 新增彩色点点 */
+.slide-dots {
+  font-size: 24px;
+}
+
+.slide-dots.active-decoration {
+  animation: pulseScale 1.2s infinite alternate, followImage 1.5s ease-in-out forwards;
+}
+
+.dots-1 {
+  top: 25%;
+  right: 40%;
+  animation-delay: 0.1s;
+}
+
+.dots-2 {
+  bottom: 40%;
+  right: 25%;
+  animation-delay: 0.3s;
+}
+
+.dots-3 {
+  top: 65%;
+  left: 45%;
+  animation-delay: 0.5s;
+}
+
+@keyframes pulseScale {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+@keyframes bounce {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-15px);
+  }
+}
+
+@keyframes followImage {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-150vw);
+  }
+}
+
+@keyframes twinkleFade {
+  0% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes floatUp {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+}
+
+@keyframes fadeInOut {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
 </style>
+
