@@ -97,10 +97,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted, defineExpose } from 'vue';
-import { invoke } from '@tauri-apps/api/tauri';
 import { appLocalDataDir } from '@tauri-apps/api/path';
-import { convertFileSrc } from '@tauri-apps/api/tauri';
-
+import { convertFileSrc ,invoke} from '@tauri-apps/api/core';
 // 定义事件
 const emit = defineEmits(['image-selected']);
 
@@ -291,8 +289,6 @@ defineExpose({
   showMessage,
   triggerFileInput
 });
-
-export default {}; // 添加默认导出以解决导入错误
 </script>
 
 <style scoped>
