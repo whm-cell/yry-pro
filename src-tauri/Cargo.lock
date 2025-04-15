@@ -3,6 +3,17 @@
 version = 4
 
 [[package]]
+name = "AiMate"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-opener",
+]
+
+[[package]]
 name = "addr2line"
 version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5028,17 +5039,6 @@ dependencies = [
  "quote",
  "syn 2.0.100",
  "synstructure",
-]
-
-[[package]]
-name = "yry-pro"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-opener",
 ]
 
 [[package]]
