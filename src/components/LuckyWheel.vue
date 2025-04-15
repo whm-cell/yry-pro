@@ -449,6 +449,12 @@ function resetRecords(): void {
     // 如果正在执行滑动动画，取消滑动
     if (isInSlidingAnimation) {
       isSliding.value = false;
+      
+      // 移除可能存在的滑动结束类
+      const displayEl = document.querySelector('.image-display');
+      if (displayEl) {
+        displayEl.classList.remove('sliding-end');
+      }
     }
     
     // 直接关闭显示
@@ -462,7 +468,7 @@ function resetRecords(): void {
       
       // 释放过渡锁
       isTransitioning.value = false;
-    }, 1000); // 简单使用1秒延迟，因为滑动被取消了
+    }, 600);
   } else {
     // 如果没有显示图片，直接释放锁
     isTransitioning.value = false;
@@ -628,19 +634,38 @@ function autoSlideImage(): void {
     // 开始向左滑动
     isSliding.value = true;
     
-    // 等待滑动动画完成后再隐藏
+    // 给滑动动画充分时间完成
+    const slideTime = 4000; // 4秒滑动时间
+    
+    // 在滑动即将结束时应用淡出效果
     setTimeout(() => {
-      showImageDisplay.value = false;
-      isSliding.value = false; // 重置滑动状态
+      // 添加滑动结束的类，触发淡出
+      const displayEl = document.querySelector('.image-display');
+      if (displayEl) {
+        displayEl.classList.add('sliding-end');
+      }
       
-      // 重置状态
+      // 给淡出动画一些时间完成
       setTimeout(() => {
-        isEnlarged.value = false;
-        autoCloseSecondsLeft.value = 5; // 重置倒计时
-        selectedPrize.value = null; // 完全清除选中的奖品，避免下次显示时再次从右侧滑入
-        isTransitioning.value = false; // 释放过渡锁
-      }, 100);
-    }, 15000); // 等待15秒，与CSS动画时间一致
+        // 完全隐藏并重置所有状态
+        showImageDisplay.value = false;
+        isSliding.value = false;
+        
+        // 稍微延迟后重置其他状态，确保DOM已完全更新
+        setTimeout(() => {
+          // 移除滑动结束类，避免影响下次动画
+          if (displayEl) {
+            displayEl.classList.remove('sliding-end');
+          }
+          
+          isEnlarged.value = false;
+          autoCloseSecondsLeft.value = 5;
+          selectedPrize.value = null;
+          isTransitioning.value = false;
+        }, 50);
+      }, 300); // 等待淡出动画完成
+      
+    }, slideTime - 100); // 在滑动完成前稍微提前开始淡出
   } else if (showImageDisplay.value && isEnlarged.value) {
     // 非魔法小礼袋直接关闭
     showImageDisplay.value = false;
@@ -650,8 +675,8 @@ function autoSlideImage(): void {
       isEnlarged.value = false;
       autoCloseSecondsLeft.value = 5;
       selectedPrize.value = null;
-      isTransitioning.value = false; // 释放过渡锁
-    }, 1000);
+      isTransitioning.value = false;
+    }, 600);
   } else {
     // 如果不满足条件，直接释放锁
     isTransitioning.value = false;
@@ -713,19 +738,38 @@ function toggleImageSize(): void {
       // 魔法小礼袋使用滑动效果
       isSliding.value = true;
       
-      // 等待滑动动画完成后再隐藏
+      // 给滑动动画充分时间完成
+      const slideTime = 4000; // 4秒滑动时间
+      
+      // 在滑动即将结束时应用淡出效果
       setTimeout(() => {
-        showImageDisplay.value = false;
-        isSliding.value = false; // 重置滑动状态
+        // 添加滑动结束的类，触发淡出
+        const displayEl = document.querySelector('.image-display');
+        if (displayEl) {
+          displayEl.classList.add('sliding-end');
+        }
         
-        // 重置状态
+        // 给淡出动画一些时间完成
         setTimeout(() => {
-          isEnlarged.value = false;
-          autoCloseSecondsLeft.value = 5; // 重置倒计时
-          selectedPrize.value = null; // 完全清除选中的奖品，避免下次显示时再次从右侧滑入
-          isTransitioning.value = false; // 释放过渡锁
-        }, 100);
-      }, 15000); // 与CSS动画时间一致
+          // 完全隐藏并重置所有状态
+          showImageDisplay.value = false;
+          isSliding.value = false;
+          
+          // 稍微延迟后重置其他状态，确保DOM已完全更新
+          setTimeout(() => {
+            // 移除滑动结束类，避免影响下次动画
+            if (displayEl) {
+              displayEl.classList.remove('sliding-end');
+            }
+            
+            isEnlarged.value = false;
+            autoCloseSecondsLeft.value = 5;
+            selectedPrize.value = null;
+            isTransitioning.value = false;
+          }, 50);
+        }, 300); // 等待淡出动画完成
+        
+      }, slideTime - 100); // 在滑动完成前稍微提前开始淡出
     } else {
       // 设置过渡锁
       isTransitioning.value = true;
@@ -738,8 +782,8 @@ function toggleImageSize(): void {
         isEnlarged.value = false;
         autoCloseSecondsLeft.value = 5;
         selectedPrize.value = null;
-        isTransitioning.value = false; // 释放过渡锁
-      }, 1000); // 增加等待时间以匹配CSS过渡时间
+        isTransitioning.value = false;
+      }, 600);
     }
   } else {
     // 设置过渡锁
@@ -929,37 +973,46 @@ function showTip(text: string, duration: number = 2000): void {
   z-index: 50;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 1s ease, visibility 0s 1s; /* 确保visibility在opacity完全消失后再变化 */
-  will-change: opacity, transform; /* 提示浏览器优化动画性能 */
-  overflow: hidden; /* 确保内容不会溢出 */
-  pointer-events: auto; /* 确保在过渡期间仍然可以捕获点击事件 */
+  /* 使过渡更平滑，确保visibility在opacity完全消失后才改变 */
+  transition: opacity 0.5s ease, visibility 0s 0.5s;
+  will-change: opacity, transform;
+  overflow: hidden;
+  pointer-events: auto;
 }
 
 .image-display.active {
   opacity: 1;
   visibility: visible;
-  transition: opacity 1s ease, visibility 0s; /* 显示时立即改变visibility */
+  transition: opacity 0.5s ease, visibility 0s;
 }
 
-/* 添加整体滑动效果 */
+/* 修改滑动效果，简化过渡 */
 .image-display.sliding {
   transform: translateX(-120vw);
-  transition: transform 4s cubic-bezier(0.12, 0.25, 0.1, 1), opacity 1s ease 4s, visibility 0s 4s;
+  /* 仅对transform应用过渡，不要对opacity应用延迟过渡 */
+  transition: transform 4s cubic-bezier(0.12, 0.25, 0.1, 1);
+}
+
+/* 添加一个处理滑动结束的新类 */
+.image-display.sliding-end {
+  opacity: 0;
+  /* 确保opacity动画在transform完成之后快速发生 */
+  transition: opacity 0.3s ease, visibility 0s 0.3s;
 }
 
 .prize-image {
   position: relative;
   width: 500px;
   height: 500px;
-  transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease-in; /* 调整普通过渡速度 */
+  transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease-in;
   cursor: pointer;
   transform-origin: center;
-  transform: translateX(0) scale(0.8); /* 初始位置在中央，不是在屏幕右侧 */
-  opacity: 0; /* 初始时不可见 */
-  will-change: transform, opacity; /* 提示浏览器优化动画性能 */
-  -webkit-backface-visibility: hidden; /* 防止Safari中的闪烁 */
+  transform: translateX(0) scale(0.8);
+  opacity: 0;
+  will-change: transform, opacity;
+  -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
-  -webkit-transform-style: preserve-3d; /* 在移动设备上提高性能 */
+  -webkit-transform-style: preserve-3d;
   transform-style: preserve-3d;
 }
 
