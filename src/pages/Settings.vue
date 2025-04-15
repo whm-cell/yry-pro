@@ -338,6 +338,206 @@
                 <p class="mt-1 text-sm text-gray-500">每个奖品最多可以被抽中的次数</p>
               </div>
             </div>
+            
+            <!-- 单词配置模块 -->
+            <div class="bg-emerald-50 rounded-xl p-5 border border-emerald-200 shadow-sm">
+              <div class="flex justify-between items-center mb-3">
+                <h4 class="text-lg font-medium text-emerald-700">转盘单词配置</h4>
+                <button 
+                  @click="addNewWord" 
+                  class="px-4 py-1.5 bg-emerald-500 text-white rounded-md hover:bg-emerald-600 transition-colors flex items-center text-sm"
+                >
+                  <span class="mr-1">+</span> 添加单词
+                </button>
+              </div>
+              
+              <!-- 单词列表 -->
+              <div class="space-y-4 mt-4 max-h-96 overflow-y-auto pr-1">
+                <div 
+                  v-for="(word, index) in wordsList" 
+                  :key="index"
+                  class="bg-white rounded-lg border border-gray-200 p-4 transition-all hover:shadow-md"
+                >
+                  <div class="flex justify-between items-start mb-3">
+                    <div class="font-bold text-lg text-gray-800">{{ word.english }}</div>
+                    <div class="flex space-x-2">
+                      <button 
+                        @click="editWord(index)" 
+                        class="text-blue-500 hover:text-blue-700"
+                      >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                        </svg>
+                      </button>
+                      <button 
+                        @click="deleteWord(index)" 
+                        class="text-red-500 hover:text-red-700"
+                      >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div class="flex space-x-4">
+                    <div class="flex-shrink-0 w-20 h-20 bg-gray-100 rounded-md overflow-hidden">
+                      <img 
+                        :src="word.imgSrc" 
+                        :alt="word.english" 
+                        class="w-full h-full object-cover"
+                        @error="handleImgError($event, index)"
+                      />
+                    </div>
+                    <div class="flex-grow">
+                      <div class="text-gray-500 mb-1">翻译: <span class="text-gray-700">{{ word.translation }}</span></div>
+                      <div class="text-gray-500 mb-1">背景色: 
+                        <span 
+                          class="inline-block w-4 h-4 rounded-full border border-gray-300" 
+                          :style="{ backgroundColor: word.bgColor }"
+                        ></span>
+                        <span class="text-gray-700 ml-1">{{ word.bgColor }}</span>
+                      </div>
+                      <div class="text-gray-500">字体颜色: 
+                        <span 
+                          class="inline-block w-4 h-4 rounded-full border border-gray-300" 
+                          :style="{ backgroundColor: word.fontColor }"
+                        ></span>
+                        <span class="text-gray-700 ml-1">{{ word.fontColor }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- 空状态提示 -->
+                <div 
+                  v-if="wordsList.length === 0" 
+                  class="text-center py-8 bg-white rounded-lg border border-gray-200"
+                >
+                  <div class="text-gray-400 mb-2">暂无单词配置</div>
+                  <div class="text-sm text-gray-500">点击上方"添加单词"按钮开始配置转盘单词</div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 单词编辑弹窗 -->
+            <div 
+              v-if="showWordModal" 
+              class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            >
+              <div class="bg-white rounded-xl p-6 w-full max-w-md m-4">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">
+                  {{ editingIndex === -1 ? '添加新单词' : '编辑单词' }}
+                </h3>
+                
+                <div class="space-y-4">
+                  <!-- 英语单词 -->
+                  <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-1">英语单词</label>
+                    <input 
+                      v-model="editingWord.english" 
+                      type="text" 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      placeholder="请输入英语单词"
+                    />
+                  </div>
+                  
+                  <!-- 中文翻译 -->
+                  <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-1">中文翻译</label>
+                    <input 
+                      v-model="editingWord.translation" 
+                      type="text" 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      placeholder="请输入中文翻译"
+                    />
+                  </div>
+                  
+                  <!-- 背景颜色 -->
+                  <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-1">背景颜色</label>
+                    <div class="flex items-center">
+                      <input 
+                        v-model="editingWord.bgColor" 
+                        type="text" 
+                        class="flex-grow px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        placeholder="#RRGGBB 或颜色名称"
+                      />
+                      <input 
+                        v-model="editingWord.bgColor" 
+                        type="color" 
+                        class="w-10 h-10 border-y border-r border-gray-300 rounded-r-md"
+                      />
+                    </div>
+                  </div>
+                  
+                  <!-- 字体颜色 -->
+                  <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-1">字体颜色</label>
+                    <div class="flex items-center">
+                      <input 
+                        v-model="editingWord.fontColor" 
+                        type="text" 
+                        class="flex-grow px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        placeholder="#RRGGBB 或颜色名称"
+                      />
+                      <input 
+                        v-model="editingWord.fontColor" 
+                        type="color" 
+                        class="w-10 h-10 border-y border-r border-gray-300 rounded-r-md"
+                      />
+                    </div>
+                  </div>
+                  
+                  <!-- 图片地址 -->
+                  <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-1">图片地址</label>
+                    <input 
+                      v-model="editingWord.imgSrc" 
+                      type="text" 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      placeholder="请输入图片URL"
+                    />
+                    <p class="text-xs text-gray-500 mt-1">支持外部链接或本地图片路径</p>
+                  </div>
+                  
+                  <!-- 图片预览 -->
+                  <div v-if="editingWord.imgSrc" class="mt-2">
+                    <label class="block text-gray-700 text-sm font-medium mb-1">图片预览</label>
+                    <div class="w-full h-40 bg-gray-100 rounded-md overflow-hidden">
+                      <img 
+                        :src="editingWord.imgSrc" 
+                        alt="预览" 
+                        class="w-full h-full object-contain"
+                        @error="previewImgError = true"
+                      />
+                      <div 
+                        v-if="previewImgError" 
+                        class="w-full h-full flex items-center justify-center text-red-500"
+                      >
+                        图片加载失败
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="flex justify-end mt-6 space-x-3">
+                  <button 
+                    @click="closeWordModal" 
+                    class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  >
+                    取消
+                  </button>
+                  <button 
+                    @click="saveWord" 
+                    class="px-4 py-2 bg-emerald-500 text-white rounded-md hover:bg-emerald-600"
+                    :disabled="!isWordFormValid"
+                  >
+                    保存
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
           
           <!-- 关于系统 -->
@@ -372,16 +572,158 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, markRaw, h } from 'vue';
-import { useWheelSettings, DrawMode } from '../utils/wheelSettings';
+import { ref, reactive, markRaw, h, computed } from 'vue';
+import { useWheelSettings, DrawMode, WordConfig } from '../utils/wheelSettings';
 
 // 获取转盘设置
 const { 
   settings, 
   updateDrawMode, 
   updateLockAfterComplete,
-  updateMaxDraws
+  updateMaxDraws,
+  updatePrizeWords
 } = useWheelSettings();
+
+// 当前编辑的单词
+const editingWord = reactive<WordConfig>({
+  english: '',
+  translation: '',
+  bgColor: '#badc58',
+  fontColor: '#2d3436',
+  imgSrc: ''
+});
+
+// 单词列表
+const wordsList = ref<WordConfig[]>([]);
+
+// 编辑状态
+const showWordModal = ref(false);
+const editingIndex = ref(-1);
+const previewImgError = ref(false);
+
+// 验证表单是否有效
+const isWordFormValid = computed(() => {
+  return editingWord.english.trim() !== '' && 
+         editingWord.translation.trim() !== '' && 
+         editingWord.imgSrc.trim() !== '';
+});
+
+// 初始化单词列表
+function initWordsList() {
+  // 从settings中获取已配置的单词
+  if (settings.prizeWords && settings.prizeWords.length > 0) {
+    wordsList.value = [...settings.prizeWords];
+  } else {
+    // 使用默认值
+    wordsList.value = [
+      {
+        english: 'Apple',
+        translation: '苹果',
+        bgColor: '#badc58',
+        fontColor: '#2d3436',
+        imgSrc: './ct-converted.png'
+      },
+      {
+        english: 'Cat',
+        translation: '猫咪',
+        bgColor: '#ff9ff3',
+        fontColor: '#2d3436',
+        imgSrc: './ct-converted.png'
+      },
+      {
+        english: 'Ball',
+        translation: '球',
+        bgColor: '#ffeaa7',
+        fontColor: '#2d3436',
+        imgSrc: './ct-converted.png'
+      },
+      {
+        english: 'Dog',
+        translation: '小狗',
+        bgColor: '#74b9ff',
+        fontColor: '#2d3436',
+        imgSrc: './ct-converted.png'
+      }
+    ];
+  }
+}
+
+// 添加新单词
+function addNewWord() {
+  // 重置编辑状态
+  editingWord.english = '';
+  editingWord.translation = '';
+  editingWord.bgColor = '#badc58';
+  editingWord.fontColor = '#2d3436';
+  editingWord.imgSrc = '';
+  editingIndex.value = -1;
+  previewImgError.value = false;
+  showWordModal.value = true;
+}
+
+// 编辑单词
+function editWord(index: number) {
+  const word = wordsList.value[index];
+  editingWord.english = word.english;
+  editingWord.translation = word.translation;
+  editingWord.bgColor = word.bgColor;
+  editingWord.fontColor = word.fontColor;
+  editingWord.imgSrc = word.imgSrc;
+  editingIndex.value = index;
+  previewImgError.value = false;
+  showWordModal.value = true;
+}
+
+// 删除单词
+function deleteWord(index: number) {
+  if (confirm('确定要删除这个单词吗？')) {
+    wordsList.value.splice(index, 1);
+    saveWordsToSettings();
+  }
+}
+
+// 保存单词
+function saveWord() {
+  if (!isWordFormValid.value) return;
+  
+  const newWord: WordConfig = {
+    english: editingWord.english.trim(),
+    translation: editingWord.translation.trim(),
+    bgColor: editingWord.bgColor,
+    fontColor: editingWord.fontColor,
+    imgSrc: editingWord.imgSrc.trim()
+  };
+  
+  if (editingIndex.value === -1) {
+    // 添加新单词
+    wordsList.value.push(newWord);
+  } else {
+    // 更新现有单词
+    wordsList.value[editingIndex.value] = newWord;
+  }
+  
+  // 保存到全局设置
+  saveWordsToSettings();
+  
+  // 关闭弹窗
+  closeWordModal();
+}
+
+// 关闭编辑弹窗
+function closeWordModal() {
+  showWordModal.value = false;
+}
+
+// 处理图片加载错误
+function handleImgError(event: Event, index: number) {
+  const target = event.target as HTMLImageElement;
+  target.src = './ct-converted.png'; // 使用默认图片
+}
+
+// 保存单词到settings
+function saveWordsToSettings() {
+  updatePrizeWords(wordsList.value);
+}
 
 // 定义设置分类图标
 // const AppearanceIcon = markRaw({
@@ -617,6 +959,9 @@ function decreaseMaxDraws(): void {
     updateMaxDraws(currentMaxDraws - 1);
   }
 }
+
+// 组件初始化
+initWordsList();
 
 </script>
 

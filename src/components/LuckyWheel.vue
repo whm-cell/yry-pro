@@ -105,7 +105,7 @@ import dogPng from './ct-converted.png'
 import starPng from './ct-converted.png'
 
 // 导入设置钩子和类型
-import { useWheelSettings } from '../utils/wheelSettings';
+import { useWheelSettings, WordConfig } from '../utils/wheelSettings';
 
 // 奖品信息类型
 interface PrizeInfo {
@@ -223,6 +223,42 @@ const defaultPrizes: Prize[] = [
   }
 ];
 
+// 转换配置的单词为转盘奖品数据
+function convertWordsToLuckyPrizes(words: WordConfig[]): Prize[] {
+  // 确保至少有魔法小礼袋
+  const luckyPrizes: Prize[] = [
+    { 
+      background: '#fab1a0', 
+      fonts: [
+        { text: '魔法小礼袋', top: '55%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' }
+      ],
+      imgs: [{ src: starPng, width: '100px', top: '10%' }],
+      prizeInfo: {
+        name: "魔法小礼袋",
+        imgSrc: starPng
+      }
+    }
+  ];
+  
+  // 添加配置的单词
+  words.forEach(word => {
+    luckyPrizes.unshift({
+      background: word.bgColor,
+      fonts: [
+        { text: word.english, top: '55%', fontColor: word.fontColor, fontSize: '16px', fontWeight: 'bold' },
+        // { text: word.translation, top: '75%', fontColor: word.fontColor, fontSize: '14px' }
+      ],
+      imgs: [{ src: word.imgSrc, width: '100px', top: '10%' }],
+      prizeInfo: {
+        name: `${word.english} / ${word.translation}`,
+        imgSrc: word.imgSrc
+      }
+    });
+  });
+  
+  return luckyPrizes;
+}
+
 // 奖品数据
 const prizes = ref<Prize[]>([...defaultPrizes]);
 
@@ -272,6 +308,9 @@ onMounted(() => {
     // 如果全局设置中有奖品数据，使用它
     if (settings.prizes && settings.prizes.length > 0) {
       prizes.value = [...settings.prizes];
+    } else if (settings.prizeWords && settings.prizeWords.length > 0) {
+      // 如果有配置的单词，使用它们生成奖品
+      prizes.value = convertWordsToLuckyPrizes(settings.prizeWords);
     }
   }
   

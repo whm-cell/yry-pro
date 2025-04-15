@@ -1,16 +1,43 @@
-# Tauri + Vue + TypeScript
+# 英语单词转盘应用
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+## 功能介绍
 
-## Recommended IDE Setup
+这是一个交互式的英语学习工具，通过游戏化的转盘抽奖方式，帮助学习者记忆英语单词。
 
-- [VS Code](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+### 核心功能
 
-## Type Support For `.vue` Imports in TS
+- **单词转盘**: 随机抽取英语单词进行学习
+- **可配置单词**: 在设置页面中自定义单词、翻译和图片
+- **多种抽奖模式**: 支持有序模式和随机模式
+- **记录追踪**: 跟踪每个单词的抽取次数
 
-Since TypeScript cannot handle type information for `.vue` imports, they are shimmed to be a generic Vue component type by default. In most cases this is fine if you don't really care about component prop types outside of templates. However, if you wish to get actual prop types in `.vue` imports (for example to get props validation when using manual `h(...)` calls), you can enable Volar's Take Over mode by following these steps:
+## 单词配置说明
 
-1. Run `Extensions: Show Built-in Extensions` from VS Code's command palette, look for `TypeScript and JavaScript Language Features`, then right click and select `Disable (Workspace)`. By default, Take Over mode will enable itself if the default TypeScript extension is disabled.
-2. Reload the VS Code window by running `Developer: Reload Window` from the command palette.
+在"系统设置"页面的"英语转盘设置"部分，您可以：
 
-You can learn more about Take Over mode [here](https://github.com/johnsoncodehk/volar/discussions/471).
+1. **添加新单词**: 点击"添加单词"按钮
+2. **编辑单词**: 为每个单词配置以下信息：
+   - 英语单词
+   - 中文翻译
+   - 背景颜色
+   - 字体颜色
+   - 单词图片
+3. **删除单词**: 点击删除图标可移除单词
+4. **预览效果**: 添加或编辑单词时可预览图片
+
+所有配置的单词会自动保存，并在转盘页面中使用。
+
+## 使用技巧
+
+- 确保每个单词都配置了合适的图片，以增强记忆效果
+- 为不同类别的单词选择不同的背景颜色，方便区分
+- 使用高对比度的字体颜色，使单词清晰可见
+- 图片支持外部URL或本地资源路径
+
+## 其他设置选项
+
+- **抽奖模式**: 可选择有序模式或随机模式
+- **抽完后锁定**: 控制是否在抽完所有单词后锁定转盘
+- **抽取次数**: 设置每个单词最多可被抽中的次数
+
+祝您学习愉快！

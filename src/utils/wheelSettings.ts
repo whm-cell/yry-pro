@@ -10,12 +10,22 @@ export enum DrawMode {
   RANDOM = 'random'      // 模式2：奖品和魔法小礼袋完全随机，抽到哪个是哪个，抽完后对应扇形变灰色
 }
 
+// 单词配置接口
+export interface WordConfig {
+  english: string;
+  translation: string;
+  bgColor: string;
+  fontColor: string;
+  imgSrc: string;
+}
+
 // 定义设置类型
 export interface WheelSettings {
   drawMode: DrawMode;
   lockAfterComplete: boolean;
   maxDraws: number;
   prizes: any[];
+  prizeWords: WordConfig[]; // 添加单词配置
 }
 
 // 设置存储键名
@@ -26,7 +36,8 @@ const defaultSettings: WheelSettings = {
   drawMode: DrawMode.ORDERLY,
   lockAfterComplete: false,
   maxDraws: 1,
-  prizes: [] // 奖品配置将保持为空，由组件初始化时提供
+  prizes: [], // 奖品配置将保持为空，由组件初始化时提供
+  prizeWords: [] // 单词配置，初始为空
 };
 
 // 从本地存储加载设置
@@ -78,6 +89,11 @@ export function useWheelSettings() {
     settings.prizes = prizes;
   };
   
+  // 添加更新单词配置的方法
+  const updatePrizeWords = (words: WordConfig[]) => {
+    settings.prizeWords = words;
+  };
+  
   // 重置设置
   const resetSettings = () => {
     Object.assign(settings, defaultSettings);
@@ -92,6 +108,7 @@ export function useWheelSettings() {
     updateLockAfterComplete,
     updateMaxDraws,
     updatePrizes,
+    updatePrizeWords,
     resetSettings,
     isInitialized
   };
