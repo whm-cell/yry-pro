@@ -24,10 +24,26 @@
         :class="{ 'enlarged': isEnlarged, 'sliding': isSliding }"
         @click="toggleImageSize"
       >
+        <!-- 添加自动关闭计时器指示 -->
+        <div class="auto-close-indicator" v-if="isEnlarged && !isSliding">
+          <svg viewBox="0 0 36 36" class="circular-timer">
+            <path class="circle-bg"
+              d="M18 2.0845
+                a 15.9155 15.9155 0 0 1 0 31.831
+                a 15.9155 15.9155 0 0 1 0 -31.831"
+            />
+            <path class="circle"
+              :style="{ 'stroke-dasharray': `${autoCloseProgress}, 100` }"
+              d="M18 2.0845
+                a 15.9155 15.9155 0 0 1 0 31.831
+                a 15.9155 15.9155 0 0 1 0 -31.831"
+            />
+            <text x="18" y="20.35" class="timer-text">{{ Math.ceil(autoCloseSecondsLeft) }}</text>
+          </svg>
+        </div>
        
         <div class="prize-content">
-          <img  :src="selectedPrize.imgSrc" :alt="selectedPrize.name" 
-         >
+          <img :src="selectedPrize.imgSrc" :alt="selectedPrize.name">
         </div>
       </div>
     </div>
@@ -80,7 +96,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue';
 // 直接导入图片
 import applePng from './ct-converted.png'  // 使用@别名指向src目录
 import catPng from './ct-converted.png'
@@ -136,6 +152,12 @@ const selectedPrize = ref<PrizeInfo | null>(null);
 const isEnlarged = ref(false);
 const showImageDisplay = ref(false);
 const isSliding = ref(false);
+let autoSlideTimer: number | null = null; // 添加自动滑动计时器
+let autoCloseInterval: number | null = null; // 添加进度条更新计时器
+
+// 自动关闭倒计时
+const autoCloseSecondsLeft = ref(5);
+const autoCloseProgress = computed(() => (autoCloseSecondsLeft.value / 5) * 100);
 
 // 定义默认奖品数据
 const defaultPrizes: Prize[] = [
@@ -393,9 +415,28 @@ function updatePrizeRecord(prizeIndex: number) {
 
 // 重置抽奖记录
 function resetRecords(): void {
+  // 清除自动滑动定时器
+  if (autoSlideTimer) {
+    clearTimeout(autoSlideTimer);
+    autoSlideTimer = null;
+  }
+  
+  // 清除进度条更新计时器
+  if (autoCloseInterval) {
+    clearInterval(autoCloseInterval);
+    autoCloseInterval = null;
+  }
+  
   // 重置记录
   for (const key in prizeRecordsRaw.value) {
     prizeRecordsRaw.value[key] = 0;
+  }
+  
+  // 隐藏图片显示
+  if (showImageDisplay.value) {
+    showImageDisplay.value = false;
+    isEnlarged.value = false;
+    isSliding.value = false;
   }
   
   // 这部分代码也可以移除，因为我们不再改变扇形颜色
@@ -419,8 +460,32 @@ function resetRecords(): void {
   showTip('单词转盘记录已重置，可以重新开始抽单词！', 3000);
 }
 
+// 在组件卸载前清除所有定时器
+onBeforeUnmount(() => {
+  if (autoSlideTimer) {
+    clearTimeout(autoSlideTimer);
+    autoSlideTimer = null;
+  }
+  
+  if (autoCloseInterval) {
+    clearInterval(autoCloseInterval);
+    autoCloseInterval = null;
+  }
+  
+  if (tooltipTimer) {
+    clearTimeout(tooltipTimer);
+    tooltipTimer = null;
+  }
+});
+
 // 开始转动回调
 function startCallback(): void {
+  // 清除自动滑动定时器
+  if (autoSlideTimer) {
+    clearTimeout(autoSlideTimer);
+    autoSlideTimer = null;
+  }
+  
   // 如果抽奖已完成并且锁定，显示提示而不启动转盘
   if (isCompletedFlag.value && lockAfterComplete.value) {
     alert("单词转盘已完成，请点击重置按钮重新开始");
@@ -460,7 +525,18 @@ function endCallback(prize: any): void {
       // 确保DOM已更新
       setTimeout(() => {
         isSliding.value = false; // 触发滑入动画
-        isEnlarged.value = true; // 放大图片 
+        isEnlarged.value = true; // 放大图片
+        
+        // 启动自动关闭倒计时
+        startAutoCloseCountdown();
+        
+        // 设置5秒后自动滑走
+        if (autoSlideTimer) {
+          clearTimeout(autoSlideTimer);
+        }
+        autoSlideTimer = window.setTimeout(() => {
+          autoSlideImage();
+        }, 5000);
       }, 50);
       
       // 显示抽奖结果提示
@@ -485,8 +561,71 @@ function endCallback(prize: any): void {
   }
 }
 
+// 添加自动滑动图片函数
+function autoSlideImage(): void {
+  // 清除自动关闭计时器
+  if (autoCloseInterval) {
+    clearInterval(autoCloseInterval);
+    autoCloseInterval = null;
+  }
+  
+  // 如果当前正在显示图片，则触发滑出动画
+  if (showImageDisplay.value && isEnlarged.value) {
+    // 开始向左滑动
+    isSliding.value = true;
+    
+    // 等待滑动动画完成后再隐藏
+    setTimeout(() => {
+      showImageDisplay.value = false;
+      
+      // 重置状态
+      setTimeout(() => {
+        isEnlarged.value = false;
+        isSliding.value = false;
+        autoCloseSecondsLeft.value = 5; // 重置倒计时
+      }, 100);
+    }, 800);
+  }
+}
+
+// 启动自动关闭倒计时
+function startAutoCloseCountdown(): void {
+  // 重置计时
+  autoCloseSecondsLeft.value = 5;
+  
+  // 清除之前可能存在的计时器
+  if (autoCloseInterval) {
+    clearInterval(autoCloseInterval);
+  }
+  
+  // 设置每100ms更新一次进度条
+  autoCloseInterval = window.setInterval(() => {
+    autoCloseSecondsLeft.value -= 0.1;
+    
+    // 当倒计时结束，清除定时器
+    if (autoCloseSecondsLeft.value <= 0) {
+      if (autoCloseInterval) {
+        clearInterval(autoCloseInterval);
+        autoCloseInterval = null;
+      }
+    }
+  }, 100);
+}
+
 // 点击切换图片显示
 function toggleImageSize(): void {
+  // 清除自动滑动定时器
+  if (autoSlideTimer) {
+    clearTimeout(autoSlideTimer);
+    autoSlideTimer = null;
+  }
+  
+  // 清除进度条更新计时器
+  if (autoCloseInterval) {
+    clearInterval(autoCloseInterval);
+    autoCloseInterval = null;
+  }
+  
   if (isEnlarged.value) {
     // 如果已经放大，开始向左滑动
     isSliding.value = true;
@@ -499,6 +638,7 @@ function toggleImageSize(): void {
       setTimeout(() => {
         isEnlarged.value = false;
         isSliding.value = false;
+        autoCloseSecondsLeft.value = 5; // 重置倒计时
       }, 100);
     }, 800); // 增加等待时间，让动画更完整
   } else {
@@ -510,6 +650,14 @@ function toggleImageSize(): void {
     setTimeout(() => {
       isSliding.value = false; // 取消滑动状态，触发从右向左的滑入
       isEnlarged.value = true; // 放大
+      
+      // 启动自动关闭倒计时
+      startAutoCloseCountdown();
+      
+      // 设置5秒后自动滑走
+      autoSlideTimer = window.setTimeout(() => {
+        autoSlideImage();
+      }, 5000);
     }, 50);
   }
 }
@@ -691,6 +839,10 @@ function showTip(text: string, duration: number = 2000): void {
   transform-origin: center;
   transform: translateX(120vw) scale(0.8); /* 初始位置在屏幕右侧 */
   will-change: transform, opacity; /* 提示浏览器优化动画性能 */
+  -webkit-backface-visibility: hidden; /* 防止Safari中的闪烁 */
+  backface-visibility: hidden;
+  -webkit-transform-style: preserve-3d; /* 在移动设备上提高性能 */
+  transform-style: preserve-3d;
 }
 
 .prize-image.enlarged {
@@ -701,6 +853,7 @@ function showTip(text: string, duration: number = 2000): void {
   transform: translateX(-120vw) scale(1); /* 向左滑出屏幕 */
   opacity: 0;
   transition: transform 0.8s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.6s ease 0.2s; /* 先移动后淡出 */
+  pointer-events: none; /* 防止在滑动时被点击 */
 }
 
 /* 确保从右侧滑入的过程中图片保持可见 */
@@ -931,5 +1084,45 @@ function showTip(text: string, duration: number = 2000): void {
   border-width: 10px 10px 0;
   border-style: solid;
   border-color: rgba(52, 73, 94, 0.9) transparent transparent;
+}
+
+/* 自动关闭计时器样式 */
+.auto-close-indicator {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 36px;
+  height: 36px;
+  z-index: 10;
+}
+
+.circular-timer {
+  transform: rotate(-90deg);
+  width: 36px;
+  height: 36px;
+}
+
+.circle-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.3);
+  stroke-width: 2.8;
+}
+
+.circle {
+  fill: none;
+  stroke: white;
+  stroke-width: 2.8;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.1s linear;
+}
+
+.timer-text {
+  fill: white;
+  font-size: 10px;
+  text-anchor: middle;
+  transform: rotate(90deg);
+  transform-origin: center;
+  font-family: Arial, sans-serif;
+  font-weight: bold;
 }
 </style>
