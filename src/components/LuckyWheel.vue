@@ -24,8 +24,8 @@
         :class="{ 'enlarged': isEnlarged, 'sliding': isSliding }"
         @click="toggleImageSize"
       >
-        <!-- 添加自动关闭计时器指示 -->
-        <div class="auto-close-indicator" v-if="isEnlarged && !isSliding">
+        <!-- 添加自动关闭计时器指示，只在魔法小礼袋时显示 -->
+        <div class="auto-close-indicator" v-if="isEnlarged && !isSliding && selectedPrize && selectedPrize.name === '魔法小礼袋'">
           <svg viewBox="0 0 36 36" class="circular-timer">
             <path class="circle-bg"
               d="M18 2.0845
@@ -521,6 +521,9 @@ function endCallback(prize: any): void {
       // 设置选中的奖品显示
       selectedPrize.value = prizes.value[prizeIndex].prizeInfo;
       
+      // 判断是否为魔法小礼袋
+      const isMagicBag = selectedPrize.value.name === "魔法小礼袋";
+      
       // 直接显示图片，不使用滑入效果
       showImageDisplay.value = true; // 显示图片
       
@@ -528,16 +531,19 @@ function endCallback(prize: any): void {
       setTimeout(() => {
         isEnlarged.value = true; // 放大图片
         
-        // 启动自动关闭倒计时
-        startAutoCloseCountdown();
-        
-        // 设置5秒后自动滑走
-        if (autoSlideTimer) {
-          clearTimeout(autoSlideTimer);
+        // 只有魔法小礼袋才启动倒计时和自动滑动
+        if (isMagicBag) {
+          // 启动自动关闭倒计时
+          startAutoCloseCountdown();
+          
+          // 设置5秒后自动滑走
+          if (autoSlideTimer) {
+            clearTimeout(autoSlideTimer);
+          }
+          autoSlideTimer = window.setTimeout(() => {
+            autoSlideImage();
+          }, 5000);
         }
-        autoSlideTimer = window.setTimeout(() => {
-          autoSlideImage();
-        }, 5000);
       }, 50);
       
       // 显示抽奖结果提示
@@ -570,8 +576,11 @@ function autoSlideImage(): void {
     autoCloseInterval = null;
   }
   
+  // 检查是否为魔法小礼袋
+  const isMagicBag = selectedPrize.value && selectedPrize.value.name === "魔法小礼袋";
+  
   // 如果当前正在显示图片，则触发滑出动画
-  if (showImageDisplay.value && isEnlarged.value) {
+  if (showImageDisplay.value && isEnlarged.value && isMagicBag) {
     // 开始向左滑动
     isSliding.value = true;
     
@@ -587,6 +596,16 @@ function autoSlideImage(): void {
         selectedPrize.value = null; // 完全清除选中的奖品，避免下次显示时再次从右侧滑入
       }, 100);
     }, 800);
+  } else if (showImageDisplay.value && isEnlarged.value) {
+    // 非魔法小礼袋直接关闭
+    showImageDisplay.value = false;
+    
+    // 简单延迟后重置状态
+    setTimeout(() => {
+      isEnlarged.value = false;
+      autoCloseSecondsLeft.value = 5;
+      selectedPrize.value = null;
+    }, 500);
   }
 }
 
@@ -628,22 +647,38 @@ function toggleImageSize(): void {
     autoCloseInterval = null;
   }
   
+  // 判断当前奖品是否为魔法小礼袋
+  const isMagicBag = selectedPrize.value && selectedPrize.value.name === "魔法小礼袋";
+  
   if (isEnlarged.value) {
-    // 如果已经放大，开始向左滑动
-    isSliding.value = true;
-    
-    // 等待滑动动画完成后再隐藏
-    setTimeout(() => {
+    // 如果已经放大，根据奖品类型决定如何关闭
+    if (isMagicBag) {
+      // 魔法小礼袋使用滑动效果
+      isSliding.value = true;
+      
+      // 等待滑动动画完成后再隐藏
+      setTimeout(() => {
+        showImageDisplay.value = false;
+        
+        // 重置状态
+        setTimeout(() => {
+          isEnlarged.value = false;
+          isSliding.value = false;
+          autoCloseSecondsLeft.value = 5; // 重置倒计时
+          selectedPrize.value = null; // 完全清除选中的奖品，避免下次显示时再次从右侧滑入
+        }, 100);
+      }, 800); // 增加等待时间，让动画更完整
+    } else {
+      // 普通奖品直接淡出
       showImageDisplay.value = false;
       
-      // 重置状态
+      // 简单延迟后重置状态
       setTimeout(() => {
         isEnlarged.value = false;
-        isSliding.value = false;
-        autoCloseSecondsLeft.value = 5; // 重置倒计时
-        selectedPrize.value = null; // 完全清除选中的奖品，避免下次显示时再次从右侧滑入
-      }, 100);
-    }, 800); // 增加等待时间，让动画更完整
+        autoCloseSecondsLeft.value = 5;
+        selectedPrize.value = null;
+      }, 500);
+    }
   } else {
     // 如果没有放大，直接显示并放大
     showImageDisplay.value = true;
@@ -652,13 +687,16 @@ function toggleImageSize(): void {
     setTimeout(() => {
       isEnlarged.value = true; // 放大
       
-      // 启动自动关闭倒计时
-      startAutoCloseCountdown();
-      
-      // 设置5秒后自动滑走
-      autoSlideTimer = window.setTimeout(() => {
-        autoSlideImage();
-      }, 5000);
+      // 只有魔法小礼袋才启动倒计时和自动滑动
+      if (isMagicBag) {
+        // 启动自动关闭倒计时
+        startAutoCloseCountdown();
+        
+        // 设置5秒后自动滑走
+        autoSlideTimer = window.setTimeout(() => {
+          autoSlideImage();
+        }, 5000);
+      }
     }, 50);
   }
 }
@@ -835,7 +873,7 @@ function showTip(text: string, duration: number = 2000): void {
   position: relative;
   width: 500px;
   height: 500px;
-  transition: transform 3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease-in; /* 入场动画更短，更快出现 */
+  transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease-in; /* 调整普通过渡速度 */
   cursor: pointer;
   transform-origin: center;
   transform: translateX(0) scale(0.8); /* 初始位置在中央，不是在屏幕右侧 */
@@ -855,13 +893,13 @@ function showTip(text: string, duration: number = 2000): void {
 .prize-image.sliding {
   transform: translateX(-120vw) scale(1); /* 向左滑出屏幕 */
   opacity: 0;
-  transition: transform 3s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.6s ease 0.2s; /* 先移动后淡出 */
+  transition: transform 8s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 1s ease 0.5s; /* 增加滑动时间到8秒，使效果更慢 */
   pointer-events: none; /* 防止在滑动时被点击 */
 }
 
 /* 确保图片顺利显示，不要使用中间状态 */
 .image-display.active .prize-image {
-  transition: transform 3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease;
+  transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease;
 }
 
 /* 为移动设备优化显示和动画 */
