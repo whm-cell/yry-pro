@@ -437,6 +437,7 @@ function resetRecords(): void {
     showImageDisplay.value = false;
     isEnlarged.value = false;
     isSliding.value = false;
+    selectedPrize.value = null; // 完全清除选中的奖品，避免下次显示时再次从右侧滑入
   }
   
   // 这部分代码也可以移除，因为我们不再改变扇形颜色
@@ -519,12 +520,12 @@ function endCallback(prize: any): void {
     if (result) {
       // 设置选中的奖品显示
       selectedPrize.value = prizes.value[prizeIndex].prizeInfo;
-      isSliding.value = true; // 首先设置为滑动状态，从右侧开始
+      
+      // 直接显示图片，不使用滑入效果
       showImageDisplay.value = true; // 显示图片
       
       // 确保DOM已更新
       setTimeout(() => {
-        isSliding.value = false; // 触发滑入动画
         isEnlarged.value = true; // 放大图片
         
         // 启动自动关闭倒计时
@@ -583,6 +584,7 @@ function autoSlideImage(): void {
         isEnlarged.value = false;
         isSliding.value = false;
         autoCloseSecondsLeft.value = 5; // 重置倒计时
+        selectedPrize.value = null; // 完全清除选中的奖品，避免下次显示时再次从右侧滑入
       }, 100);
     }, 800);
   }
@@ -639,16 +641,15 @@ function toggleImageSize(): void {
         isEnlarged.value = false;
         isSliding.value = false;
         autoCloseSecondsLeft.value = 5; // 重置倒计时
+        selectedPrize.value = null; // 完全清除选中的奖品，避免下次显示时再次从右侧滑入
       }, 100);
     }, 800); // 增加等待时间，让动画更完整
   } else {
-    // 如果没有放大，显示并放大
-    isSliding.value = true; // 首先设置为滑动状态，从右侧开始
+    // 如果没有放大，直接显示并放大
     showImageDisplay.value = true;
     
-    // 给一个短暂延迟，让CSS过渡开始
+    // 给一个短暂延迟，让DOM渲染完成
     setTimeout(() => {
-      isSliding.value = false; // 取消滑动状态，触发从右向左的滑入
       isEnlarged.value = true; // 放大
       
       // 启动自动关闭倒计时
@@ -834,10 +835,11 @@ function showTip(text: string, duration: number = 2000): void {
   position: relative;
   width: 500px;
   height: 500px;
-  transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.8s ease; /* 分离transform和opacity的过渡效果 */
+  transition: transform 3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease-in; /* 入场动画更短，更快出现 */
   cursor: pointer;
   transform-origin: center;
-  transform: translateX(120vw) scale(0.8); /* 初始位置在屏幕右侧 */
+  transform: translateX(0) scale(0.8); /* 初始位置在中央，不是在屏幕右侧 */
+  opacity: 0; /* 初始时不可见 */
   will-change: transform, opacity; /* 提示浏览器优化动画性能 */
   -webkit-backface-visibility: hidden; /* 防止Safari中的闪烁 */
   backface-visibility: hidden;
@@ -846,19 +848,20 @@ function showTip(text: string, duration: number = 2000): void {
 }
 
 .prize-image.enlarged {
-  transform: translateX(0) scale(1); /* 放大并移动到中央 */
+  transform: translateX(0) scale(1); /* 放大但保持在中央 */
+  opacity: 1; /* 显示 */
 }
 
 .prize-image.sliding {
   transform: translateX(-120vw) scale(1); /* 向左滑出屏幕 */
   opacity: 0;
-  transition: transform 0.8s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.6s ease 0.2s; /* 先移动后淡出 */
+  transition: transform 3s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.6s ease 0.2s; /* 先移动后淡出 */
   pointer-events: none; /* 防止在滑动时被点击 */
 }
 
-/* 确保从右侧滑入的过程中图片保持可见 */
-.image-display.active .prize-image:not(.enlarged):not(.sliding) {
-  transform: translateX(0) scale(0.8); /* 移动到中央但不放大 */
+/* 确保图片顺利显示，不要使用中间状态 */
+.image-display.active .prize-image {
+  transition: transform 3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease;
 }
 
 /* 为移动设备优化显示和动画 */
@@ -880,7 +883,7 @@ function showTip(text: string, duration: number = 2000): void {
 /* 为特小屏幕设备优化动画 */
 @media (max-width: 320px) {
   .prize-image {
-    transform: translateX(150vw) scale(0.8); /* 初始位置在屏幕右侧，和滑出距离保持一致 */
+    transform: translateX(0) scale(0.8); /* 初始位置在中央 */
   }
   
   .prize-image.sliding {
@@ -916,6 +919,12 @@ function showTip(text: string, duration: number = 2000): void {
   justify-content: center;
   align-items: center;
   z-index: 2;
+  opacity: 0; /* 初始透明 */
+  transition: opacity 0.3s ease 0.2s; /* 延迟显示内容，让容器先出现 */
+}
+
+.prize-image.enlarged .prize-content {
+  opacity: 1; /* 放大时显示内容 */
 }
 
 .prize-content img {
