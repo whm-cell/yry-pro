@@ -5,6 +5,7 @@ import { ref } from "vue";
 import Sidebar from "./components/Sidebar.vue";
 import EnglishWordLottery from "./pages/EnglishWordLottery.vue";
 import Settings from "./pages/Settings.vue";
+import VocabularyManager from "./components/VocabularyManager.vue";
 
 // 当前活动页面
 const activePage = ref('englishWordLottery');
@@ -75,6 +76,7 @@ const decorations = [
         <div class="h-full overflow-auto pt-8 pb-4 px-2">
           <EnglishWordLottery v-if="activePage === 'englishWordLottery'" />
           <Settings v-else-if="activePage === 'settings'" />
+          <VocabularyManager v-else-if="activePage === 'vocabulary'" />
         </div>
       </div>
     </div>

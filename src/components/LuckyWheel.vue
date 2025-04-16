@@ -97,6 +97,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+// @ts-ignore
+import { invoke } from '@tauri-apps/api/core';
 // 移除错误的导入
 // import { ImageUploader } from './ImageUploader.vue';
 
@@ -114,6 +116,9 @@ import { useWheelSettings, WordConfig } from '../utils/wheelSettings';
 interface PrizeInfo {
   name: string;
   imgSrc: string;
+  translation?: string; // 添加翻译字段
+  phonetic?: string;    // 添加音标字段
+  example?: string;     // 添加例句字段
 }
 
 // 文字设置接口
@@ -308,19 +313,67 @@ const allPrizesDrawnOnce = ref(false);
 // 标记是否已完成抽奖
 const isCompletedFlag = ref(false);
 
-// 初始化
-onMounted(() => {
-  // 从全局设置中获取值
-  if (settings) {
-    // 如果全局设置中有奖品数据，使用它
-    if (settings.prizes && settings.prizes.length > 0) {
-      prizes.value = [...settings.prizes];
-    } else if (settings.prizeWords && settings.prizeWords.length > 0) {
-      // 如果有配置的单词，使用它们生成奖品
-      prizes.value = convertWordsToLuckyPrizes(settings.prizeWords);
+// 加载单词数据
+const loadVocabularyFromDatabase = async () => {
+  try {
+    // 类型转换修复
+    const vocabularyData: any[] = await invoke('get_all_vocabulary');
+    
+    if (vocabularyData && Array.isArray(vocabularyData) && vocabularyData.length > 0) {
+      // 将词汇数据转换为奖品格式
+      const databasePrizes: Prize[] = vocabularyData.map((item: any) => {
+        const imgSrc = `file:///Users/coolm/softs/temp_files/images/${item.image_path}`;
+        return {
+          background: getRandomColor(),
+          fonts: [
+            { text: item.word, top: '55%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' },
+          ],
+          imgs: [{ src: imgSrc, width: '100px', top: '10%' }],
+          prizeInfo: {
+            name: item.word,
+            imgSrc: imgSrc,
+            translation: item.translation,
+            phonetic: item.phonetic,
+            example: item.example
+          }
+        };
+      });
+      
+      // 使用数据库中的数据更新奖品列表
+      prizes.value = databasePrizes;
+      
+      // 更新转盘，使用类型断言
+      if (myLucky.value && (myLucky.value as any).prizes) {
+        (myLucky.value as any).prizes = prizes.value;
+      }
+      
+      console.log('从数据库加载了词汇数据:', vocabularyData.length);
+    } else {
+      // 如果没有数据，使用默认奖品
+      console.log('数据库中没有词汇数据，使用默认数据');
+      prizes.value = defaultPrizes;
     }
+  } catch (error) {
+    console.error('加载数据库词汇数据失败:', error);
+    prizes.value = defaultPrizes;
   }
+};
+
+// 生成随机颜色
+const getRandomColor = () => {
+  const colors = [
+    '#badc58', '#ff9ff3', '#ffeaa7', '#74b9ff', 
+    '#a29bfe', '#55efc4', '#fab1a0', '#81ecec'
+  ];
+  return colors[Math.floor(Math.random() * colors.length)];
+};
+
+// 修改onMounted钩子
+onMounted(async () => {
+  // 加载数据库中的单词
+  await loadVocabularyFromDatabase();
   
+  // 其他初始化代码
   // 初始化抽奖记录
   initializePrizeRecords();
   

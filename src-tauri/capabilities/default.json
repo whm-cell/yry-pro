@@ -10,12 +10,16 @@
     "opener:default",
     {
       "identifier": "fs:scope",
-      "permissions": ["fs:scope:app"]
+      "permissions": [
+        "fs:scope:app"
+      ]
     },
     "fs:allow-exists",
     "fs:allow-create",
     "fs:allow-read",
     "fs:allow-write",
-    "fs:allow-watch"
+    "fs:allow-watch",
+    "log:default",
+    "dialog:default"
   ]
 }

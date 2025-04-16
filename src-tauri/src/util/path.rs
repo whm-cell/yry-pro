@@ -231,7 +231,6 @@ pub fn paths() -> RwLockReadGuard<'static, AppPaths> {
     APP_PATHS.read().expect("read APP_PATHS error")
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -239,7 +238,9 @@ mod tests {
     #[test]
     fn test_paths() {
         let paths = paths();
-        println!("app_cache_dir: {}", paths.app_local_data_dir().to_string_lossy());
+        println!(
+            "app_cache_dir: {}",
+            paths.app_local_data_dir().to_string_lossy()
+        );
     }
 }
-

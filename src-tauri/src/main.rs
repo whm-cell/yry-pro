@@ -3,7 +3,6 @@
 
 use AiMate::util;
 
-
 fn main() {
     AiMate::run()
 }

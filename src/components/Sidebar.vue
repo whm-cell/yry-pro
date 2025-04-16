@@ -41,6 +41,18 @@
             <li class="mb-2">
               <a href="#" class="nav-item flex items-center p-3 rounded-lg" 
                 :class="{ 
+                  'bg-blue-400 bg-opacity-20': activePage === 'vocabulary', 
+                  'hover:bg-white hover:bg-opacity-10': activePage !== 'vocabulary'
+                }" 
+                @click.prevent="changePage('vocabulary')"
+              >
+                <i class="fas fa-book w-6 text-lg"></i>
+                <span class="font-semibold ml-2">单词管理</span>
+              </a>
+            </li>
+            <li class="mb-2">
+              <a href="#" class="nav-item flex items-center p-3 rounded-lg" 
+                :class="{ 
                   'bg-blue-400 bg-opacity-20': activePage === 'settings', 
                   'hover:bg-white hover:bg-opacity-10': activePage !== 'settings'
                 }" 
