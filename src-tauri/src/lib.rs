@@ -12,9 +12,11 @@ fn greet(name: &str) -> String {
 // 确保images目录存在
 #[tauri::command]
 fn ensure_images_dir(app_handle: tauri::AppHandle) -> Result<String, String> {
-    let app_dir = util::path::paths().app_local_data_dir().to_string_lossy().into_owned();
+   //  let app_dir = util::path::paths().app_local_data_dir().to_string_lossy().into_owned();
+    let app_dir = String::from("/Users/coolm/softs/temp_files");
     let images_dir = PathBuf::from(&app_dir).join("images");
     
+    // 确保目录存在
     if !images_dir.exists() {
         fs::create_dir_all(&images_dir).map_err(|e| e.to_string())?;
     }
@@ -25,7 +27,7 @@ fn ensure_images_dir(app_handle: tauri::AppHandle) -> Result<String, String> {
 // 保存图片到images目录
 #[tauri::command]
 fn save_image(app_handle: tauri::AppHandle, file_data: String, file_name: String) -> Result<String, String> {
-    let app_dir = util::path::paths().app_local_data_dir().to_string_lossy().into_owned();
+     let app_dir = String::from("/Users/coolm/softs/temp_files");
     let images_dir = PathBuf::from(&app_dir).join("images");
     
     // 确保目录存在
@@ -50,7 +52,7 @@ fn save_image(app_handle: tauri::AppHandle, file_data: String, file_name: String
 // 获取images目录中的图片列表
 #[tauri::command]
 fn list_images(app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
-    let app_dir = util::path::paths().app_local_data_dir().to_string_lossy().into_owned();
+    let app_dir = String::from("/Users/coolm/softs/temp_files");
     let images_dir = PathBuf::from(&app_dir).join("images");
     
     // 如果目录不存在，创建它

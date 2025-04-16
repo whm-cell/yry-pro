@@ -419,7 +419,7 @@
                   <div class="flex space-x-4">
                     <div class="flex-shrink-0 w-20 h-20 bg-gray-100 rounded-md overflow-hidden">
                       <img 
-                        :src="word.imgSrc" 
+                        :src="getDisplayImageUrl(word.imgSrc)" 
                         :alt="word.english" 
                         class="w-full h-full object-cover"
                         @error="handleImgError($event, index)"
@@ -550,9 +550,9 @@
                       @dragleave.prevent="isDragging = false"
                       :class="{'border-emerald-500 bg-emerald-50': isDragging}"
                     >
-                      <template v-if="editingWord.imgSrc && !previewImgError">
+                      <template v-if="hasImageForPreview && !previewImgError">
                         <img 
-                          :src="editingWord.imgSrc" 
+                          :src="getDisplayImageUrlForPreview()" 
                           alt="预览" 
                           class="w-full h-full object-contain"
                           @error="previewImgError = true"
@@ -650,6 +650,9 @@
 import { ref, reactive, markRaw, h, computed, onMounted } from 'vue';
 import { useWheelSettings, DrawMode, WordConfig } from '../utils/wheelSettings';
 import * as fs from '@tauri-apps/plugin-fs';
+import { invoke } from '@tauri-apps/api/core';
+import { convertFileSrc } from '@tauri-apps/api/core';
+import { appLocalDataDir } from '@tauri-apps/api/path';
 // 获取转盘设置
 const { 
   settings, 
@@ -869,10 +872,42 @@ const previewImgError = ref(false);
 
 // 验证表单是否有效
 const isWordFormValid = computed(() => {
-  return editingWord.english.trim() !== '' && 
-         editingWord.translation.trim() !== '' && 
-         editingWord.imgSrc.trim() !== '';
+  // 英文和翻译必须填写
+  const hasBasicInfo = editingWord.english.trim() !== '' && 
+                       editingWord.translation.trim() !== '';
+  
+  // 检查是否有图片路径（公开的或内部的）
+  let hasImagePath = editingWord.imgSrc.trim() !== '';
+  
+  // 检查内部存储的图片路径
+  // @ts-ignore - 动态添加的属性
+  if (editingWord._imgSrcInternal) {
+    hasImagePath = true;
+  }
+  
+  return hasBasicInfo && hasImagePath;
 });
+
+// 检查是否有图片可以预览
+const hasImageForPreview = computed(() => {
+  return !!editingWord.imgSrc || 
+         // @ts-ignore - 动态添加的属性
+         !!editingWord._imgSrcInternal;
+});
+
+// 获取预览图片的URL
+function getDisplayImageUrlForPreview(): string {
+  // @ts-ignore - 动态添加的属性
+  const internalPath = editingWord._imgSrcInternal;
+  
+  // 如果有内部路径，优先使用
+  if (internalPath) {
+    return getDisplayImageUrl(internalPath);
+  }
+  
+  // 否则使用普通路径
+  return getDisplayImageUrl(editingWord.imgSrc);
+}
 
 // 初始化单词列表
 function initWordsList() {
@@ -934,7 +969,21 @@ function editWord(index: number) {
   editingWord.translation = word.translation;
   editingWord.bgColor = word.bgColor;
   editingWord.fontColor = word.fontColor;
-  editingWord.imgSrc = word.imgSrc;
+  
+  // 检查图片路径是否以app://开头
+  if (word.imgSrc && word.imgSrc.startsWith('app://')) {
+    // 将实际路径存储在内部，但不显示在输入框中
+    // @ts-ignore - 动态添加的属性
+    editingWord._imgSrcInternal = word.imgSrc;
+    editingWord.imgSrc = ''; // 清空输入框显示
+  } else {
+    // 常规URL或其他格式路径，直接显示
+    editingWord.imgSrc = word.imgSrc;
+    // 确保没有残留的内部路径
+    // @ts-ignore - 动态添加的属性
+    editingWord._imgSrcInternal = undefined;
+  }
+  
   editingIndex.value = index;
   previewImgError.value = false;
   showWordModal.value = true;
@@ -952,12 +1001,22 @@ function deleteWord(index: number) {
 function saveWord() {
   if (!isWordFormValid.value) return;
   
+  // 获取实际的图片路径
+  let actualImgSrc = editingWord.imgSrc.trim();
+  
+  // 如果有内部存储的路径，优先使用它
+  // @ts-ignore - 动态添加的属性
+  if (editingWord._imgSrcInternal) {
+    // @ts-ignore - 动态添加的属性
+    actualImgSrc = editingWord._imgSrcInternal;
+  }
+  
   const newWord: WordConfig = {
     english: editingWord.english.trim(),
     translation: editingWord.translation.trim(),
     bgColor: editingWord.bgColor,
     fontColor: editingWord.fontColor,
-    imgSrc: editingWord.imgSrc.trim()
+    imgSrc: actualImgSrc
   };
   
   if (editingIndex.value === -1) {
@@ -980,10 +1039,59 @@ function closeWordModal() {
   showWordModal.value = false;
 }
 
+// 获取显示用的图片URL
+function getDisplayImageUrl(storedPath: string): string {
+  // 如果已经在缓存中，直接返回
+  if (imageUrlCache[storedPath]) {
+    return imageUrlCache[storedPath];
+  }
+  
+  // 如果是app://开头的路径，但尚未缓存，触发异步加载
+  if (storedPath.startsWith('app://')) {
+    // 返回占位图片，handleImgError会在图片加载失败时处理
+    return './ct-converted.png';
+  }
+  
+  // 正常返回路径
+  return storedPath;
+}
+
 // 处理图片加载错误
-function handleImgError(event: Event, index: number) {
+async function handleImgError(event: Event, index: number) {
   const target = event.target as HTMLImageElement;
-  target.src = './ct-converted.png'; // 使用默认图片
+  
+  try {
+    // 获取存储的路径
+    const storedPath = wordsList.value[index].imgSrc;
+    console.log("处理图片加载错误:", storedPath);
+    
+    // 如果是app://开头但尚未处理过或处理出错
+    if (storedPath.startsWith('app://')) {
+      // 检查是否已缓存
+      if (imageUrlCache[storedPath]) {
+        console.log("使用缓存的URL:", imageUrlCache[storedPath]);
+        target.src = imageUrlCache[storedPath];
+        return;
+      }
+      
+      // 重新尝试获取正确的URL
+      try {
+        const url = await getImageUrl(storedPath);
+        console.log("重新获取的图片URL:", url);
+        imageUrlCache[storedPath] = url;
+        target.src = url;
+        return;
+      } catch (urlError) {
+        console.error("获取图片URL失败:", urlError);
+      }
+    }
+  } catch (error) {
+    console.error('处理图片URL错误:', error);
+  }
+  
+  // 如果上述处理失败，使用默认图片
+  console.log("使用默认图片");
+  target.src = './ct-converted.png';
 }
 
 // 保存单词到settings
@@ -1244,9 +1352,6 @@ async function handleImageFile(file: File) {
       return;
     }
 
-    // 读取文件为base64
-    const reader = new FileReader();
-    
     // 添加加载中的提示
     const loadingMsg = document.createElement('div');
     loadingMsg.textContent = '图片处理中...';
@@ -1258,41 +1363,90 @@ async function handleImageFile(file: File) {
     loadingMsg.style.zIndex = '1000';
     document.body.appendChild(loadingMsg);
     
-    reader.onload = (e) => {
-      if (e.target?.result) {
-        // 设置图片src为base64数据
-        const base64String = e.target.result as string;
-        
-        // 可选：压缩大图片
-        if (file.size > 1024 * 1024) { // 如果大于1MB
-          compressImage(base64String, 800, 800, 0.8).then(compressedImage => {
-            editingWord.imgSrc = compressedImage;
-            previewImgError.value = false;
-            document.body.removeChild(loadingMsg);
-          }).catch(err => {
-            console.error('图片压缩失败:', err);
-            editingWord.imgSrc = base64String;
-            previewImgError.value = false;
-            document.body.removeChild(loadingMsg);
-          });
-        } else {
-          editingWord.imgSrc = base64String;
-          previewImgError.value = false;
-          document.body.removeChild(loadingMsg);
-        }
+    try {
+      // 创建唯一文件名
+      const timestamp = new Date().getTime();
+      const ext = file.name.split('.').pop() || 'jpg';
+      const fileName = `word_image_${timestamp}.${ext}`;
+      
+      // 读取文件为base64（仅用于传输）
+      const fileDataUrl = await readFileAsDataURL(file);
+      
+      // 调用后端保存图片
+      await invoke('ensure_images_dir'); // 确保目录存在
+      
+      // 可选：如果图片较大，进行压缩
+      let fileData = fileDataUrl;
+      if (file.size > 1024 * 1024) { // 如果大于1MB
+        fileData = await compressImage(fileDataUrl, 800, 800, 0.8);
       }
-    };
-    
-    reader.onerror = () => {
+      
+      // 调用Rust函数保存文件（使用try-catch包裹以防止未处理的异常）
+      try {
+        await invoke('save_image', { 
+          fileData: fileData,
+          fileName: fileName
+        });
+      } catch (saveError) {
+        console.error('保存图片失败:', saveError);
+        alert(`保存图片失败: ${saveError instanceof Error ? saveError.message : '未知错误'}`);
+        return;
+      }
+      
+      // 设置图片相对路径（保存在数据中），但不显示在输入框中
+      const relativePath = `app://image/${fileName}`;
+      
+      // 创建预览URL（使用convertFileSrc函数正确处理路径）
+      try {
+        const appDataDir = await appLocalDataDir();
+        const fullImagePath = `${appDataDir}/images/${fileName}`;
+        const previewUrl = convertFileSrc(fullImagePath);
+        
+        // 创建图片元素预加载图片，确保显示正常
+        const preloadImg = new Image();
+        preloadImg.src = previewUrl;
+        
+        // 添加到缓存，避免后续重复转换
+        imageUrlCache[relativePath] = previewUrl;
+        
+        // 保存内部存储的路径
+        // @ts-ignore - 动态添加的属性
+        editingWord._imgSrcInternal = relativePath;
+        
+        // 清空输入框（不显示技术路径）
+        editingWord.imgSrc = '';
+        
+        preloadImg.onload = () => {
+          console.log("图片预加载成功:", previewUrl);
+        };
+        
+        preloadImg.onerror = (err) => {
+          console.error("图片预加载失败:", previewUrl, err);
+          previewImgError.value = true;
+        };
+      } catch (urlError) {
+        console.error('创建预览URL失败:', urlError);
+        previewImgError.value = true;
+      }
+      
+    } finally {
+      // 移除加载提示
       document.body.removeChild(loadingMsg);
-      alert('读取图片失败，请重试');
-    };
-    
-    reader.readAsDataURL(file);
+    }
   } catch (error) {
     console.error('图片处理失败:', error);
-    alert('图片处理失败，请重试');
+    alert(`图片处理失败: ${error instanceof Error ? error.message : '未知错误'}`);
   }
+}
+
+// 读取文件为DataURL
+function readFileAsDataURL(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error('文件读取失败'));
+    reader.readAsDataURL(file);
+  });
 }
 
 // 压缩图片函数
@@ -1329,14 +1483,97 @@ function compressImage(base64: string, maxWidth: number, maxHeight: number, qual
   });
 }
 
+// 转换存储的图片路径为可显示的URL
+async function getImageUrl(storedPath: string): Promise<string> {
+  try {
+    // 检查是否是app://格式的路径
+    if (storedPath.startsWith('app://')) {
+      // 提取文件名部分
+      const fileName = storedPath.replace('app://image/', '');
+      
+      try {
+        // 使用appLocalDataDir获取应用数据目录
+        const appDataDir = await appLocalDataDir();
+        // 构建图片文件的完整路径
+        const fullPath = `${appDataDir}/images/${fileName}`;
+        // 将本地文件路径转换为有效的URL
+        return convertFileSrc(fullPath);
+      } catch (pathError) {
+        console.error('无法获取应用数据目录:', pathError);
+        return './ct-converted.png'; // 返回默认图片
+      }
+    }
+    
+    // 如果是base64图片，直接返回
+    if (storedPath.startsWith('data:image/')) {
+      return storedPath;
+    }
+    
+    // 如果是相对路径，尝试转换
+    if (!storedPath.includes('://')) {
+      return convertFileSrc(storedPath);
+    }
+    
+    // 其他情况直接返回
+    return storedPath;
+  } catch (error) {
+    console.error('图片URL转换失败:', error);
+    return './ct-converted.png'; // 出错时返回默认图片
+  }
+}
+
 // 重置图片预览
 function resetImagePreview() {
   editingWord.imgSrc = '';
+  // 清除内部存储的路径
+  // @ts-ignore - 动态添加的属性
+  editingWord._imgSrcInternal = undefined;
   previewImgError.value = false;
 }
 
+// 图片URL缓存
+const imageUrlCache = reactive<Record<string, string>>({});
+
 // 组件初始化
 initWordsList();
+
+// 确保images目录存在
+onMounted(async () => {
+  try {
+    console.log("组件初始化中...");
+    // 确保images目录存在
+    await invoke('ensure_images_dir');
+    console.log("images目录已确保存在");
+    
+    // 预处理单词列表中的图片，并缓存URL
+    const processPromises = [];
+    for (const word of wordsList.value) {
+      if (word.imgSrc && word.imgSrc.startsWith('app://')) {
+        processPromises.push(
+          (async () => {
+            try {
+              console.log("处理图片路径:", word.imgSrc);
+              // 转换URL并缓存
+              const url = await getImageUrl(word.imgSrc);
+              console.log("图片URL已转换:", url);
+              imageUrlCache[word.imgSrc] = url;
+            } catch (err) {
+              console.error('预处理图片URL失败:', word.imgSrc, err);
+            }
+          })()
+        );
+      }
+    }
+    
+    // 等待所有图片处理完成
+    if (processPromises.length > 0) {
+      await Promise.allSettled(processPromises);
+      console.log("所有图片路径处理完成");
+    }
+  } catch (error) {
+    console.error('初始化图片目录失败:', error);
+  }
+});
 
 </script>
 
