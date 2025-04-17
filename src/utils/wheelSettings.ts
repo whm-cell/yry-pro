@@ -20,6 +20,13 @@ export interface WordConfig {
   imgSrc: string;
 }
 
+// 音效类型
+export interface SoundSetting {
+  type: 'preset' | 'uploaded';
+  name: string;
+  url: string;
+}
+
 // 定义设置类型
 export interface WheelSettings {
   drawMode: DrawMode;
@@ -27,6 +34,10 @@ export interface WheelSettings {
   maxDraws: number;
   prizes: any[];
   prizeWords: WordConfig[]; // 添加单词配置
+  sounds: {
+    spin: SoundSetting;
+    win: SoundSetting;
+  };
 }
 
 // 设置存储键名
@@ -38,7 +49,19 @@ const defaultSettings: WheelSettings = {
   lockAfterComplete: false,
   maxDraws: 1,
   prizes: [], // 奖品配置将保持为空，由组件初始化时提供
-  prizeWords: [] // 单词配置，初始为空
+  prizeWords: [], // 单词配置，初始为空
+  sounds: {
+    spin: {
+      type: 'preset',
+      name: 'spin',
+      url: 'https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3'
+    },
+    win: {
+      type: 'preset',
+      name: 'win',
+      url: 'https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3'
+    }
+  }
 };
 
 // 从本地存储加载设置
@@ -129,6 +152,11 @@ export function useWheelSettings() {
     settings.prizeWords = words;
   };
   
+  // 添加更新音效设置的方法
+  const updateSound = (type: 'spin' | 'win', sound: SoundSetting) => {
+    settings.sounds[type] = sound;
+  };
+  
   // 重置设置
   const resetSettings = () => {
     Object.assign(settings, defaultSettings);
@@ -144,6 +172,7 @@ export function useWheelSettings() {
     updateMaxDraws,
     updatePrizes,
     updatePrizeWords,
+    updateSound,
     resetSettings,
     isInitialized
   };

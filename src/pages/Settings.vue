@@ -338,6 +338,65 @@
                 <p class="mt-1 text-sm text-gray-500">每个奖品最多可以被抽中的次数</p>
               </div>
             </div>
+            
+            <!-- 音效设置 -->
+            <div class="bg-orange-50 rounded-xl p-5 border border-orange-200 shadow-sm mt-6">
+              <h4 class="text-lg font-medium text-orange-700 mb-3">音效设置</h4>
+              
+              <div class="space-y-4">
+                <!-- 转盘旋转音效 -->
+                <div>
+                  <label class="block text-gray-700 font-medium mb-2">转盘旋转音效</label>
+                  <div class="flex items-center">
+                    <div class="flex-grow">
+                      <div class="text-sm text-gray-600 truncate">{{ getSelectedSoundName('spin') }}</div>
+                    </div>
+                    <div class="flex">
+                      <button 
+                        @click="playSelectedSound('spin')" 
+                        class="mr-2 px-3 py-1 bg-orange-100 text-orange-700 rounded border border-orange-300"
+                      >
+                        试听
+                      </button>
+                      <button 
+                        @click="openSoundUploader('spin')" 
+                        class="px-3 py-1 bg-orange-100 text-orange-700 rounded border border-orange-300"
+                      >
+                        选择
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- 中奖音效 -->
+                <div>
+                  <label class="block text-gray-700 font-medium mb-2">中奖音效</label>
+                  <div class="flex items-center">
+                    <div class="flex-grow">
+                      <div class="text-sm text-gray-600 truncate">{{ getSelectedSoundName('win') }}</div>
+                    </div>
+                    <div class="flex">
+                      <button 
+                        @click="playSelectedSound('win')" 
+                        class="mr-2 px-3 py-1 bg-orange-100 text-orange-700 rounded border border-orange-300"
+                      >
+                        试听
+                      </button>
+                      <button 
+                        @click="openSoundUploader('win')" 
+                        class="px-3 py-1 bg-orange-100 text-orange-700 rounded border border-orange-300"
+                      >
+                        选择
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <p class="text-sm text-gray-500 mt-2">
+                  音效可以使用预设音效或上传自定义音效（支持MP3、WAV格式）
+                </p>
+              </div>
+            </div>
           </div>
           
           <!-- 关于系统 -->
@@ -369,23 +428,41 @@
       </div>
     </div>
   </div>
+  
+  <!-- 音效选择器对话框 -->
+  <div v-if="showSoundUploader" class="sound-uploader-overlay" @click.self="closeSoundUploader">
+    <div class="sound-uploader-modal">
+      <div class="sound-uploader-header">
+        <h3 class="text-xl font-bold text-gray-800">选择音效</h3>
+        <button @click="closeSoundUploader" class="text-gray-500 hover:text-gray-700">✕</button>
+      </div>
+      
+      <div class="sound-uploader-content">
+        <SoundUploader @sound-selected="handleSoundSelected" />
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, markRaw, h, computed, onMounted } from 'vue';
-import { useWheelSettings, DrawMode, WordConfig } from '../utils/wheelSettings';
+import { useWheelSettings, DrawMode, WordConfig, SoundSetting } from '../utils/wheelSettings';
 import * as fs from '@tauri-apps/plugin-fs';
 import { invoke } from '@tauri-apps/api/core';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { appLocalDataDir } from '@tauri-apps/api/path';
 import { debug } from '@tauri-apps/plugin-log';
+import { playSound } from '../utils/wheelUtils';
+import SoundUploader from '../components/SoundUploader.vue';
+
 // 获取转盘设置
 const { 
   settings, 
   updateDrawMode, 
   updateLockAfterComplete,
   updateMaxDraws,
-  updatePrizeWords
+  updatePrizeWords,
+  updateSound
 } = useWheelSettings();
 
 // 抽奖模式列表
@@ -585,6 +662,50 @@ async function decreaseMaxDraws(): Promise<void> {
     await updateMaxDraws(currentMaxDraws - 1);
   }
 }
+
+// 音效设置相关变量
+const selectedSoundType = ref<'spin' | 'win'>('spin');
+const showSoundUploader = ref(false);
+
+// 获取当前选中音效名称
+function getSelectedSoundName(type: 'spin' | 'win'): string {
+  if (!settings.sounds || !settings.sounds[type]) {
+    return '加载中...';
+  }
+  
+  const sound = settings.sounds[type];
+  if (sound.type === 'preset') {
+    return sound.name === 'spin' ? '预设-转盘旋转音效' : '预设-中奖音效';
+  } else {
+    return `自定义音效: ${sound.name}`;
+  }
+}
+
+// 播放选中的音效
+function playSelectedSound(type: 'spin' | 'win'): void {
+  if (!settings.sounds || !settings.sounds[type]) {
+    console.warn('音效设置未加载完成');
+    return;
+  }
+  playSound(type, 0.5);
+}
+
+// 打开音效选择器
+function openSoundUploader(type: 'spin' | 'win'): void {
+  selectedSoundType.value = type;
+  showSoundUploader.value = true;
+}
+
+// 关闭音效选择器
+function closeSoundUploader(): void {
+  showSoundUploader.value = false;
+}
+
+// 处理音效选择
+function handleSoundSelected(sound: SoundSetting): void {
+  updateSound(selectedSoundType.value, sound);
+  closeSoundUploader();
+}
 </script>
 
 <style scoped>
@@ -621,5 +742,45 @@ input[type=range]::-webkit-slider-thumb {
   background: #3b82f6;
   cursor: pointer;
   -webkit-appearance: none;
+}
+
+/* 音效选择器样式 */
+.sound-uploader-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.sound-uploader-modal {
+  background-color: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.sound-uploader-header {
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(229, 231, 235);
+}
+
+.sound-uploader-content {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex-grow: 1;
 }
 </style>

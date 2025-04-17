@@ -3,6 +3,7 @@
  * @author YryPro
  */
 import gsap from 'gsap';
+import { useWheelSettings } from './wheelSettings';
 
 /**
  * 旋转数据接口
@@ -118,12 +119,26 @@ const WheelCore = {
    */
   playSound(type: 'spin' | 'win', volume = 0.5): void {
     try {
-      const audio = new Audio();
-      if (type === 'spin') {
-        audio.src = 'https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3';
-      } else if (type === 'win') {
-        audio.src = 'https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3';
+      const { settings } = useWheelSettings();
+      
+      // 检查音效设置是否存在
+      if (!settings.sounds || !settings.sounds[type]) {
+        console.warn(`音效设置未找到: ${type}`);
+        // 使用默认音效作为备选
+        const audio = new Audio();
+        if (type === 'spin') {
+          audio.src = 'https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3';
+        } else if (type === 'win') {
+          audio.src = 'https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3';
+        }
+        audio.volume = volume;
+        audio.play().catch(e => console.error('无法播放音效', e));
+        return;
       }
+      
+      const soundSetting = settings.sounds[type];
+      const audio = new Audio();
+      audio.src = soundSetting.url;
       audio.volume = volume;
       audio.play().catch(e => console.error('无法播放音效', e));
     } catch (e) {

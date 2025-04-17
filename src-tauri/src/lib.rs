@@ -105,6 +105,86 @@ fn list_images(_app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
     Ok(images)
 }
 
+// 确保sounds目录存在
+#[tauri::command]
+fn ensure_sounds_dir(_app_handle: tauri::AppHandle) -> Result<String, String> {
+    let app_dir = String::from("/Users/coolm/softs/temp_files");
+    let sounds_dir = PathBuf::from(&app_dir).join("sounds");
+
+    // 确保目录存在
+    if !sounds_dir.exists() {
+        fs::create_dir_all(&sounds_dir).map_err(|e| e.to_string())?;
+    }
+
+    Ok(sounds_dir.to_string_lossy().to_string())
+}
+
+// 保存音频到sounds目录
+#[tauri::command]
+#[allow(deprecated)]
+fn save_sound(
+    _app_handle: tauri::AppHandle,
+    file_data: String,
+    file_name: String,
+) -> Result<String, String> {
+    let app_dir = String::from("/Users/coolm/softs/temp_files");
+    let sounds_dir = PathBuf::from(&app_dir).join("sounds");
+
+    // 确保目录存在
+    if !sounds_dir.exists() {
+        fs::create_dir_all(&sounds_dir).map_err(|e| e.to_string())?;
+    }
+
+    // 解码Base64数据
+    let prefix_removed = file_data.split(",").nth(1).unwrap_or(&file_data);
+    let sound_data = base64::decode(prefix_removed).map_err(|e| e.to_string())?;
+
+    // 构建文件路径
+    let file_path = sounds_dir.join(&file_name);
+
+    // 写入文件
+    fs::write(&file_path, sound_data).map_err(|e| e.to_string())?;
+
+    // 返回保存的文件路径
+    Ok(file_path.to_string_lossy().to_string())
+}
+
+// 获取sounds目录中的音频文件列表
+#[tauri::command]
+fn list_sounds(_app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
+    let app_dir = String::from("/Users/coolm/softs/temp_files");
+    let sounds_dir = PathBuf::from(&app_dir).join("sounds");
+
+    // 如果目录不存在，创建它
+    if !sounds_dir.exists() {
+        fs::create_dir_all(&sounds_dir).map_err(|e| e.to_string())?;
+        return Ok(Vec::new());
+    }
+
+    // 读取目录内容
+    let mut sounds = Vec::new();
+    for entry in fs::read_dir(sounds_dir).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        let path = entry.path();
+        if path.is_file() {
+            let file_name = path
+                .file_name()
+                .and_then(|name| name.to_str())
+                .ok_or_else(|| "Failed to get file name".to_string())?;
+
+            // 只添加音频文件
+            if file_name.ends_with(".mp3")
+                || file_name.ends_with(".wav")
+                || file_name.ends_with(".ogg")
+            {
+                sounds.push(file_name.to_string());
+            }
+        }
+    }
+
+    Ok(sounds)
+}
+
 // 添加单词记录
 #[tauri::command]
 async fn add_vocabulary(
@@ -220,6 +300,9 @@ pub fn run() {
             ensure_images_dir,
             save_image,
             list_images,
+            ensure_sounds_dir,
+            save_sound,
+            list_sounds,
             add_vocabulary,
             get_all_vocabulary,
             get_vocabulary_by_id,
