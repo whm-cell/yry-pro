@@ -2,8 +2,7 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use sqlx::{migrate::MigrateDatabase, Row, Sqlite, SqlitePool};
 
-const DB_URL: &str = "sqlite://vocabulary.db";
-
+const DB_URL: &str = "sqlite:///Users/coolm/softs/temp_files/vocabulary.db";
 /// 单词记录结构体
 #[derive(Debug, Serialize, Deserialize)]
 pub struct VocabularyRecord {
@@ -88,7 +87,7 @@ impl Database {
         .fetch_all(&self.pool)
         .await
         .context("获取单词记录失败")?;
-
+        dbg!(&records);
         Ok(records)
     }
 
