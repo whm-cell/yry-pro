@@ -96,7 +96,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, reactive, markRaw } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, reactive, markRaw, watch } from 'vue';
 // @ts-ignore
 import { invoke } from '@tauri-apps/api/core';
 // @ts-ignore
@@ -451,30 +451,56 @@ onMounted(async () => {
   // 加载数据库中的单词
   await loadVocabularyFromDatabase();
   
-  // 其他初始化代码
   // 初始化抽奖记录
+  console.log('初始化抽奖记录');
   initializePrizeRecords();
+  
+  // 打印初始化后的记录和奖品列表
+  console.log('初始化后的记录:', JSON.stringify(prizeRecordsRaw.value));
+  console.log('当前奖品列表:', prizes.value.map(p => p.prizeInfo?.name || '未命名'));
   
   // 标记已初始化
   isInitialized.value = true;
 });
 
+// 添加对prizes的监听，当奖品变化时更新记录
+watch(prizes, () => {
+  console.log('奖品列表变化，更新记录');
+  initializePrizeRecords();
+}, { deep: true });
+
+// 监听maxDraws设置的变化
+watch(() => settings.maxDraws, (newValue) => {
+  console.log(`最大抽取次数更改为: ${newValue}`);
+}, { immediate: true });
+
 // 手动初始化奖品记录
 function initializePrizeRecords() {
   const records: Record<string, number> = {};
+  
+  // 先确保旧记录的值被保留
+  const oldRecords = { ...prizeRecordsRaw.value };
+  
+  // 遍历所有奖品
   prizes.value.forEach(prize => {
     if (prize.prizeInfo && prize.prizeInfo.name) {
-      records[prize.prizeInfo.name] = 0;
+      // 如果旧记录中有值，则保留，否则设为0
+      records[prize.prizeInfo.name] = oldRecords[prize.prizeInfo.name] || 0;
+      console.log(`初始化奖品记录: ${prize.prizeInfo.name} = ${records[prize.prizeInfo.name]}`);
     }
   });
+  
+  // 替换整个记录对象，保证响应式更新
   prizeRecordsRaw.value = records;
+  console.log('初始化后的记录:', prizeRecordsRaw.value);
 }
 
 // 强制更新记录
 function forceUpdateRecords(): void {
-  console.log('当前记录:', prizeRecordsRaw.value);
+  console.log('强制更新前的记录:', JSON.stringify(prizeRecordsRaw.value));
   // 手动刷新一次奖品记录
   initializePrizeRecords();
+  console.log('强制更新后的记录:', JSON.stringify(prizeRecordsRaw.value));
   showTip('记录已刷新', 1500);
 }
 
@@ -487,7 +513,7 @@ function checkAllPrizesDrawnOnce(): boolean {
 
 // 检查是否所有普通奖品都已经抽中最大次数
 function areAllPrizesDrawnToMax(): boolean {
-  const maxDraws = settings.maxDraws || 2;
+  const maxDraws = settings.maxDraws || 1;
   const prizeNames = Object.keys(prizeRecordsRaw.value).filter(name => name !== "魔法小礼袋");
   return prizeNames.every(name => prizeRecordsRaw.value[name] >= maxDraws);
 }
@@ -507,7 +533,7 @@ function getNextPrizeIndex(): number {
   const drawMode = settings.drawMode;
   
   if (drawMode === 'orderly') {
-    // 有序模式：每个奖品都要抽一次，最大是1次，抽完后只能抽到魔法小礼袋
+    // 有序模式：每个奖品都要抽一次，最大抽取次数为settings.maxDraws次，抽完后只能抽到魔法小礼袋
     
     // 获取未抽中过的奖品索引
     const undrawnPrizes = getUndrawnPrizeIndices();
@@ -518,22 +544,33 @@ function getNextPrizeIndex(): number {
       return undrawnPrizes[randomIndex];
     }
     
-    // 如果所有奖品都抽过一次，返回"魔法小礼袋"
+    // 获取未达到最大抽取次数的奖品
+    const availablePrizes = getAvailablePrizeIndices();
+    
+    // 如果还有未达到最大抽取次数的奖品，从中随机选择一个
+    if (availablePrizes.length > 0) {
+      const randomIndex = Math.floor(Math.random() * availablePrizes.length);
+      return availablePrizes[randomIndex];
+    }
+    
+    // 如果所有奖品都抽到最大次数，返回"魔法小礼袋"
     isCompletedFlag.value = true;
     return getThanksIndex();
   } else {
-    // 随机模式：奖品和魔法小礼袋完全随机
+    // 随机模式：奖品和魔法小礼袋完全随机，但要遵循最大抽取次数限制
     
-    // 所有奖品的索引（包括"魔法小礼袋"）
-    const allPrizes = prizes.value.length;
+    // 获取未达到最大抽取次数的奖品索引（包括魔法小礼袋）
+    const availablePrizes = getAvailablePrizeIndicesWithMagicBag();
     
-    // 如果所有普通奖品都已经抽中最大次数，标记为完成
-    if (areAllPrizesDrawnToMax()) {
-      isCompletedFlag.value = true;
+    // 如果还有可用奖品，从中随机选择一个
+    if (availablePrizes.length > 0) {
+      const randomIndex = Math.floor(Math.random() * availablePrizes.length);
+      return availablePrizes[randomIndex];
     }
     
-    // 随机选择一个奖品索引
-    return Math.floor(Math.random() * allPrizes);
+    // 如果所有普通奖品都已经抽中最大次数，标记为完成并返回魔法小礼袋
+    isCompletedFlag.value = true;
+    return getThanksIndex();
   }
 }
 
@@ -557,13 +594,73 @@ function getUndrawnPrizeIndices(): number[] {
   return undrawnIndices;
 }
 
+// 获取未达到最大抽取次数的奖品索引（不包括魔法小礼袋）
+function getAvailablePrizeIndices(): number[] {
+  const maxDraws = settings.maxDraws || 1;
+  const availableIndices: number[] = [];
+  
+  prizes.value.forEach((prize, index) => {
+    if (prize.prizeInfo && prize.prizeInfo.name !== "魔法小礼袋") {
+      const count = prizeRecordsRaw.value[prize.prizeInfo.name] || 0;
+      if (count < maxDraws) {
+        availableIndices.push(index);
+      }
+    }
+  });
+  
+  return availableIndices;
+}
+
+// 获取未达到最大抽取次数的奖品索引（包括魔法小礼袋）
+function getAvailablePrizeIndicesWithMagicBag(): number[] {
+  const maxDraws = settings.maxDraws || 1;
+  const availableIndices: number[] = [];
+  const magicBagIndex = getThanksIndex();
+  
+  prizes.value.forEach((prize, index) => {
+    if (prize.prizeInfo) {
+      if (prize.prizeInfo.name === "魔法小礼袋") {
+        // 魔法小礼袋总是可用的
+        availableIndices.push(index);
+      } else {
+        // 普通奖品检查抽取次数
+        const count = prizeRecordsRaw.value[prize.prizeInfo.name] || 0;
+        if (count < maxDraws) {
+          availableIndices.push(index);
+        }
+      }
+    }
+  });
+  
+  // 如果没有可用奖品，至少返回魔法小礼袋
+  if (availableIndices.length === 0 && magicBagIndex >= 0) {
+    availableIndices.push(magicBagIndex);
+  }
+  
+  return availableIndices;
+}
+
 // 更新奖品抽中记录
 function updatePrizeRecord(prizeIndex: number) {
+  console.log(`更新奖品记录，索引: ${prizeIndex}`);
+  
   if (prizeIndex >= 0 && prizeIndex < prizes.value.length) {
     const prizeName = prizes.value[prizeIndex].prizeInfo.name;
+    console.log(`奖品名称: ${prizeName}`);
+    
+    // 打印当前的记录状态
+    console.log('当前记录状态:', JSON.stringify(prizeRecordsRaw.value));
+    
+    // 如果奖品名称存在但记录中没有，先初始化
+    if (prizeName && prizeRecordsRaw.value[prizeName] === undefined) {
+      console.log(`记录中没有此奖品，正在初始化: ${prizeName}`);
+      prizeRecordsRaw.value[prizeName] = 0;
+    }
     
     if (prizeRecordsRaw.value[prizeName] !== undefined) {
+      // 增加计数
       prizeRecordsRaw.value[prizeName]++;
+      console.log(`更新后的记录: ${prizeName} = ${prizeRecordsRaw.value[prizeName]}`);
       
       // 检查是否所有奖品都至少抽中一次
       checkAllPrizesDrawnOnce();
@@ -571,14 +668,23 @@ function updatePrizeRecord(prizeIndex: number) {
       // 检查是否抽完（所有普通奖品都抽中最大次数）
       if (areAllPrizesDrawnToMax()) {
         isCompletedFlag.value = true;
+        console.log('所有奖品已达到最大抽取次数，标记为完成');
       }
+      
+      // 确保实时更新UI
+      // 使用Vue的响应式系统强制更新视图
+      prizeRecordsRaw.value = { ...prizeRecordsRaw.value };
       
       return {
         prize: prizes.value[prizeIndex],
         name: prizeName,
         count: prizeRecordsRaw.value[prizeName]
       };
+    } else {
+      console.error(`奖品 ${prizeName} 的记录依然不存在，无法更新`);
     }
+  } else {
+    console.error(`奖品索引 ${prizeIndex} 超出范围`);
   }
   return null;
 }
@@ -717,11 +823,31 @@ function startCallback(): void {
 
 // 结束转动回调
 function endCallback(prize: any): void {
-  // 获取中奖索引
-  const prizeIndex = prizes.value.findIndex((p: Prize) => 
-    p.fonts[0].text === prize.fonts[0].text);
+  console.log('转盘停止，中奖信息:', prize);
   
+  // 获取中奖索引
+  let prizeIndex = -1;
+  
+  // 尝试通过文本匹配查找
+  if (prize.fonts && prize.fonts.length > 0 && prize.fonts[0].text) {
+    prizeIndex = prizes.value.findIndex((p: Prize) => 
+      p.fonts[0].text === prize.fonts[0].text);
+    console.log(`通过文本匹配查找奖品，文本: ${prize.fonts[0].text}, 索引: ${prizeIndex}`);
+  }
+  
+  // 如果找不到，尝试通过背景颜色匹配
+  if (prizeIndex === -1 && prize.background) {
+    prizeIndex = prizes.value.findIndex((p: Prize) => 
+      p.background === prize.background);
+    console.log(`通过背景颜色匹配查找奖品，颜色: ${prize.background}, 索引: ${prizeIndex}`);
+  }
+  
+  // 如果匹配到了有效的奖品索引
   if (prizeIndex !== -1) {
+    // 记录奖品名称以便调试
+    const prizeName = prizes.value[prizeIndex].prizeInfo?.name || '未知奖品';
+    console.log(`匹配到奖品：${prizeName}，索引：${prizeIndex}`);
+    
     // 更新抽奖记录
     const result = updatePrizeRecord(prizeIndex);
     
@@ -764,7 +890,7 @@ function endCallback(prize: any): void {
         showTip(`恭喜！抽中 ${prizes.value[prizeIndex].prizeInfo.name} (第${count}次)`, 1500);
       }
       
-      console.log('抽奖记录:', prizeRecordsRaw.value);
+      console.log('抽奖后的记录:', JSON.stringify(prizeRecordsRaw.value));
       
       // 如果抽奖已完成并且锁定，显示提示
       if (isCompletedFlag.value && lockAfterComplete.value) {
@@ -772,7 +898,13 @@ function endCallback(prize: any): void {
           showTip("所有奖品已抽完，点击重置按钮重新开始", 5000);
         }, 2000);
       }
+    } else {
+      console.error(`更新奖品记录失败: ${prizeName}`);
     }
+  } else {
+    console.error('未能找到匹配的奖品索引');
+    // 如果找不到匹配的奖品，可能是初始结构有问题，尝试重新初始化记录
+    initializePrizeRecords();
   }
 }
 

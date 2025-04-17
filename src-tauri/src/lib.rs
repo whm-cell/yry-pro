@@ -7,7 +7,7 @@ use std::{
     path:: PathBuf,
 };
 use tokio::sync::OnceCell;
-use util::{database::{Database, VocabularyRecord}, special_tools};
+use util::{database::{Database, VocabularyRecord, SystemSetting}, special_tools};
 
 // 全局数据库连接
 static DB: OnceCell<Database> = OnceCell::const_new();
@@ -174,6 +174,30 @@ async fn remove_active_word(word_id: i64) -> Result<bool, String> {
     db.remove_active_word(word_id).await.map_err(|e| e.to_string())
 }
 
+// 获取系统设置
+#[tauri::command]
+async fn get_system_setting(key: String) -> Result<Option<SystemSetting>, String> {
+    let db = get_db().await;
+
+    db.get_system_setting(&key).await.map_err(|e| e.to_string())
+}
+
+// 获取所有系统设置
+#[tauri::command]
+async fn get_all_system_settings() -> Result<Vec<SystemSetting>, String> {
+    let db = get_db().await;
+
+    db.get_all_system_settings().await.map_err(|e| e.to_string())
+}
+
+// 更新系统设置
+#[tauri::command]
+async fn update_system_setting(key: String, value: String) -> Result<bool, String> {
+    let db = get_db().await;
+
+    db.update_system_setting(&key, &value).await.map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -192,7 +216,10 @@ pub fn run() {
             delete_vocabulary,
             get_active_words,
             add_active_word,
-            remove_active_word
+            remove_active_word,
+            get_system_setting,
+            get_all_system_settings,
+            update_system_setting
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

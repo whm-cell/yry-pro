@@ -22,6 +22,14 @@ pub struct VocabularyRecord {
     pub example: Option<String>,
 }
 
+/// 系统设置结构体
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SystemSetting {
+    pub key: String,
+    pub value: String,
+    pub description: Option<String>,
+}
+
 /// 数据库接口
 pub struct Database {
     pool: SqlitePool,
@@ -74,7 +82,51 @@ impl Database {
         .await
         .context("创建活动单词表失败")?;
 
+        // 初始化系统设置表
+        sqlx::query(
+            "CREATE TABLE IF NOT EXISTS system_settings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                key TEXT NOT NULL UNIQUE,
+                value TEXT NOT NULL,
+                description TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )",
+        )
+        .execute(&pool)
+        .await
+        .context("创建系统设置表失败")?;
+
+        // 初始化默认设置
+        Self::init_default_settings(&pool).await?;
+
         Ok(Self { pool })
+    }
+
+    /// 初始化默认设置
+    async fn init_default_settings(pool: &SqlitePool) -> Result<()> {
+        // 检查max_prize_draws设置是否存在
+        let max_prize_draws_exists = sqlx::query("SELECT COUNT(*) as count FROM system_settings WHERE key = 'max_prize_draws'")
+            .map(|row: sqlx::sqlite::SqliteRow| {
+                row.get::<i64, _>("count") > 0
+            })
+            .fetch_one(pool)
+            .await
+            .context("检查max_prize_draws设置是否存在失败")?;
+
+        // 如果max_prize_draws设置不存在，添加默认值
+        if !max_prize_draws_exists {
+            sqlx::query(
+                "INSERT INTO system_settings (key, value, description) VALUES (?, ?, ?)"
+            )
+            .bind("max_prize_draws")
+            .bind("1")
+            .bind("普通奖品最多抽取次数")
+            .execute(pool)
+            .await
+            .context("添加默认max_prize_draws设置失败")?;
+        }
+
+        Ok(())
     }
 
     /// 添加单词记录
@@ -209,5 +261,72 @@ impl Database {
             .context("移除活动单词失败")?;
 
         Ok(result.rows_affected() > 0)
+    }
+
+    /// 获取系统设置
+    pub async fn get_system_setting(&self, key: &str) -> Result<Option<SystemSetting>> {
+        let setting = sqlx::query(
+            "SELECT key, value, description FROM system_settings WHERE key = ?"
+        )
+        .bind(key)
+        .map(|row: sqlx::sqlite::SqliteRow| {
+            SystemSetting {
+                key: row.get("key"),
+                value: row.get("value"),
+                description: row.get("description"),
+            }
+        })
+        .fetch_optional(&self.pool)
+        .await
+        .context("获取系统设置失败")?;
+
+        Ok(setting)
+    }
+
+    /// 获取所有系统设置
+    pub async fn get_all_system_settings(&self) -> Result<Vec<SystemSetting>> {
+        let settings = sqlx::query(
+            "SELECT key, value, description FROM system_settings"
+        )
+        .map(|row: sqlx::sqlite::SqliteRow| {
+            SystemSetting {
+                key: row.get("key"),
+                value: row.get("value"),
+                description: row.get("description"),
+            }
+        })
+        .fetch_all(&self.pool)
+        .await
+        .context("获取所有系统设置失败")?;
+
+        Ok(settings)
+    }
+
+    /// 更新系统设置
+    pub async fn update_system_setting(&self, key: &str, value: &str) -> Result<bool> {
+        let result = sqlx::query(
+            "UPDATE system_settings SET value = ?, updated_at = CURRENT_TIMESTAMP WHERE key = ?"
+        )
+        .bind(value)
+        .bind(key)
+        .execute(&self.pool)
+        .await
+        .context("更新系统设置失败")?;
+
+        // 如果未找到设置，尝试插入
+        if result.rows_affected() == 0 {
+            let result = sqlx::query(
+                "INSERT INTO system_settings (key, value) VALUES (?, ?)"
+            )
+            .bind(key)
+            .bind(value)
+            .execute(&self.pool)
+            .await
+            .context("插入系统设置失败")?;
+
+            Ok(result.rows_affected() > 0)
+        } else {
+            Ok(true)
+        }
     }
 }

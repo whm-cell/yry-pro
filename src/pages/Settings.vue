@@ -572,17 +572,17 @@ function toggleLockAfterComplete(): void {
   updateLockAfterComplete(!currentSetting);
 }
 
-function increaseMaxDraws(): void {
+async function increaseMaxDraws(): Promise<void> {
   const currentMaxDraws = settings.maxDraws;
   if (currentMaxDraws < 5) {
-    updateMaxDraws(currentMaxDraws + 1);
+    await updateMaxDraws(currentMaxDraws + 1);
   }
 }
 
-function decreaseMaxDraws(): void {
+async function decreaseMaxDraws(): Promise<void> {
   const currentMaxDraws = settings.maxDraws;
   if (currentMaxDraws > 1) {
-    updateMaxDraws(currentMaxDraws - 1);
+    await updateMaxDraws(currentMaxDraws - 1);
   }
 }
 </script>
