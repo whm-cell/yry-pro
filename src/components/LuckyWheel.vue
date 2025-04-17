@@ -96,7 +96,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, reactive, markRaw } from 'vue';
 // @ts-ignore
 import { invoke } from '@tauri-apps/api/core';
 // @ts-ignore
@@ -112,7 +112,7 @@ import dogPng from './ct-converted.png'
 import starPng from './ct-converted.png'
 
 // 导入设置钩子和类型
-import { useWheelSettings, WordConfig } from '../utils/wheelSettings';
+import { useWheelSettings } from '../utils/wheelSettings';
 
 // 奖品信息类型
 interface PrizeInfo {
@@ -165,11 +165,6 @@ const isTransitioning = ref(false); // 添加过渡状态锁，防止在过渡�
 let autoSlideTimer: number | null = null; // 添加自动滑动计时器
 let autoCloseInterval: number | null = null; // 添加进度条更新计时器
 
-// 图片上传对话框状态
-const showImageUploader = ref(false);
-// 图片上传选择的单词索引
-const selectedWordIndex = ref<number | null>(null);
-
 // 自动关闭倒计时
 const autoCloseSecondsLeft = ref(5);
 const autoCloseProgress = computed(() => (autoCloseSecondsLeft.value / 5) * 100);
@@ -180,10 +175,8 @@ const defaultPrizes: Prize[] = [
     background: '#badc58', 
     fonts: [
       { text: 'Apple', top: '55%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' },
-      // { text: '苹果', top: '55%', fontColor: '#2d3436', fontSize: '14px' }
     ],
     imgs: [{ src: applePng, width: '100px', top: '10%' }],
-    // 额外信息
     prizeInfo: {
       name: "Apple / 苹果",
       imgSrc: applePng
@@ -193,7 +186,6 @@ const defaultPrizes: Prize[] = [
     background: '#ff9ff3', 
     fonts: [
       { text: 'Cat', top: '55%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' },
-      // { text: '猫咪', top: '55%', fontColor: '#2d3436', fontSize: '14px' }
     ],
     imgs: [{ src: catPng, width: '100px', top: '10%' }],
     prizeInfo: {
@@ -205,7 +197,6 @@ const defaultPrizes: Prize[] = [
     background: '#ffeaa7', 
     fonts: [
       { text: 'Ball', top: '55%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' },
-      // { text: '球', top: '55%', fontColor: '#2d3436', fontSize: '14px' }
     ],
     imgs: [{ src: ballPng, width: '100px', top: '10%' }],
     prizeInfo: {
@@ -217,7 +208,6 @@ const defaultPrizes: Prize[] = [
     background: '#74b9ff', 
     fonts: [
       { text: 'Dog', top: '55%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' },
-      // { text: '小狗', top: '55%', fontColor: '#2d3436', fontSize: '14px' }
     ],
     imgs: [{ src: dogPng, width: '100px', top: '10%' }],
     prizeInfo: {
@@ -237,41 +227,6 @@ const defaultPrizes: Prize[] = [
     }
   }
 ];
-
-// 转换配置的单词为转盘奖品数据
-function convertWordsToLuckyPrizes(words: WordConfig[]): Prize[] {
-  // 确保至少有魔法小礼袋
-  const luckyPrizes: Prize[] = [
-    { 
-      background: '#fab1a0', 
-      fonts: [
-        { text: '魔法小礼袋', top: '55%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' }
-      ],
-      imgs: [{ src: starPng, width: '100px', top: '10%' }],
-      prizeInfo: {
-        name: "魔法小礼袋",
-        imgSrc: starPng
-      }
-    }
-  ];
-  
-  // 添加配置的单词
-  words.forEach(word => {
-    luckyPrizes.unshift({
-      background: word.bgColor,
-      fonts: [
-        { text: word.english, top: '55%', fontColor: word.fontColor, fontSize: '16px', fontWeight: 'bold' },
-      ],
-      imgs: [{ src: word.imgSrc || applePng, width: '100px', top: '10%' }],
-      prizeInfo: {
-        name: `${word.english} / ${word.translation}`,
-        imgSrc: word.imgSrc || applePng
-      }
-    });
-  });
-  
-  return luckyPrizes;
-}
 
 // 奖品数据
 const prizes = ref<Prize[]>([...defaultPrizes]);
@@ -297,15 +252,11 @@ const buttons = [{
   fonts: [
     { 
       text: '转一转', 
-      // top: '35%',
       fontColor: '#fff',
       fontSize: '18px',
       fontWeight: 'bold'
     }
   ],
-  // imgs: [
-  //   { src: crownPng, width: '25px', top: '10%' }
-  // ]
 }];
 
 // 抽奖记录
@@ -315,11 +266,18 @@ const allPrizesDrawnOnce = ref(false);
 // 标记是否已完成抽奖
 const isCompletedFlag = ref(false);
 
+// 检查是否是魔法礼袋词条
+const isMagicBagItem = (item: any): boolean => {
+  // 检查单词是否为"☆"或者翻译中包含"礼袋"
+  return item.word === "☆" || item.translation.includes("礼袋");
+};
+
 // 加载单词数据
 const loadVocabularyFromDatabase = async () => {
   try {
     // 先尝试加载活动单词
     const activeWords: any[] = await invoke('get_active_words');
+    console.log('活动单词原始数据:', activeWords);
     
     if (activeWords && Array.isArray(activeWords) && activeWords.length > 0) {
       console.log('加载活动单词成功:', activeWords.length);
@@ -328,14 +286,25 @@ const loadVocabularyFromDatabase = async () => {
       const activePrizes: Prize[] = activeWords.map((item: any) => {
         // 使用convertFileSrc处理图片路径
         const imgSrc = convertFileSrc(item.image_path);
+        console.log(`处理图片路径: ${item.image_path} -> ${imgSrc}`);
+        
+        // 判断是否是魔法礼袋
+        const isMagicBag = isMagicBagItem(item);
+        
         return {
-          background: getRandomColor(),
+          background: isMagicBag ? '#fab1a0' : getRandomColor(),
           fonts: [
-            { text: item.word, top: '55%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' },
+            { 
+              text: isMagicBag ? '魔法小礼袋' : "", 
+              top: isMagicBag?'80%':'55%', 
+              fontColor: '#2d3436', 
+              fontSize: '16px', 
+              fontWeight: 'bold' 
+            },
           ],
           imgs: [{ src: imgSrc, width: '100px', top: '10%' }],
           prizeInfo: {
-            name: `${item.word} / ${item.translation}`,
+            name: isMagicBag ? "魔法小礼袋" : `${item.word} / ${item.translation}`,
             imgSrc: imgSrc,
             translation: item.translation,
             phonetic: item.phonetic,
@@ -344,45 +313,43 @@ const loadVocabularyFromDatabase = async () => {
         };
       });
       
-      // 添加魔法小礼袋
-      activePrizes.push({
-        background: '#fab1a0', 
-        fonts: [
-          { text: '魔法小礼袋', top: '55%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' }
-        ],
-        imgs: [{ src: starPng, width: '100px', top: '10%' }],
-        prizeInfo: {
-          name: "魔法小礼袋",
-          imgSrc: starPng
-        }
-      });
+      console.log('处理后的转盘奖品数据:', activePrizes);
       
-      // 使用活动单词更新奖品列表
+      // 设置奖品列表（引用替换而不是修改属性）
       prizes.value = activePrizes;
       
-      // 更新转盘，使用类型断言
-      if (myLucky.value && (myLucky.value as any).prizes) {
-        (myLucky.value as any).prizes = prizes.value;
-      }
-      
       return; // 如果找到活动单词，直接返回，不加载所有单词
+    } else {
+      console.log('没有找到活动单词，使用所有单词');
     }
     
     // 如果没有活动单词，则加载所有单词
     const vocabularyData: any[] = await invoke('get_all_vocabulary');
+    console.log('所有单词原始数据:', vocabularyData);
     
     if (vocabularyData && Array.isArray(vocabularyData) && vocabularyData.length > 0) {
       // 将词汇数据转换为奖品格式
       const databasePrizes: Prize[] = vocabularyData.map((item: any) => {
         const imgSrc = convertFileSrc(item.image_path);
+        console.log(`处理图片路径: ${item.image_path} -> ${imgSrc}`);
+        
+        // 判断是否是魔法礼袋
+        const isMagicBag = isMagicBagItem(item);
+        
         return {
-          background: getRandomColor(),
+          background: isMagicBag ? '#fab1a0' : getRandomColor(),
           fonts: [
-            { text: item.word, top: '55%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' },
+            { 
+              text: isMagicBag ? '魔法小礼袋' : item.word, 
+              top: '55%', 
+              fontColor: '#2d3436', 
+              fontSize: '16px', 
+              fontWeight: 'bold' 
+            },
           ],
           imgs: [{ src: imgSrc, width: '100px', top: '10%' }],
           prizeInfo: {
-            name: `${item.word} / ${item.translation}`,
+            name: isMagicBag ? "魔法小礼袋" : `${item.word} / ${item.translation}`,
             imgSrc: imgSrc,
             translation: item.translation,
             phonetic: item.phonetic,
@@ -391,36 +358,20 @@ const loadVocabularyFromDatabase = async () => {
         };
       });
       
-      // 添加魔法小礼袋
-      databasePrizes.push({
-        background: '#fab1a0', 
-        fonts: [
-          { text: '魔法小礼袋', top: '55%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' }
-        ],
-        imgs: [{ src: starPng, width: '100px', top: '10%' }],
-        prizeInfo: {
-          name: "魔法小礼袋",
-          imgSrc: starPng
-        }
-      });
+      console.log('处理后的转盘奖品数据:', databasePrizes);
       
-      // 使用数据库中的数据更新奖品列表
+      // 设置奖品列表（引用替换而不是修改属性）
       prizes.value = databasePrizes;
-      
-      // 更新转盘，使用类型断言
-      if (myLucky.value && (myLucky.value as any).prizes) {
-        (myLucky.value as any).prizes = prizes.value;
-      }
       
       console.log('从数据库加载了词汇数据:', vocabularyData.length);
     } else {
       // 如果没有数据，使用默认奖品
       console.log('数据库中没有词汇数据，使用默认数据');
-      prizes.value = defaultPrizes;
+      prizes.value = [...defaultPrizes];
     }
   } catch (error) {
     console.error('加载数据库词汇数据失败:', error);
-    prizes.value = defaultPrizes;
+    prizes.value = [...defaultPrizes];
   }
 };
 
@@ -435,6 +386,11 @@ const getRandomColor = () => {
 
 // 修改onMounted钩子
 onMounted(async () => {
+  console.log('LuckyWheel组件挂载');
+  
+  // 确保转盘组件已经初始化
+  await new Promise(resolve => setTimeout(resolve, 300));
+  
   // 加载数据库中的单词
   await loadVocabularyFromDatabase();
   
@@ -455,6 +411,14 @@ function initializePrizeRecords() {
     }
   });
   prizeRecordsRaw.value = records;
+}
+
+// 强制更新记录
+function forceUpdateRecords(): void {
+  console.log('当前记录:', prizeRecordsRaw.value);
+  // 手动刷新一次奖品记录
+  initializePrizeRecords();
+  showTip('记录已刷新', 1500);
 }
 
 // 检查是否所有普通奖品都至少抽中一次
@@ -972,11 +936,6 @@ const prizeRecords = computed(() => {
 const isCompleted = computed(() => {
   return isCompletedFlag.value;
 });
-
-// 强制更新记录
-function forceUpdateRecords(): void {
-  console.log('当前记录:', prizeRecordsRaw.value);
-}
 
 // 显示工具提示
 function showTip(text: string, duration: number = 2000): void {
