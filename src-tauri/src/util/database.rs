@@ -1,8 +1,16 @@
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use sqlx::{migrate::MigrateDatabase, Row, Sqlite, SqlitePool};
+use crate::util::special_tools;
 
-const DB_URL: &str = "sqlite:///Users/coolm/softs/temp_files/vocabulary.db";
+
+// 获取数据库URL
+fn get_db_url() -> String {
+    let path = special_tools::get_base_storage_path();
+    format!("sqlite:///{}/vocabulary.db", path.display())
+}
+
+
 /// 单词记录结构体
 #[derive(Debug, Serialize, Deserialize)]
 pub struct VocabularyRecord {
@@ -22,15 +30,17 @@ pub struct Database {
 impl Database {
     /// 创建或连接到数据库
     pub async fn new() -> Result<Self> {
+        let db_url = get_db_url();
+        
         // 确保数据库存在
-        if !Sqlite::database_exists(DB_URL).await.unwrap_or(false) {
-            Sqlite::create_database(DB_URL)
+        if !Sqlite::database_exists(&db_url).await.unwrap_or(false) {
+            Sqlite::create_database(&db_url)
                 .await
                 .context("创建数据库失败")?;
         }
 
         // 连接到数据库
-        let pool = SqlitePool::connect(DB_URL)
+        let pool = SqlitePool::connect(&db_url)
             .await
             .context("连接数据库失败")?;
 

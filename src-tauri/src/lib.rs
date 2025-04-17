@@ -7,7 +7,7 @@ use std::{
     path:: PathBuf,
 };
 use tokio::sync::OnceCell;
-use util::database::{Database, VocabularyRecord};
+use util::{database::{Database, VocabularyRecord}, special_tools};
 
 // 全局数据库连接
 static DB: OnceCell<Database> = OnceCell::const_new();
@@ -115,12 +115,12 @@ async fn add_vocabulary(
     example: Option<String>,
 ) -> Result<i64, String> {
     let db = get_db().await;
-
+    let full_image_path = special_tools::get_base_storage_path().join(image_path);
     let record = VocabularyRecord {
         id: None,
         word,
         translation,
-        image_path,
+        image_path: full_image_path.to_string_lossy().to_string(),
         phonetic,
         example,
     };
