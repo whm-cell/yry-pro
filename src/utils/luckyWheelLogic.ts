@@ -45,8 +45,8 @@ export type PrizeRecords = Record<string, number>;
 
 /**
  * 抽奖模式枚举
- * ORDERLY - 有序模式：每个奖品都要抽一次，最大是1次，最后可以抽到魔法小礼袋
- * RANDOM - 随机模式：奖品和魔法小礼袋完全随机，抽到哪个是哪个，抽完后对应扇形变灰色
+ * ORDERLY - 有序模式：每个奖品都要抽一次，最大是1次，最后可以抽到Magic Bag
+ * RANDOM - 随机模式：奖品和Magic Bag完全随机，抽到哪个是哪个，抽完后对应扇形变灰色
  */
 export enum DrawMode {
   ORDERLY = 'orderly',
@@ -129,7 +129,7 @@ export class LuckyWheelManager {
   public getNextPrizeIndex(): number {
     // 如果已完成抽奖且设置了锁定，则不允许继续抽奖
     if (this._isCompleted && this.lockAfterComplete) {
-      // 返回"魔法小礼袋"的索引
+      // 返回"Magic Bag"的索引
       const thanksIndex = this.getThanksIndex();
       return thanksIndex;
     }
@@ -139,7 +139,7 @@ export class LuckyWheelManager {
     
     // 根据不同模式处理抽奖逻辑
     if (this.drawMode === DrawMode.ORDERLY) {
-      // 有序模式：先抽每个奖品一次，然后抽"魔法小礼袋"
+      // 有序模式：先抽每个奖品一次，然后抽"Magic Bag"
       
       // 获取未抽中过的奖品索引
       const undrawnPrizes = this.getUndrawnPrizeIndices();
@@ -150,13 +150,13 @@ export class LuckyWheelManager {
         return undrawnPrizes[randomIndex];
       }
       
-      // 如果所有奖品都抽过一次，返回"魔法小礼袋"
+      // 如果所有奖品都抽过一次，返回"Magic Bag"
       this._isCompleted = true;
       return this.getThanksIndex();
     } else {
-      // 随机模式：完全随机抽取，包括"魔法小礼袋"
+      // 随机模式：完全随机抽取，包括"Magic Bag"
       
-      // 获取所有可用奖品（包括"魔法小礼袋"）
+      // 获取所有可用奖品（包括"Magic Bag"）
       const allPrizes = this.prizes.length;
       
       // 随机选择一个奖品索引
@@ -164,19 +164,19 @@ export class LuckyWheelManager {
     }
   }
   
-  // 获取"魔法小礼袋"的索引
+  // 获取"Magic Bag"的索引
   private getThanksIndex(): number {
     const thanksIndex = this.prizes.findIndex(prize => 
-      prize.prizeInfo && prize.prizeInfo.name === "魔法小礼袋");
-    return thanksIndex >= 0 ? thanksIndex : this.prizes.length - 1; // 默认最后一个是"魔法小礼袋"
+      prize.prizeInfo && prize.prizeInfo.name === "Magic Bag");
+    return thanksIndex >= 0 ? thanksIndex : this.prizes.length - 1; // 默认最后一个是"Magic Bag"
   }
   
   // 获取未抽中过的奖品索引
   public getUndrawnPrizeIndices(): number[] {
     const undrawnIndices: number[] = [];
-    // 只检查非"魔法小礼袋"的普通奖品
+    // 只检查非"Magic Bag"的普通奖品
     const regularPrizeCount = this.prizes.filter(prize => 
-      prize.prizeInfo && prize.prizeInfo.name !== "魔法小礼袋").length;
+      prize.prizeInfo && prize.prizeInfo.name !== "Magic Bag").length;
       
     for (let i = 0; i < regularPrizeCount; i++) {
       const prizeName = this.prizes[i].prizeInfo.name;
@@ -190,9 +190,9 @@ export class LuckyWheelManager {
   // 获取可选的奖品索引（次数小于最大抽取次数的奖品）
   public getAvailablePrizeIndices(): number[] {
     const availableIndices: number[] = [];
-    // 只检查非"魔法小礼袋"的普通奖品
+    // 只检查非"Magic Bag"的普通奖品
     const regularPrizeCount = this.prizes.filter(prize => 
-      prize.prizeInfo && prize.prizeInfo.name !== "魔法小礼袋").length;
+      prize.prizeInfo && prize.prizeInfo.name !== "Magic Bag").length;
       
     for (let i = 0; i < regularPrizeCount; i++) {
       const prizeName = this.prizes[i].prizeInfo.name;
@@ -205,14 +205,14 @@ export class LuckyWheelManager {
   
   // 检查是否所有普通奖品都至少抽中一次
   public checkAllPrizesDrawnOnce(): boolean {
-    const prizeNames = Object.keys(this.prizeRecords).filter(name => name !== "魔法小礼袋");
+    const prizeNames = Object.keys(this.prizeRecords).filter(name => name !== "Magic Bag");
     this.allPrizesDrawnOnce = prizeNames.every(name => this.prizeRecords[name] > 0);
     return this.allPrizesDrawnOnce;
   }
   
   // 检查是否所有普通奖品都已经抽中最大次数
   public areAllPrizesDrawnToMax(): boolean {
-    const prizeNames = Object.keys(this.prizeRecords).filter(name => name !== "魔法小礼袋");
+    const prizeNames = Object.keys(this.prizeRecords).filter(name => name !== "Magic Bag");
     return prizeNames.every(name => this.prizeRecords[name] >= this.maxDraws);
   }
   

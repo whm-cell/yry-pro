@@ -7,8 +7,8 @@ import { invoke } from '@tauri-apps/api/core';
 
 // 抽奖模式枚举
 export enum DrawMode {
-  ORDERLY = 'orderly',   // 模式1：每个奖品都要抽一次，最大是1次，最后可以抽到魔法小礼袋
-  RANDOM = 'random'      // 模式2：奖品和魔法小礼袋完全随机，抽到哪个是哪个，抽完后对应扇形变灰色
+  ORDERLY = 'orderly',   // 模式1：每个奖品都要抽一次，最大是1次，最后可以抽到Magic Bag
+  RANDOM = 'random'      // 模式2：奖品和Magic Bag完全随机，抽到哪个是哪个，抽完后对应扇形变灰色
 }
 
 // 单词配置接口

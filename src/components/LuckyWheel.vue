@@ -24,8 +24,8 @@
         :class="{ 'enlarged': isEnlarged, 'sliding': isSliding, 'scale-70': scaleLevel === 1, 'scale-40': scaleLevel === 2 }"
         @click="toggleImageSize"
       >
-        <!-- 添加自动关闭计时器指示，只在魔法小礼袋时显示 -->
-        <div class="auto-close-indicator" v-if="isEnlarged && !isSliding && selectedPrize && selectedPrize.name === '魔法小礼袋'">
+        <!-- 添加自动关闭计时器指示，只在Magic Bag时显示 -->
+        <div class="auto-close-indicator" v-if="isEnlarged && !isSliding && selectedPrize && selectedPrize.name === 'Magic Bag'">
           <svg viewBox="0 0 36 36" class="circular-timer">
             <path class="circle-bg"
               d="M18 2.0845
@@ -227,11 +227,11 @@ const defaultPrizes: Prize[] = [
   { 
     background: '#fab1a0', 
     fonts: [
-      { text: '魔法小礼袋', top: '55%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' }
+      { text: 'Magic Bag', top: '55%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' }
     ],
     imgs: [{ src: starPng, width: '100px', top: '10%' }],
     prizeInfo: {
-      name: "魔法小礼袋",
+      name: "Magic Bag",
       imgSrc: starPng
     }
   }
@@ -335,11 +335,15 @@ const loadVocabularyFromDatabase = async () => {
         // 判断是否是魔法礼袋
         const isMagicBag = isMagicBagItem(item);
         
+        // 使用数据库中的自定义颜色或默认颜色
+        const itemColor = item.color || null;
+        console.log(`单词颜色: ${item.word} -> ${itemColor || '未设置，使用随机颜色'}`);
+        
         return {
-          background: isMagicBag ? '#fab1a0' : getRandomColor(),
+          background: isMagicBag ? '#fab1a0' : (itemColor || getRandomColor()),
           fonts: [
             { 
-              text: isMagicBag ? '魔法小礼袋' : "", 
+              text: isMagicBag ? 'Magic Bag' : "", 
               top: isMagicBag?'80%':'55%', 
               fontColor: '#2d3436', 
               fontSize: '16px', 
@@ -348,7 +352,7 @@ const loadVocabularyFromDatabase = async () => {
           ],
           imgs: [{ src: imgSrc, width: '100px', top: '10%' }],
           prizeInfo: {
-            name: isMagicBag ? "魔法小礼袋" : `${item.word} / ${item.translation}`,
+            name: isMagicBag ? "Magic Bag" : `${item.word} / ${item.translation}`,
             imgSrc: imgSrc,
             translation: item.translation,
             phonetic: item.phonetic,
@@ -383,11 +387,15 @@ const loadVocabularyFromDatabase = async () => {
         // 判断是否是魔法礼袋
         const isMagicBag = isMagicBagItem(item);
         
+        // 使用数据库中的自定义颜色或默认颜色
+        const itemColor = item.color || null;
+        console.log(`单词颜色: ${item.word} -> ${itemColor || '未设置，使用随机颜色'}`);
+        
         return {
-          background: isMagicBag ? '#fab1a0' : getRandomColor(),
+          background: isMagicBag ? '#fab1a0' : (itemColor || getRandomColor()),
           fonts: [
             { 
-              text: isMagicBag ? '魔法小礼袋' : item.word, 
+              text: isMagicBag ? 'Magic Bag' : item.word, 
               top: '55%', 
               fontColor: '#2d3436', 
               fontSize: '16px', 
@@ -396,7 +404,7 @@ const loadVocabularyFromDatabase = async () => {
           ],
           imgs: [{ src: imgSrc, width: '100px', top: '10%' }],
           prizeInfo: {
-            name: isMagicBag ? "魔法小礼袋" : `${item.word} / ${item.translation}`,
+            name: isMagicBag ? "Magic Bag" : `${item.word} / ${item.translation}`,
             imgSrc: imgSrc,
             translation: item.translation,
             phonetic: item.phonetic,
@@ -420,8 +428,8 @@ const loadVocabularyFromDatabase = async () => {
       
       // 确保默认奖品使用不同颜色
       prizes.value = defaultPrizes.map((prize, index) => {
-        // 为"魔法小礼袋"保留原来的颜色
-        if (prize.prizeInfo.name === "魔法小礼袋") {
+        // 为"Magic Bag"保留原来的颜色
+        if (prize.prizeInfo.name === "Magic Bag") {
           return prize;
         }
         return {
@@ -438,8 +446,8 @@ const loadVocabularyFromDatabase = async () => {
     
     // 确保默认奖品使用不同颜色
     prizes.value = defaultPrizes.map((prize, index) => {
-      // 为"魔法小礼袋"保留原来的颜色
-      if (prize.prizeInfo.name === "魔法小礼袋") {
+      // 为"Magic Bag"保留原来的颜色
+      if (prize.prizeInfo.name === "Magic Bag") {
         return prize;
       }
       return {
@@ -515,7 +523,7 @@ function forceUpdateRecords(): void {
 
 // 检查是否所有普通奖品都至少抽中一次
 function checkAllPrizesDrawnOnce(): boolean {
-  const prizeNames = Object.keys(prizeRecordsRaw.value).filter(name => name !== "魔法小礼袋");
+  const prizeNames = Object.keys(prizeRecordsRaw.value).filter(name => name !== "Magic Bag");
   allPrizesDrawnOnce.value = prizeNames.every(name => prizeRecordsRaw.value[name] > 0);
   return allPrizesDrawnOnce.value;
 }
@@ -523,7 +531,7 @@ function checkAllPrizesDrawnOnce(): boolean {
 // 检查是否所有普通奖品都已经抽中最大次数
 function areAllPrizesDrawnToMax(): boolean {
   const maxDraws = settings.maxDraws || 1;
-  const prizeNames = Object.keys(prizeRecordsRaw.value).filter(name => name !== "魔法小礼袋");
+  const prizeNames = Object.keys(prizeRecordsRaw.value).filter(name => name !== "Magic Bag");
   return prizeNames.every(name => prizeRecordsRaw.value[name] >= maxDraws);
 }
 
@@ -534,7 +542,7 @@ function getNextPrizeIndex(): number {
   
   // 如果抽奖已完成并且锁定，则不允许继续抽奖
   if (isCompletedFlag.value && lockAfterComplete.value) {
-    // 返回"魔法小礼袋"的索引
+    // 返回"Magic Bag"的索引
     return getThanksIndex();
   }
   
@@ -542,7 +550,7 @@ function getNextPrizeIndex(): number {
   const drawMode = settings.drawMode;
   
   if (drawMode === 'orderly') {
-    // 有序模式：每个奖品都要抽一次，最大抽取次数为settings.maxDraws次，抽完后只能抽到魔法小礼袋
+    // 有序模式：每个奖品都要抽一次，最大抽取次数为settings.maxDraws次，抽完后只能抽到Magic Bag
     
     // 获取未抽中过的奖品索引
     const undrawnPrizes = getUndrawnPrizeIndices();
@@ -562,13 +570,13 @@ function getNextPrizeIndex(): number {
       return availablePrizes[randomIndex];
     }
     
-    // 如果所有奖品都抽到最大次数，返回"魔法小礼袋"
+    // 如果所有奖品都抽到最大次数，返回"Magic Bag"
     isCompletedFlag.value = true;
     return getThanksIndex();
   } else {
-    // 随机模式：奖品和魔法小礼袋完全随机，但要遵循最大抽取次数限制
+    // 随机模式：奖品和Magic Bag完全随机，但要遵循最大抽取次数限制
     
-    // 获取未达到最大抽取次数的奖品索引（包括魔法小礼袋）
+    // 获取未达到最大抽取次数的奖品索引（包括Magic Bag）
     const availablePrizes = getAvailablePrizeIndicesWithMagicBag();
     
     // 如果还有可用奖品，从中随机选择一个
@@ -577,25 +585,25 @@ function getNextPrizeIndex(): number {
       return availablePrizes[randomIndex];
     }
     
-    // 如果所有普通奖品都已经抽中最大次数，标记为完成并返回魔法小礼袋
+    // 如果所有普通奖品都已经抽中最大次数，标记为完成并返回Magic Bag
     isCompletedFlag.value = true;
     return getThanksIndex();
   }
 }
 
-// 获取"魔法小礼袋"的索引
+// 获取"Magic Bag"的索引
 function getThanksIndex(): number {
   const thanksIndex = prizes.value.findIndex(prize => 
-    prize.prizeInfo && prize.prizeInfo.name === "魔法小礼袋");
-  return thanksIndex >= 0 ? thanksIndex : prizes.value.length - 1; // 默认最后一个是"魔法小礼袋"
+    prize.prizeInfo && prize.prizeInfo.name === "Magic Bag");
+  return thanksIndex >= 0 ? thanksIndex : prizes.value.length - 1; // 默认最后一个是"Magic Bag"
 }
 
 // 获取未抽中过的奖品索引
 function getUndrawnPrizeIndices(): number[] {
   const undrawnIndices: number[] = [];
-  // 只检查非"魔法小礼袋"的普通奖品
+  // 只检查非"Magic Bag"的普通奖品
   prizes.value.forEach((prize, index) => {
-    if (prize.prizeInfo && prize.prizeInfo.name !== "魔法小礼袋" && 
+    if (prize.prizeInfo && prize.prizeInfo.name !== "Magic Bag" && 
         prizeRecordsRaw.value[prize.prizeInfo.name] === 0) {
       undrawnIndices.push(index);
     }
@@ -603,13 +611,13 @@ function getUndrawnPrizeIndices(): number[] {
   return undrawnIndices;
 }
 
-// 获取未达到最大抽取次数的奖品索引（不包括魔法小礼袋）
+// 获取未达到最大抽取次数的奖品索引（不包括Magic Bag）
 function getAvailablePrizeIndices(): number[] {
   const maxDraws = settings.maxDraws || 1;
   const availableIndices: number[] = [];
   
   prizes.value.forEach((prize, index) => {
-    if (prize.prizeInfo && prize.prizeInfo.name !== "魔法小礼袋") {
+    if (prize.prizeInfo && prize.prizeInfo.name !== "Magic Bag") {
       const count = prizeRecordsRaw.value[prize.prizeInfo.name] || 0;
       if (count < maxDraws) {
         availableIndices.push(index);
@@ -620,7 +628,7 @@ function getAvailablePrizeIndices(): number[] {
   return availableIndices;
 }
 
-// 获取未达到最大抽取次数的奖品索引（包括魔法小礼袋）
+// 获取未达到最大抽取次数的奖品索引（包括Magic Bag）
 function getAvailablePrizeIndicesWithMagicBag(): number[] {
   const maxDraws = settings.maxDraws || 1;
   const availableIndices: number[] = [];
@@ -628,8 +636,8 @@ function getAvailablePrizeIndicesWithMagicBag(): number[] {
   
   prizes.value.forEach((prize, index) => {
     if (prize.prizeInfo) {
-      if (prize.prizeInfo.name === "魔法小礼袋") {
-        // 魔法小礼袋总是可用的
+      if (prize.prizeInfo.name === "Magic Bag") {
+        // Magic Bag总是可用的
         availableIndices.push(index);
       } else {
         // 普通奖品检查抽取次数
@@ -641,7 +649,7 @@ function getAvailablePrizeIndicesWithMagicBag(): number[] {
     }
   });
   
-  // 如果没有可用奖品，至少返回魔法小礼袋
+  // 如果没有可用奖品，至少返回Magic Bag
   if (availableIndices.length === 0 && magicBagIndex >= 0) {
     availableIndices.push(magicBagIndex);
   }
@@ -864,8 +872,8 @@ function endCallback(prize: any): void {
       // 设置选中的奖品显示
       selectedPrize.value = prizes.value[prizeIndex].prizeInfo;
       
-      // 判断是否为魔法小礼袋
-      const isMagicBag = selectedPrize.value.name === "魔法小礼袋";
+      // 判断是否为Magic Bag
+      const isMagicBag = selectedPrize.value.name === "Magic Bag";
       
       // 直接显示图片，不使用滑入效果
       showImageDisplay.value = true; // 显示图片
@@ -874,7 +882,7 @@ function endCallback(prize: any): void {
       setTimeout(() => {
         isEnlarged.value = true; // 放大图片
         
-        // 只有魔法小礼袋才启动倒计时和自动滑动
+        // 只有Magic Bag才启动倒计时和自动滑动
         if (isMagicBag) {
           // 启动自动关闭倒计时
           startAutoCloseCountdown();
@@ -890,11 +898,11 @@ function endCallback(prize: any): void {
       }, 50);
       
       // 显示抽奖结果提示
-      const isPrizeThanks = prizes.value[prizeIndex].prizeInfo.name === "魔法小礼袋";
+      const isPrizeThanks = prizes.value[prizeIndex].prizeInfo.name === "Magic Bag";
       const count = prizeRecordsRaw.value[prizes.value[prizeIndex].prizeInfo.name];
       
       if (isPrizeThanks) {
-        showTip('本次抽中: 魔法小礼袋', 1500);
+        showTip('本次抽中: Magic Bag', 1500);
       } else {
         showTip(`恭喜！抽中 ${prizes.value[prizeIndex].prizeInfo.name} (第${count}次)`, 1500);
       }
@@ -933,8 +941,8 @@ function autoSlideImage(): void {
     autoCloseInterval = null;
   }
   
-  // 检查是否为魔法小礼袋
-  const isMagicBag = selectedPrize.value && selectedPrize.value.name === "魔法小礼袋";
+  // 检查是否为Magic Bag
+  const isMagicBag = selectedPrize.value && selectedPrize.value.name === "Magic Bag";
   
   // 如果当前正在显示图片，则触发滑出动画
   if (showImageDisplay.value && isEnlarged.value && isMagicBag) {
@@ -977,7 +985,7 @@ function autoSlideImage(): void {
       
     }, slideTime - 100); // 在滑动完成前稍微提前开始淡出
   } else if (showImageDisplay.value && isEnlarged.value) {
-    // 非魔法小礼袋直接关闭
+    // 非Magic Bag直接关闭
     showImageDisplay.value = false;
     
     // 简单延迟后重置状态
@@ -1036,18 +1044,18 @@ function toggleImageSize(): void {
     autoCloseInterval = null;
   }
   
-  // 判断当前奖品是否为魔法小礼袋
-  const isMagicBag = selectedPrize.value && selectedPrize.value.name === "魔法小礼袋";
+  // 判断当前奖品是否为Magic Bag
+  const isMagicBag = selectedPrize.value && selectedPrize.value.name === "Magic Bag";
   
   if (isEnlarged.value) {
     // 如果已经放大，根据奖品类型和点击次数决定如何操作
     
     if (isMagicBag) {
-      // 魔法小礼袋仍然使用原来的滑动效果
+      // Magic Bag仍然使用原来的滑动效果
       // 设置过渡锁
       isTransitioning.value = true;
       
-      // 魔法小礼袋使用滑动效果
+      // Magic Bag使用滑动效果
       isSliding.value = true;
       
       // 给滑动动画充分时间完成
@@ -1130,7 +1138,7 @@ function toggleImageSize(): void {
     setTimeout(() => {
       isEnlarged.value = true; // 放大
       
-      // 只有魔法小礼袋才启动倒计时和自动滑动
+      // 只有Magic Bag才启动倒计时和自动滑动
       if (isMagicBag) {
         // 启动自动关闭倒计时
         startAutoCloseCountdown();

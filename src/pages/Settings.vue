@@ -308,7 +308,7 @@
                 <p class="text-sm text-gray-500">
                   {{ settings.lockAfterComplete ? 
                     '抽完所有奖品后将锁定转盘，不能继续抽取' : 
-                    '抽完后仍可继续抽取魔法小礼袋' }}
+                    '抽完后仍可继续抽取Magic Bag' }}
                 </p>
               </div>
             </div>
@@ -394,13 +394,13 @@ const drawModes = [
     name: '有序模式', 
     value: DrawMode.ORDERLY, 
     icon: '📋',
-    description: '每个奖品都要抽一次，抽完后只能抽到魔法小礼袋'
+    description: '每个奖品都要抽一次，抽完后只能抽到Magic Bag'
   },
   { 
     name: '随机模式', 
     value: DrawMode.RANDOM, 
     icon: '🎲',
-    description: '奖品和魔法小礼袋完全随机，抽到哪个是哪个'
+    description: '奖品和Magic Bag完全随机，抽到哪个是哪个'
   }
 ];
 
