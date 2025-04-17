@@ -107,7 +107,7 @@
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.phonetic || '-' }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 <div v-if="item.image_path" class="w-12 h-12 overflow-hidden rounded-md">
-                  <img :src="getImageUrl(item.image_path)" class="w-full h-full object-cover" />
+                  <img :src="getImageUrl(item.image_path)" class="w-full h-full object-cover" alt="单词图片" />
                 </div>
                 <span v-else>-</span>
               </td>
@@ -133,6 +133,7 @@ import { ref, onMounted } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 import { basename } from '@tauri-apps/api/path';
 import { message } from '@tauri-apps/plugin-dialog';
+import { convertFileSrc } from '@tauri-apps/api/core';
 
 // 状态
 const newWord = ref({
@@ -153,9 +154,12 @@ const loadVocabularyList = async () => {
   try {
     isLoading.value = true;
     const data = await invoke('get_all_vocabulary');
-    vocabularyList.value = data;
+    console.log('获取到的单词列表数据:', data);
+    vocabularyList.value = data || [];
   } catch (error) {
+    console.error('获取单词列表失败:', error);
     await message('获取单词列表失败: ' + error, { title: '错误' });
+    vocabularyList.value = [];
   } finally {
     isLoading.value = false;
   }
@@ -181,8 +185,34 @@ const handleImageSelect = (event) => {
   reader.readAsDataURL(file);
 };
 
+// 获取图片URL
+const getImageUrl = (imagePath) => {
+  // 使用更通用的方式，适应不同系统环境
+  try {
+    // 判断是否已经是完整路径
+    if (imagePath.startsWith('file://') || imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath;
+    }
+    
+    // 尝试使用Tauri的convertFileSrc API来获取正确的图片URL
+    // 对于本地文件，该函数会创建一个特殊的URL，允许Tauri显示本地文件
+    try {
+      // 假设图片存储在固定目录
+      return convertFileSrc(`/Users/coolm/softs/temp_files/images/${imagePath}`);
+    } catch (e) {
+      console.error('使用convertFileSrc失败:', e);
+      // 回退到基本文件URL
+      return `file:///Users/coolm/softs/temp_files/images/${imagePath}`;
+    }
+  } catch (error) {
+    console.error('构建图片URL失败:', error);
+    return ''; // 返回空字符串表示加载失败
+  }
+};
+
 // 保存单词
 const saveVocabulary = async () => {
+  debugger
   if (!newWord.value.word || !newWord.value.translation) {
     await message('单词和翻译不能为空', { title: '提示' });
     return;
@@ -211,14 +241,18 @@ const saveVocabulary = async () => {
       fileName: fileName 
     });
     
+    console.log('图片已保存:', imagePath);
+    
     // 2. 保存单词信息到数据库
-    await invoke('add_vocabulary', {
+    const result = await invoke('add_vocabulary', {
       word: newWord.value.word,
       translation: newWord.value.translation,
-      imagePath: fileName, // 只存储文件名
+      image_path: fileName, // 修正参数名：从imagePath改为image_path
       phonetic: newWord.value.phonetic || null,
       example: newWord.value.example || null
     });
+    
+    console.log('单词保存结果:', result);
     
     // 3. 重置表单
     newWord.value = { word: '', translation: '', phonetic: '', example: '' };
@@ -230,16 +264,11 @@ const saveVocabulary = async () => {
     
     await message('单词添加成功', { title: '成功' });
   } catch (error) {
+    console.error('保存单词失败:', error);
     await message('保存单词失败: ' + error, { title: '错误' });
   } finally {
     isSaving.value = false;
   }
-};
-
-// 获取图片URL
-const getImageUrl = (imagePath) => {
-  // 这里你可能需要根据你的实际情况处理图片路径
-  return `file:///Users/coolm/softs/temp_files/images/${imagePath}`;
 };
 
 // 删除单词
@@ -252,6 +281,7 @@ const deleteVocabulary = async (id) => {
     await loadVocabularyList();
     await message('单词删除成功', { title: '成功' });
   } catch (error) {
+    console.error('删除单词失败:', error);
     await message('删除单词失败: ' + error, { title: '错误' });
   } finally {
     isDeleting.value = false;

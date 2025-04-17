@@ -1,7 +1,6 @@
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use sqlx::{migrate::MigrateDatabase, Row, Sqlite, SqlitePool};
-use std::path::{Path, PathBuf};
 
 const DB_URL: &str = "sqlite://vocabulary.db";
 

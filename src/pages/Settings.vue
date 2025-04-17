@@ -653,6 +653,7 @@ import * as fs from '@tauri-apps/plugin-fs';
 import { invoke } from '@tauri-apps/api/core';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { appLocalDataDir } from '@tauri-apps/api/path';
+import { debug } from '@tauri-apps/plugin-log';
 // 获取转盘设置
 const { 
   settings, 
@@ -1041,6 +1042,7 @@ function closeWordModal() {
 
 // 获取显示用的图片URL
 function getDisplayImageUrl(storedPath: string): string {
+  debugger
   // 如果已经在缓存中，直接返回
   if (imageUrlCache[storedPath]) {
     return imageUrlCache[storedPath];
@@ -1059,7 +1061,6 @@ function getDisplayImageUrl(storedPath: string): string {
 // 处理图片加载错误
 async function handleImgError(event: Event, index: number) {
   const target = event.target as HTMLImageElement;
-  
   try {
     // 获取存储的路径
     const storedPath = wordsList.value[index].imgSrc;

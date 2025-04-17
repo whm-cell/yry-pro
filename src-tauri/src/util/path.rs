@@ -163,6 +163,9 @@ impl AppPaths {
     }
 }
 
+
+#[allow(dead_code)]
+#[allow(unused_variables)]
 impl AppPaths {
     fn new() -> AppPaths {
         Self {
@@ -218,6 +221,7 @@ impl AppPaths {
 static APP_PATHS: LazyLock<Arc<RwLock<AppPaths>>> =
     LazyLock::new(|| Arc::new(RwLock::new(AppPaths::new())));
 
+#[allow(dead_code)]
 pub(crate) fn init_paths(app: &tauri::App) -> Result<()> {
     let handle = app.handle();
     let mut app_paths = APP_PATHS

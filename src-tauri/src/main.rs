@@ -1,8 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use AiMate::util;
-
+#[allow(non_snake_case)]
 fn main() {
-    AiMate::run()
+    ai_mate::run()
 }

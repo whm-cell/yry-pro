@@ -4,7 +4,7 @@ pub mod util;
 
 use std::{
     fs,
-    path::{Path, PathBuf},
+    path:: PathBuf,
 };
 use tokio::sync::OnceCell;
 use util::database::{Database, VocabularyRecord};
@@ -25,7 +25,7 @@ fn greet(name: &str) -> String {
 
 // 确保images目录存在
 #[tauri::command]
-fn ensure_images_dir(app_handle: tauri::AppHandle) -> Result<String, String> {
+fn ensure_images_dir(_app_handle: tauri::AppHandle) -> Result<String, String> {
     //  let app_dir = util::path::paths().app_local_data_dir().to_string_lossy().into_owned();
     let app_dir = String::from("/Users/coolm/softs/temp_files");
     let images_dir = PathBuf::from(&app_dir).join("images");
@@ -40,8 +40,9 @@ fn ensure_images_dir(app_handle: tauri::AppHandle) -> Result<String, String> {
 
 // 保存图片到images目录
 #[tauri::command]
+#[allow(deprecated)]
 fn save_image(
-    app_handle: tauri::AppHandle,
+    _app_handle: tauri::AppHandle,
     file_data: String,
     file_name: String,
 ) -> Result<String, String> {
@@ -69,7 +70,7 @@ fn save_image(
 
 // 获取images目录中的图片列表
 #[tauri::command]
-fn list_images(app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
+fn list_images(_app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
     let app_dir = String::from("/Users/coolm/softs/temp_files");
     let images_dir = PathBuf::from(&app_dir).join("images");
 
