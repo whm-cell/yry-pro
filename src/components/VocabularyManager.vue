@@ -247,7 +247,7 @@ const saveVocabulary = async () => {
     const result = await invoke('add_vocabulary', {
       word: newWord.value.word,
       translation: newWord.value.translation,
-      image_path: fileName, // 修正参数名：从imagePath改为image_path
+      imagePath: fileName, // 修正参数名：从image_path改为imagePath
       phonetic: newWord.value.phonetic || null,
       example: newWord.value.example || null
     });
