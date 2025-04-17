@@ -107,7 +107,7 @@
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.phonetic || '-' }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 <div v-if="item.image_path" class="w-12 h-12 overflow-hidden rounded-md">
-                  <img :src="getImageUrl(item.image_path)" class="w-full h-full object-cover" alt="单词图片" />
+                  <img :src="convertFileSrc(item.image_path)" class="w-full h-full object-cover" alt="单词图片" />
                 </div>
                 <span v-else>-</span>
               </td>
@@ -183,31 +183,6 @@ const handleImageSelect = (event) => {
     imagePreview.value = e.target.result;
   };
   reader.readAsDataURL(file);
-};
-
-// 获取图片URL
-const getImageUrl = (imagePath) => {
-  // 使用更通用的方式，适应不同系统环境
-  try {
-    // 判断是否已经是完整路径
-    if (imagePath.startsWith('file://') || imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-      return imagePath;
-    }
-    
-    // 尝试使用Tauri的convertFileSrc API来获取正确的图片URL
-    // 对于本地文件，该函数会创建一个特殊的URL，允许Tauri显示本地文件
-    try {
-      // 假设图片存储在固定目录
-      return convertFileSrc(`/Users/coolm/softs/temp_files/images/${imagePath}`);
-    } catch (e) {
-      console.error('使用convertFileSrc失败:', e);
-      // 回退到基本文件URL
-      return `file:///Users/coolm/softs/temp_files/images/${imagePath}`;
-    }
-  } catch (error) {
-    console.error('构建图片URL失败:', error);
-    return ''; // 返回空字符串表示加载失败
-  }
 };
 
 // 保存单词
