@@ -111,6 +111,7 @@ async fn add_vocabulary(
     word: String,
     translation: String,
     image_path: String,
+    color: Option<String>,
 ) -> Result<i64, String> {
     let db = get_db().await;
     let full_image_path = special_tools::get_image_path(&image_path);
@@ -121,6 +122,7 @@ async fn add_vocabulary(
         image_path: full_image_path.to_string_lossy().to_string(),
         phonetic: None,
         example: None,
+        color,
     };
 
     db.add_vocabulary(record).await.map_err(|e| e.to_string())
@@ -198,6 +200,14 @@ async fn update_system_setting(key: String, value: String) -> Result<bool, Strin
     db.update_system_setting(&key, &value).await.map_err(|e| e.to_string())
 }
 
+// 更新单词颜色
+#[tauri::command]
+async fn update_vocabulary_color(id: i64, color: String) -> Result<bool, String> {
+    let db = get_db().await;
+
+    db.update_vocabulary_color(id, color).await.map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -219,7 +229,8 @@ pub fn run() {
             remove_active_word,
             get_system_setting,
             get_all_system_settings,
-            update_system_setting
+            update_system_setting,
+            update_vocabulary_color,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

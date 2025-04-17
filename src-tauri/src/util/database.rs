@@ -20,6 +20,7 @@ pub struct VocabularyRecord {
     pub image_path: String,
     pub phonetic: Option<String>,
     pub example: Option<String>,
+    pub color: Option<String>,
 }
 
 /// 系统设置结构体
@@ -61,12 +62,32 @@ impl Database {
                 image_path TEXT NOT NULL,
                 phonetic TEXT,
                 example TEXT,
+                color TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )",
         )
         .execute(&pool)
         .await
         .context("创建单词表失败")?;
+
+        // 检查color列是否存在，如果不存在则添加
+        let column_exists = sqlx::query("PRAGMA table_info(vocabulary)")
+            .map(|row: sqlx::sqlite::SqliteRow| {
+                let column_name: String = row.get("name");
+                column_name == "color"
+            })
+            .fetch_all(&pool)
+            .await
+            .context("检查color列是否存在失败")?
+            .iter()
+            .any(|&exists| exists);
+
+        if !column_exists {
+            sqlx::query("ALTER TABLE vocabulary ADD COLUMN color TEXT")
+                .execute(&pool)
+                .await
+                .context("添加color列失败")?;
+        }
 
         // 初始化活动单词表
         sqlx::query(
@@ -132,14 +153,15 @@ impl Database {
     /// 添加单词记录
     pub async fn add_vocabulary(&self, record: VocabularyRecord) -> Result<i64> {
         let result = sqlx::query(
-            "INSERT INTO vocabulary (word, translation, image_path, phonetic, example) 
-             VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO vocabulary (word, translation, image_path, phonetic, example, color) 
+             VALUES (?, ?, ?, ?, ?, ?)",
         )
         .bind(&record.word)
         .bind(&record.translation)
         .bind(&record.image_path)
         .bind(&record.phonetic)
         .bind(&record.example)
+        .bind(&record.color)
         .execute(&self.pool)
         .await
         .context("添加单词记录失败")?;
@@ -150,7 +172,7 @@ impl Database {
     /// 获取所有单词记录
     pub async fn get_all_vocabulary(&self) -> Result<Vec<VocabularyRecord>> {
         let records = sqlx::query(
-            "SELECT id, word, translation, image_path, phonetic, example FROM vocabulary",
+            "SELECT id, word, translation, image_path, phonetic, example, color FROM vocabulary",
         )
         .map(|row: sqlx::sqlite::SqliteRow| VocabularyRecord {
             id: Some(row.get("id")),
@@ -159,6 +181,7 @@ impl Database {
             image_path: row.get("image_path"),
             phonetic: row.get("phonetic"),
             example: row.get("example"),
+            color: row.get("color"),
         })
         .fetch_all(&self.pool)
         .await
@@ -170,7 +193,7 @@ impl Database {
     /// 根据ID获取单词记录
     pub async fn get_vocabulary_by_id(&self, id: i64) -> Result<Option<VocabularyRecord>> {
         let record = sqlx::query(
-            "SELECT id, word, translation, image_path, phonetic, example FROM vocabulary WHERE id = ?"
+            "SELECT id, word, translation, image_path, phonetic, example, color FROM vocabulary WHERE id = ?"
         )
         .bind(id)
         .map(|row: sqlx::sqlite::SqliteRow| {
@@ -181,6 +204,7 @@ impl Database {
                 image_path: row.get("image_path"),
                 phonetic: row.get("phonetic"),
                 example: row.get("example"),
+                color: row.get("color"),
             }
         })
         .fetch_optional(&self.pool)
@@ -201,10 +225,22 @@ impl Database {
         Ok(result.rows_affected() > 0)
     }
 
+    /// 更新单词颜色
+    pub async fn update_vocabulary_color(&self, id: i64, color: String) -> Result<bool> {
+        let result = sqlx::query("UPDATE vocabulary SET color = ? WHERE id = ?")
+            .bind(color)
+            .bind(id)
+            .execute(&self.pool)
+            .await
+            .context("更新单词颜色失败")?;
+
+        Ok(result.rows_affected() > 0)
+    }
+
     /// 获取所有活动单词
     pub async fn get_active_words(&self) -> Result<Vec<VocabularyRecord>> {
         let records = sqlx::query(
-            "SELECT v.id, v.word, v.translation, v.image_path, v.phonetic, v.example
+            "SELECT v.id, v.word, v.translation, v.image_path, v.phonetic, v.example, v.color
              FROM vocabulary v
              INNER JOIN active_words a ON v.id = a.word_id
              ORDER BY a.added_at DESC
@@ -217,6 +253,7 @@ impl Database {
             image_path: row.get("image_path"),
             phonetic: row.get("phonetic"),
             example: row.get("example"),
+            color: row.get("color"),
         })
         .fetch_all(&self.pool)
         .await

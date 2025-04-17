@@ -24,6 +24,25 @@
         </div>
       </div>
       
+      <!-- 颜色选择器 -->
+      <div class="mt-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">颜色</label>
+        <div class="flex items-center">
+          <input 
+            v-model="newWord.color" 
+            type="color" 
+            class="w-12 h-8 cursor-pointer border border-gray-300 rounded"
+          />
+          <input 
+            v-model="newWord.color" 
+            type="text" 
+            class="ml-3 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="#636e72"
+          />
+          <div class="ml-3 w-8 h-8 rounded" :style="{backgroundColor: newWord.color}"></div>
+        </div>
+      </div>
+      
       <!-- 图片上传 -->
       <div class="mt-4">
         <label class="block text-sm font-medium text-gray-700 mb-1">图片</label>
@@ -103,6 +122,7 @@
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">单词</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">翻译</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">图片</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">颜色</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
             </tr>
           </thead>
@@ -115,6 +135,18 @@
                   <img :src="convertFileSrc(item.image_path)" class="w-full h-full object-cover" alt="单词图片" />
                 </div>
                 <span v-else>-</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <div class="flex items-center">
+                  <div class="w-6 h-6 rounded mr-2" :style="{backgroundColor: item.color || '#636e72'}"></div>
+                  <span>{{ item.color || '#636e72' }}</span>
+                  <button 
+                    @click="openColorEditor(item)" 
+                    class="ml-2 text-blue-600 hover:text-blue-900"
+                  >
+                    修改
+                  </button>
+                </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 space-x-2">
                 <button 
@@ -137,6 +169,42 @@
         </table>
       </div>
     </div>
+
+    <!-- 颜色编辑对话框 -->
+    <div v-if="colorEditDialog.visible" class="fixed inset-0 flex items-center justify-center z-50">
+      <div class="fixed inset-0 bg-black bg-opacity-50" @click="colorEditDialog.visible = false"></div>
+      <div class="bg-white p-6 rounded-lg shadow-lg relative z-10 w-96">
+        <h3 class="text-lg font-semibold mb-4">修改颜色</h3>
+        <div class="flex items-center mb-4">
+          <input 
+            v-model="colorEditDialog.color" 
+            type="color" 
+            class="w-14 h-10 cursor-pointer border border-gray-300 rounded"
+          />
+          <input 
+            v-model="colorEditDialog.color" 
+            type="text" 
+            class="ml-3 flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <div class="ml-3 w-10 h-10 rounded" :style="{backgroundColor: colorEditDialog.color}"></div>
+        </div>
+        <div class="flex justify-end space-x-2">
+          <button 
+            @click="colorEditDialog.visible = false" 
+            class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md"
+          >
+            取消
+          </button>
+          <button 
+            @click="saveColorChange" 
+            class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            :disabled="isColorUpdating"
+          >
+            {{ isColorUpdating ? '保存中...' : '保存' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -151,6 +219,7 @@ import { convertFileSrc } from '@tauri-apps/api/core';
 const newWord = ref({
   word: '',
   translation: '',
+  color: '#636e72', // 默认颜色值
 });
 const selectedImage = ref(null);
 const imagePreview = ref('');
@@ -160,6 +229,14 @@ const isDeleting = ref(false);
 const vocabularyList = ref([]);
 const activeWords = ref([]);
 const isActiveWordUpdating = ref(false);
+
+// 颜色编辑对话框状态
+const colorEditDialog = ref({
+  visible: false,
+  wordId: null,
+  color: '',
+});
+const isColorUpdating = ref(false);
 
 // 获取单词列表
 const loadVocabularyList = async () => {
@@ -247,12 +324,13 @@ const saveVocabulary = async () => {
       word: newWord.value.word,
       translation: newWord.value.translation,
       imagePath: fileName,
+      color: newWord.value.color, // 添加颜色值
     });
     
     console.log('单词保存结果:', result);
     
     // 3. 重置表单
-    newWord.value = { word: '', translation: '' };
+    newWord.value = { word: '', translation: '', color: '#636e72' };
     selectedImage.value = null;
     imagePreview.value = '';
     
@@ -338,6 +416,49 @@ const removeActiveWord = async (wordId) => {
     await message('移除活动单词失败: ' + error, { title: '错误' });
   } finally {
     isActiveWordUpdating.value = false;
+  }
+};
+
+// 打开颜色编辑对话框
+const openColorEditor = (word) => {
+  colorEditDialog.value = {
+    visible: true,
+    wordId: word.id,
+    color: word.color || '#636e72',
+  };
+};
+
+// 保存颜色修改
+const saveColorChange = async () => {
+  if (!colorEditDialog.value.wordId) return;
+  
+  try {
+    isColorUpdating.value = true;
+    
+    await invoke('update_vocabulary_color', { 
+      id: colorEditDialog.value.wordId,
+      color: colorEditDialog.value.color
+    });
+    
+    // 更新本地列表中的颜色值
+    const index = vocabularyList.value.findIndex(w => w.id === colorEditDialog.value.wordId);
+    if (index !== -1) {
+      vocabularyList.value[index].color = colorEditDialog.value.color;
+    }
+    
+    // 如果是活动单词，也更新活动单词列表
+    const activeIndex = activeWords.value.findIndex(w => w.id === colorEditDialog.value.wordId);
+    if (activeIndex !== -1) {
+      activeWords.value[activeIndex].color = colorEditDialog.value.color;
+    }
+    
+    colorEditDialog.value.visible = false;
+    await message('颜色修改成功', { title: '成功' });
+  } catch (error) {
+    console.error('修改颜色失败:', error);
+    await message('修改颜色失败: ' + error, { title: '错误' });
+  } finally {
+    isColorUpdating.value = false;
   }
 };
 </script>
