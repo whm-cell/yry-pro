@@ -272,6 +272,38 @@ const isMagicBagItem = (item: any): boolean => {
   return item.word === "☆" || item.translation.includes("礼袋");
 };
 
+// 修改颜色生成逻辑，确保颜色不重复
+// 创建一个颜色池
+const colorPool = [
+  '#badc58', '#ff9ff3', '#ffeaa7', '#74b9ff', 
+  '#a29bfe', '#55efc4', '#fab1a0', '#81ecec',
+  '#e17055', '#0984e3', '#6c5ce7', '#00b894',
+  '#fd79a8', '#fdcb6e', '#e84393', '#00cec9',
+  '#2d3436', '#636e72', '#b2bec3', '#dfe6e9'
+];
+
+// 跟踪已使用的颜色索引
+let usedColorIndices: number[] = [];
+
+// 获取不重复的颜色
+const getRandomColor = () => {
+  // 如果所有颜色都已使用，重置已使用颜色数组
+  if (usedColorIndices.length >= colorPool.length) {
+    usedColorIndices = [];
+  }
+  
+  // 找到一个未使用的颜色索引
+  let colorIndex;
+  do {
+    colorIndex = Math.floor(Math.random() * colorPool.length);
+  } while (usedColorIndices.includes(colorIndex));
+  
+  // 记录已使用的颜色索引
+  usedColorIndices.push(colorIndex);
+  
+  return colorPool[colorIndex];
+};
+
 // 加载单词数据
 const loadVocabularyFromDatabase = async () => {
   try {
@@ -281,6 +313,9 @@ const loadVocabularyFromDatabase = async () => {
     
     if (activeWords && Array.isArray(activeWords) && activeWords.length > 0) {
       console.log('加载活动单词成功:', activeWords.length);
+      
+      // 重置已使用颜色索引
+      usedColorIndices = [];
       
       // 将活动单词转换为奖品格式
       const activePrizes: Prize[] = activeWords.map((item: any) => {
@@ -328,6 +363,9 @@ const loadVocabularyFromDatabase = async () => {
     console.log('所有单词原始数据:', vocabularyData);
     
     if (vocabularyData && Array.isArray(vocabularyData) && vocabularyData.length > 0) {
+      // 重置已使用颜色索引
+      usedColorIndices = [];
+      
       // 将词汇数据转换为奖品格式
       const databasePrizes: Prize[] = vocabularyData.map((item: any) => {
         const imgSrc = convertFileSrc(item.image_path);
@@ -367,21 +405,40 @@ const loadVocabularyFromDatabase = async () => {
     } else {
       // 如果没有数据，使用默认奖品
       console.log('数据库中没有词汇数据，使用默认数据');
-      prizes.value = [...defaultPrizes];
+      
+      // 重置已使用颜色索引
+      usedColorIndices = [];
+      
+      // 确保默认奖品使用不同颜色
+      prizes.value = defaultPrizes.map((prize, index) => {
+        // 为"魔法小礼袋"保留原来的颜色
+        if (prize.prizeInfo.name === "魔法小礼袋") {
+          return prize;
+        }
+        return {
+          ...prize,
+          background: getRandomColor()
+        };
+      });
     }
   } catch (error) {
     console.error('加载数据库词汇数据失败:', error);
-    prizes.value = [...defaultPrizes];
+    
+    // 重置已使用颜色索引
+    usedColorIndices = [];
+    
+    // 确保默认奖品使用不同颜色
+    prizes.value = defaultPrizes.map((prize, index) => {
+      // 为"魔法小礼袋"保留原来的颜色
+      if (prize.prizeInfo.name === "魔法小礼袋") {
+        return prize;
+      }
+      return {
+        ...prize,
+        background: getRandomColor()
+      };
+    });
   }
-};
-
-// 生成随机颜色
-const getRandomColor = () => {
-  const colors = [
-    '#badc58', '#ff9ff3', '#ffeaa7', '#74b9ff', 
-    '#a29bfe', '#55efc4', '#fab1a0', '#81ecec'
-  ];
-  return colors[Math.floor(Math.random() * colors.length)];
 };
 
 // 修改onMounted钩子
