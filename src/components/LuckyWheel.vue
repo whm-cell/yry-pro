@@ -99,6 +99,8 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 // @ts-ignore
 import { invoke } from '@tauri-apps/api/core';
+// @ts-ignore
+import { convertFileSrc } from '@tauri-apps/api/core';
 // 移除错误的导入
 // import { ImageUploader } from './ImageUploader.vue';
 
@@ -316,13 +318,16 @@ const isCompletedFlag = ref(false);
 // 加载单词数据
 const loadVocabularyFromDatabase = async () => {
   try {
-    // 类型转换修复
-    const vocabularyData: any[] = await invoke('get_all_vocabulary');
+    // 先尝试加载活动单词
+    const activeWords: any[] = await invoke('get_active_words');
     
-    if (vocabularyData && Array.isArray(vocabularyData) && vocabularyData.length > 0) {
-      // 将词汇数据转换为奖品格式
-      const databasePrizes: Prize[] = vocabularyData.map((item: any) => {
-        const imgSrc = `file:///Users/coolm/softs/temp_files/images/${item.image_path}`;
+    if (activeWords && Array.isArray(activeWords) && activeWords.length > 0) {
+      console.log('加载活动单词成功:', activeWords.length);
+      
+      // 将活动单词转换为奖品格式
+      const activePrizes: Prize[] = activeWords.map((item: any) => {
+        // 使用convertFileSrc处理图片路径
+        const imgSrc = convertFileSrc(item.image_path);
         return {
           background: getRandomColor(),
           fonts: [
@@ -330,13 +335,73 @@ const loadVocabularyFromDatabase = async () => {
           ],
           imgs: [{ src: imgSrc, width: '100px', top: '10%' }],
           prizeInfo: {
-            name: item.word,
+            name: `${item.word} / ${item.translation}`,
             imgSrc: imgSrc,
             translation: item.translation,
             phonetic: item.phonetic,
             example: item.example
           }
         };
+      });
+      
+      // 添加魔法小礼袋
+      activePrizes.push({
+        background: '#fab1a0', 
+        fonts: [
+          { text: '魔法小礼袋', top: '55%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' }
+        ],
+        imgs: [{ src: starPng, width: '100px', top: '10%' }],
+        prizeInfo: {
+          name: "魔法小礼袋",
+          imgSrc: starPng
+        }
+      });
+      
+      // 使用活动单词更新奖品列表
+      prizes.value = activePrizes;
+      
+      // 更新转盘，使用类型断言
+      if (myLucky.value && (myLucky.value as any).prizes) {
+        (myLucky.value as any).prizes = prizes.value;
+      }
+      
+      return; // 如果找到活动单词，直接返回，不加载所有单词
+    }
+    
+    // 如果没有活动单词，则加载所有单词
+    const vocabularyData: any[] = await invoke('get_all_vocabulary');
+    
+    if (vocabularyData && Array.isArray(vocabularyData) && vocabularyData.length > 0) {
+      // 将词汇数据转换为奖品格式
+      const databasePrizes: Prize[] = vocabularyData.map((item: any) => {
+        const imgSrc = convertFileSrc(item.image_path);
+        return {
+          background: getRandomColor(),
+          fonts: [
+            { text: item.word, top: '55%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' },
+          ],
+          imgs: [{ src: imgSrc, width: '100px', top: '10%' }],
+          prizeInfo: {
+            name: `${item.word} / ${item.translation}`,
+            imgSrc: imgSrc,
+            translation: item.translation,
+            phonetic: item.phonetic,
+            example: item.example
+          }
+        };
+      });
+      
+      // 添加魔法小礼袋
+      databasePrizes.push({
+        background: '#fab1a0', 
+        fonts: [
+          { text: '魔法小礼袋', top: '55%', fontColor: '#2d3436', fontSize: '16px', fontWeight: 'bold' }
+        ],
+        imgs: [{ src: starPng, width: '100px', top: '10%' }],
+        prizeInfo: {
+          name: "魔法小礼袋",
+          imgSrc: starPng
+        }
       });
       
       // 使用数据库中的数据更新奖品列表

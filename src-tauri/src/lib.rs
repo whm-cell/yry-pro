@@ -111,18 +111,16 @@ async fn add_vocabulary(
     word: String,
     translation: String,
     image_path: String,
-    phonetic: Option<String>,
-    example: Option<String>,
 ) -> Result<i64, String> {
     let db = get_db().await;
-    let full_image_path = special_tools::get_base_storage_path().join(image_path);
+    let full_image_path = special_tools::get_image_path(&image_path);
     let record = VocabularyRecord {
         id: None,
         word,
         translation,
         image_path: full_image_path.to_string_lossy().to_string(),
-        phonetic,
-        example,
+        phonetic: None,
+        example: None,
     };
 
     db.add_vocabulary(record).await.map_err(|e| e.to_string())
@@ -152,6 +150,30 @@ async fn delete_vocabulary(id: i64) -> Result<bool, String> {
     db.delete_vocabulary(id).await.map_err(|e| e.to_string())
 }
 
+// 获取活动单词列表
+#[tauri::command]
+async fn get_active_words() -> Result<Vec<VocabularyRecord>, String> {
+    let db = get_db().await;
+
+    db.get_active_words().await.map_err(|e| e.to_string())
+}
+
+// 添加活动单词
+#[tauri::command]
+async fn add_active_word(word_id: i64) -> Result<bool, String> {
+    let db = get_db().await;
+
+    db.add_active_word(word_id).await.map_err(|e| e.to_string())
+}
+
+// 移除活动单词
+#[tauri::command]
+async fn remove_active_word(word_id: i64) -> Result<bool, String> {
+    let db = get_db().await;
+
+    db.remove_active_word(word_id).await.map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -167,7 +189,10 @@ pub fn run() {
             add_vocabulary,
             get_all_vocabulary,
             get_vocabulary_by_id,
-            delete_vocabulary
+            delete_vocabulary,
+            get_active_words,
+            add_active_word,
+            remove_active_word
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

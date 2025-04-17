@@ -35,7 +35,7 @@
                 @click.prevent="changePage('englishWordLottery')"
               >
                 <i class="fas fa-spinner w-6 text-lg"></i>
-                <span class="font-semibold ml-2">英语小转盘</span>
+                <span class="font-semibold ml-2">单词抽奖</span>
               </a>
             </li>
             <li class="mb-2">

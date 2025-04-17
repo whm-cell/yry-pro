@@ -22,22 +22,6 @@
             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">音标</label>
-          <input 
-            v-model="newWord.phonetic" 
-            type="text" 
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">例句</label>
-          <input 
-            v-model="newWord.example" 
-            type="text" 
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
       </div>
       
       <!-- 图片上传 -->
@@ -77,6 +61,29 @@
       </div>
     </div>
     
+    <!-- 活动单词管理 -->
+    <div class="bg-white p-4 rounded-lg shadow mb-6">
+      <h3 class="text-lg font-semibold mb-3">活动单词 ({{ activeWords.length }}/5)</h3>
+      <div v-if="activeWords.length === 0" class="text-gray-500 mb-3">
+        您尚未设置活动单词，请从下方单词列表中选择最多5个单词设为活动单词
+      </div>
+      <div v-else class="flex flex-wrap gap-2 mb-3">
+        <div 
+          v-for="word in activeWords" 
+          :key="word.id" 
+          class="bg-blue-100 px-3 py-1 rounded-full flex items-center"
+        >
+          <span class="font-medium">{{ word.word }}</span>
+          <button 
+            @click="removeActiveWord(word.id)" 
+            class="ml-2 text-red-500 hover:text-red-700"
+          >
+            &times;
+          </button>
+        </div>
+      </div>
+    </div>
+    
     <!-- 单词列表 -->
     <div class="bg-white p-4 rounded-lg shadow">
       <h3 class="text-lg font-semibold mb-3">单词列表</h3>
@@ -95,7 +102,6 @@
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">单词</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">翻译</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">音标</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">图片</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
             </tr>
@@ -104,14 +110,20 @@
             <tr v-for="item in vocabularyList" :key="item.id" class="hover:bg-gray-50">
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ item.word }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.translation }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.phonetic || '-' }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 <div v-if="item.image_path" class="w-12 h-12 overflow-hidden rounded-md">
                   <img :src="convertFileSrc(item.image_path)" class="w-full h-full object-cover" alt="单词图片" />
                 </div>
                 <span v-else>-</span>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 space-x-2">
+                <button 
+                  @click="toggleActiveWord(item)" 
+                  class="text-blue-600 hover:text-blue-900"
+                  :disabled="isActiveWordUpdating"
+                >
+                  {{ isWordActive(item.id) ? '取消活动' : '设为活动' }}
+                </button>
                 <button 
                   @click="deleteVocabulary(item.id)" 
                   class="text-red-600 hover:text-red-900"
@@ -129,7 +141,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 import { basename } from '@tauri-apps/api/path';
 import { message } from '@tauri-apps/plugin-dialog';
@@ -139,8 +151,6 @@ import { convertFileSrc } from '@tauri-apps/api/core';
 const newWord = ref({
   word: '',
   translation: '',
-  phonetic: '',
-  example: '',
 });
 const selectedImage = ref(null);
 const imagePreview = ref('');
@@ -148,6 +158,8 @@ const isSaving = ref(false);
 const isLoading = ref(true);
 const isDeleting = ref(false);
 const vocabularyList = ref([]);
+const activeWords = ref([]);
+const isActiveWordUpdating = ref(false);
 
 // 获取单词列表
 const loadVocabularyList = async () => {
@@ -165,9 +177,22 @@ const loadVocabularyList = async () => {
   }
 };
 
+// 获取活动单词
+const loadActiveWords = async () => {
+  try {
+    const data = await invoke('get_active_words');
+    activeWords.value = data || [];
+  } catch (error) {
+    console.error('获取活动单词失败:', error);
+    await message('获取活动单词失败: ' + error, { title: '错误' });
+    activeWords.value = [];
+  }
+};
+
 // 初始化
 onMounted(async () => {
   await loadVocabularyList();
+  await loadActiveWords();
 });
 
 // 处理图片选择
@@ -187,7 +212,6 @@ const handleImageSelect = (event) => {
 
 // 保存单词
 const saveVocabulary = async () => {
-  debugger
   if (!newWord.value.word || !newWord.value.translation) {
     await message('单词和翻译不能为空', { title: '提示' });
     return;
@@ -222,15 +246,13 @@ const saveVocabulary = async () => {
     const result = await invoke('add_vocabulary', {
       word: newWord.value.word,
       translation: newWord.value.translation,
-      imagePath: fileName, // 修正参数名：从image_path改为imagePath
-      phonetic: newWord.value.phonetic || null,
-      example: newWord.value.example || null
+      imagePath: fileName,
     });
     
     console.log('单词保存结果:', result);
     
     // 3. 重置表单
-    newWord.value = { word: '', translation: '', phonetic: '', example: '' };
+    newWord.value = { word: '', translation: '' };
     selectedImage.value = null;
     imagePreview.value = '';
     
@@ -252,6 +274,12 @@ const deleteVocabulary = async (id) => {
   
   try {
     isDeleting.value = true;
+    
+    // 如果是活动单词，先从活动单词中移除
+    if (isWordActive(id)) {
+      await removeActiveWord(id);
+    }
+    
     await invoke('delete_vocabulary', { id });
     await loadVocabularyList();
     await message('单词删除成功', { title: '成功' });
@@ -260,6 +288,56 @@ const deleteVocabulary = async (id) => {
     await message('删除单词失败: ' + error, { title: '错误' });
   } finally {
     isDeleting.value = false;
+  }
+};
+
+// 检查单词是否为活动单词
+const isWordActive = (wordId) => {
+  return activeWords.value.some(word => word.id === wordId);
+};
+
+// 切换单词活动状态
+const toggleActiveWord = async (word) => {
+  if (isWordActive(word.id)) {
+    await removeActiveWord(word.id);
+  } else {
+    await addActiveWord(word);
+  }
+};
+
+// 添加活动单词
+const addActiveWord = async (word) => {
+  try {
+    isActiveWordUpdating.value = true;
+    
+    if (activeWords.value.length >= 5) {
+      await message('活动单词最多只能设置5个，请先移除一些', { title: '提示' });
+      return;
+    }
+    
+    await invoke('add_active_word', { wordId: word.id });
+    activeWords.value.push(word);
+    await message(`单词"${word.word}"已设为活动单词`, { title: '成功' });
+  } catch (error) {
+    console.error('设置活动单词失败:', error);
+    await message('设置活动单词失败: ' + error, { title: '错误' });
+  } finally {
+    isActiveWordUpdating.value = false;
+  }
+};
+
+// 移除活动单词
+const removeActiveWord = async (wordId) => {
+  try {
+    isActiveWordUpdating.value = true;
+    await invoke('remove_active_word', { wordId });
+    activeWords.value = activeWords.value.filter(w => w.id !== wordId);
+    await message('已从活动单词中移除', { title: '成功' });
+  } catch (error) {
+    console.error('移除活动单词失败:', error);
+    await message('移除活动单词失败: ' + error, { title: '错误' });
+  } finally {
+    isActiveWordUpdating.value = false;
   }
 };
 </script>

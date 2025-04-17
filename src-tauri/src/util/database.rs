@@ -44,7 +44,7 @@ impl Database {
             .await
             .context("连接数据库失败")?;
 
-        // 初始化表
+        // 初始化单词表
         sqlx::query(
             "CREATE TABLE IF NOT EXISTS vocabulary (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -58,7 +58,21 @@ impl Database {
         )
         .execute(&pool)
         .await
-        .context("创建表失败")?;
+        .context("创建单词表失败")?;
+
+        // 初始化活动单词表
+        sqlx::query(
+            "CREATE TABLE IF NOT EXISTS active_words (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                word_id INTEGER NOT NULL,
+                added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (word_id) REFERENCES vocabulary (id) ON DELETE CASCADE,
+                UNIQUE(word_id)
+            )",
+        )
+        .execute(&pool)
+        .await
+        .context("创建活动单词表失败")?;
 
         Ok(Self { pool })
     }
@@ -97,7 +111,7 @@ impl Database {
         .fetch_all(&self.pool)
         .await
         .context("获取单词记录失败")?;
-        dbg!(&records);
+
         Ok(records)
     }
 
@@ -131,6 +145,68 @@ impl Database {
             .execute(&self.pool)
             .await
             .context("删除单词记录失败")?;
+
+        Ok(result.rows_affected() > 0)
+    }
+
+    /// 获取所有活动单词
+    pub async fn get_active_words(&self) -> Result<Vec<VocabularyRecord>> {
+        let records = sqlx::query(
+            "SELECT v.id, v.word, v.translation, v.image_path, v.phonetic, v.example
+             FROM vocabulary v
+             INNER JOIN active_words a ON v.id = a.word_id
+             ORDER BY a.added_at DESC
+             LIMIT 5"
+        )
+        .map(|row: sqlx::sqlite::SqliteRow| VocabularyRecord {
+            id: Some(row.get("id")),
+            word: row.get("word"),
+            translation: row.get("translation"),
+            image_path: row.get("image_path"),
+            phonetic: row.get("phonetic"),
+            example: row.get("example"),
+        })
+        .fetch_all(&self.pool)
+        .await
+        .context("获取活动单词失败")?;
+
+        Ok(records)
+    }
+
+    /// 添加活动单词
+    pub async fn add_active_word(&self, word_id: i64) -> Result<bool> {
+        // 检查活动单词数量，最多允许5个
+        let count = sqlx::query("SELECT COUNT(*) as count FROM active_words")
+            .map(|row: sqlx::sqlite::SqliteRow| {
+                row.get::<i64, _>("count")
+            })
+            .fetch_one(&self.pool)
+            .await
+            .context("获取活动单词数量失败")?;
+
+        if count >= 5 {
+            return Err(anyhow::anyhow!("活动单词已达到最大限制（5个）"));
+        }
+
+        // 添加新的活动单词
+        let result = sqlx::query(
+            "INSERT OR REPLACE INTO active_words (word_id) VALUES (?)"
+        )
+        .bind(word_id)
+        .execute(&self.pool)
+        .await
+        .context("添加活动单词失败")?;
+
+        Ok(result.rows_affected() > 0)
+    }
+
+    /// 移除活动单词
+    pub async fn remove_active_word(&self, word_id: i64) -> Result<bool> {
+        let result = sqlx::query("DELETE FROM active_words WHERE word_id = ?")
+            .bind(word_id)
+            .execute(&self.pool)
+            .await
+            .context("移除活动单词失败")?;
 
         Ok(result.rows_affected() > 0)
     }
