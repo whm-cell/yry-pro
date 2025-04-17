@@ -21,7 +21,7 @@
       <div 
         v-if="selectedPrize"
         class="prize-image" 
-        :class="{ 'enlarged': isEnlarged, 'sliding': isSliding }"
+        :class="{ 'enlarged': isEnlarged, 'sliding': isSliding, 'scale-70': scaleLevel === 1, 'scale-40': scaleLevel === 2 }"
         @click="toggleImageSize"
       >
         <!-- 添加自动关闭计时器指示，只在魔法小礼袋时显示 -->
@@ -42,6 +42,11 @@
           </svg>
         </div>
        
+        <!-- 添加点击次数提示 -->
+        <div class="click-indicator" v-if="isEnlarged && !isSliding && clickCount > 0">
+          再点击 {{ 3 - clickCount }} 次关闭
+        </div>
+        
         <div class="prize-content">
           <img :src="selectedPrize.imgSrc" :alt="selectedPrize.name">
         </div>
@@ -168,6 +173,10 @@ let autoCloseInterval: number | null = null; // 添加进度条更新计时器
 // 自动关闭倒计时
 const autoCloseSecondsLeft = ref(5);
 const autoCloseProgress = computed(() => (autoCloseSecondsLeft.value / 5) * 100);
+
+// 添加点击计数器和缩放级别
+const clickCount = ref(0);
+const scaleLevel = ref(0);
 
 // 定义默认奖品数据
 const defaultPrizes: Prize[] = [
@@ -1031,8 +1040,10 @@ function toggleImageSize(): void {
   const isMagicBag = selectedPrize.value && selectedPrize.value.name === "魔法小礼袋";
   
   if (isEnlarged.value) {
-    // 如果已经放大，根据奖品类型决定如何关闭
+    // 如果已经放大，根据奖品类型和点击次数决定如何操作
+    
     if (isMagicBag) {
+      // 魔法小礼袋仍然使用原来的滑动效果
       // 设置过渡锁
       isTransitioning.value = true;
       
@@ -1067,24 +1078,42 @@ function toggleImageSize(): void {
             autoCloseSecondsLeft.value = 5;
             selectedPrize.value = null;
             isTransitioning.value = false;
+            // 重置点击计数和缩放级别
+            clickCount.value = 0;
+            scaleLevel.value = 0;
           }, 50);
         }, 300); // 等待淡出动画完成
         
       }, slideTime - 100); // 在滑动完成前稍微提前开始淡出
     } else {
-      // 设置过渡锁
-      isTransitioning.value = true;
+      // 普通奖品使用三次点击缩小效果
+      clickCount.value++;
       
-      // 普通奖品直接淡出
-      showImageDisplay.value = false;
-      
-      // 简单延迟后重置状态
-      setTimeout(() => {
-        isEnlarged.value = false;
-        autoCloseSecondsLeft.value = 5;
-        selectedPrize.value = null;
-        isTransitioning.value = false;
-      }, 600);
+      if (clickCount.value === 1) {
+        // 第一次点击：缩小到70%
+        scaleLevel.value = 1;
+      } else if (clickCount.value === 2) {
+        // 第二次点击：缩小到40%
+        scaleLevel.value = 2;
+      } else if (clickCount.value >= 3) {
+        // 第三次点击：关闭弹框
+        // 设置过渡锁
+        isTransitioning.value = true;
+        
+        // 普通奖品直接淡出
+        showImageDisplay.value = false;
+        
+        // 简单延迟后重置状态
+        setTimeout(() => {
+          isEnlarged.value = false;
+          autoCloseSecondsLeft.value = 5;
+          selectedPrize.value = null;
+          isTransitioning.value = false;
+          // 重置点击计数和缩放级别
+          clickCount.value = 0;
+          scaleLevel.value = 0;
+        }, 600);
+      }
     }
   } else {
     // 设置过渡锁
@@ -1092,6 +1121,10 @@ function toggleImageSize(): void {
     
     // 如果没有放大，直接显示并放大
     showImageDisplay.value = true;
+    
+    // 重置点击计数和缩放级别
+    clickCount.value = 0;
+    scaleLevel.value = 0;
     
     // 给一个短暂延迟，让DOM渲染完成
     setTimeout(() => {
@@ -1315,6 +1348,15 @@ function showTip(text: string, duration: number = 2000): void {
 .prize-image.enlarged {
   transform: translateX(0) scale(1); /* 放大但保持在中央 */
   opacity: 1; /* 显示 */
+}
+
+/* 添加缩放级别类 */
+.prize-image.scale-70 {
+  transform: translateX(0) scale(0.7); /* 缩小到70% */
+}
+
+.prize-image.scale-40 {
+  transform: translateX(0) scale(0.4); /* 缩小到40% */
 }
 
 /* 移除个别滑动效果，使用整体滑动 */
@@ -1685,5 +1727,20 @@ function showTip(text: string, duration: number = 2000): void {
   padding: 16px;
   max-height: 80vh;
   overflow-y: auto;
+}
+
+/* 添加点击次数提示样式 */
+.click-indicator {
+  position: absolute;
+  bottom: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  z-index: 10;
+  animation: pulse 2s infinite;
 }
 </style>
