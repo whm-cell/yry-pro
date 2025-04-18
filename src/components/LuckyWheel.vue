@@ -97,6 +97,10 @@
     <div class="tooltip" :class="{ 'active': showTooltip }">
       {{ tooltipText }}
     </div>
+    
+    <!-- 增加隐藏的音频元素，添加id以便更容易获取 -->
+    <audio ref="spinAudioEl" id="spinAudioEl" style="display:none"></audio>
+    <audio ref="winAudioEl" id="winAudioEl" style="display:none"></audio>
   </div>
 </template>
 
@@ -458,6 +462,17 @@ const loadVocabularyFromDatabase = async () => {
   }
 };
 
+// 添加音频相关状态
+const spinAudioEl = ref<HTMLAudioElement | null>(null);
+const winAudioEl = ref<HTMLAudioElement | null>(null);
+const spinAudio = ref<HTMLAudioElement | null>(null);
+const winAudio = ref<HTMLAudioElement | null>(null);
+
+// 音频状态
+const isSpinAudioLoaded = ref(false);
+const isWinAudioLoaded = ref(false);
+const isSpinAudioPlaying = ref(false);
+
 // 修改onMounted钩子
 onMounted(async () => {
   console.log('LuckyWheel组件挂载');
@@ -476,6 +491,24 @@ onMounted(async () => {
   console.log('初始化后的记录:', JSON.stringify(prizeRecordsRaw.value));
   console.log('当前奖品列表:', prizes.value.map(p => p.prizeInfo?.name || '未命名'));
   
+  // 确保DOM已完全挂载
+  await new Promise(resolve => setTimeout(resolve, 200));
+  
+  // 检查音频元素是否存在
+  if (!spinAudioEl.value) {
+    spinAudioEl.value = document.querySelector('audio[ref="spinAudioEl"]');
+    console.log('通过DOM查询获取spinAudioEl:', spinAudioEl.value ? '成功' : '失败');
+  }
+  
+  if (!winAudioEl.value) {
+    winAudioEl.value = document.querySelector('audio[ref="winAudioEl"]');
+    console.log('通过DOM查询获取winAudioEl:', winAudioEl.value ? '成功' : '失败');
+  }
+  
+  // 加载音频资源
+  console.log('开始加载音频资源');
+  await loadAudios();
+  
   // 标记已初始化
   isInitialized.value = true;
 });
@@ -490,6 +523,12 @@ watch(prizes, () => {
 watch(() => settings.maxDraws, (newValue) => {
   console.log(`最大抽取次数更改为: ${newValue}`);
 }, { immediate: true });
+
+// 监听音效设置的变化
+watch(() => settings.sounds, () => {
+  console.log('音效设置变化，重新加载音频');
+  loadAudios();
+}, { deep: true });
 
 // 手动初始化奖品记录
 function initializePrizeRecords() {
@@ -716,6 +755,9 @@ function resetRecords(): void {
   // 设置过渡锁
   isTransitioning.value = true;
   
+  // 停止所有音频
+  stopSpinSound();
+  
   // 清除自动滑动定时器
   if (autoSlideTimer) {
     clearTimeout(autoSlideTimer);
@@ -787,7 +829,7 @@ function resetRecords(): void {
   showTip('单词转盘记录已重置，可以重新开始抽单词！', 3000);
 }
 
-// 在组件卸载前清除所有定时器
+// 在组件卸载前清除所有定时器和音频资源
 onBeforeUnmount(() => {
   if (autoSlideTimer) {
     clearTimeout(autoSlideTimer);
@@ -802,6 +844,18 @@ onBeforeUnmount(() => {
   if (tooltipTimer) {
     clearTimeout(tooltipTimer);
     tooltipTimer = null;
+  }
+  
+  // 清理音频资源
+  stopSpinSound();
+  if (spinAudio.value) {
+    spinAudio.value.pause();
+    spinAudio.value.src = '';
+  }
+  
+  if (winAudio.value) {
+    winAudio.value.pause();
+    winAudio.value.src = '';
   }
 });
 
@@ -820,6 +874,8 @@ function startCallback(): void {
   
   // 如果抽奖已完成并且锁定，显示提示而不启动转盘
   if (isCompletedFlag.value && lockAfterComplete.value) {
+    // 确保停止任何可能正在播放的音效
+    stopSpinSound();
     alert("单词转盘已完成，请点击重置按钮重新开始");
     return;
   }
@@ -828,6 +884,9 @@ function startCallback(): void {
   if (!showImageDisplay.value && myLucky.value) {
     (myLucky.value as any).play();
     
+    // 播放旋转音效
+    playSpinSound();
+    
     // 根据规则选择抽奖结果
     setTimeout(() => {
       const selectedIndex = getNextPrizeIndex();
@@ -835,12 +894,18 @@ function startCallback(): void {
         (myLucky.value as any).stop(selectedIndex);
       }
     }, 3000);
+  } else {
+    // 如果转盘无法开始旋转，确保停止任何可能正在播放的音效
+    stopSpinSound();
   }
 }
 
 // 结束转动回调
 function endCallback(prize: any): void {
   console.log('转盘停止，中奖信息:', prize);
+  
+  // 停止旋转音效
+  stopSpinSound();
   
   // 获取中奖索引
   let prizeIndex = -1;
@@ -864,6 +929,9 @@ function endCallback(prize: any): void {
     // 记录奖品名称以便调试
     const prizeName = prizes.value[prizeIndex].prizeInfo?.name || '未知奖品';
     console.log(`匹配到奖品：${prizeName}，索引：${prizeIndex}`);
+    
+    // 播放中奖音效
+    playWinSound();
     
     // 更新抽奖记录
     const result = updatePrizeRecord(prizeIndex);
@@ -934,6 +1002,9 @@ function autoSlideImage(): void {
   
   // 设置过渡锁
   isTransitioning.value = true;
+  
+  // 停止所有音效
+  stopSpinSound();
   
   // 清除自动关闭计时器
   if (autoCloseInterval) {
@@ -1031,6 +1102,9 @@ function toggleImageSize(): void {
   if (isTransitioning.value) {
     return;
   }
+  
+  // 停止所有音效
+  stopSpinSound();
   
   // 清除自动滑动定时器
   if (autoSlideTimer) {
@@ -1181,6 +1255,274 @@ function showTip(text: string, duration: number = 2000): void {
   tooltipTimer = window.setTimeout(() => {
     showTooltip.value = false;
   }, duration);
+}
+
+// 添加音频控制相关函数
+// 加载音频资源
+async function loadAudios() {
+  console.log('开始加载音频资源');
+  
+  // 检查是否有音效设置
+  if (settings.sounds?.spin?.url) {
+    try {
+      let spinAudioUrl = settings.sounds.spin.url;
+      
+      console.log('加载旋转音效:', spinAudioUrl);
+      
+      // 首先尝试使用DOM元素
+      if (spinAudioEl.value) {
+        spinAudioEl.value.src = spinAudioUrl;
+        spinAudioEl.value.loop = true; // 旋转音效需要循环播放
+        spinAudioEl.value.volume = 0.5;
+        spinAudio.value = spinAudioEl.value;
+      } else {
+        // 备用方案：直接创建新的Audio对象
+        console.log('找不到旋转音效DOM元素，创建新的Audio对象');
+        spinAudio.value = new Audio(spinAudioUrl);
+        spinAudio.value.loop = true;
+        spinAudio.value.volume = 0.5;
+      }
+      
+      // 监听加载完成事件
+      spinAudio.value.addEventListener('canplaythrough', () => {
+        console.log('旋转音效加载完成');
+        isSpinAudioLoaded.value = true;
+      });
+      
+      // 监听错误事件
+      spinAudio.value.addEventListener('error', (e) => {
+        console.error('旋转音效加载失败:', e, spinAudio.value?.error);
+        isSpinAudioLoaded.value = false;
+        
+        // 尝试使用备用方法加载
+        if (typeof Audio !== 'undefined') {
+          console.log('尝试使用备用方法加载旋转音效');
+          const backupAudio = new Audio();
+          backupAudio.src = spinAudioUrl;
+          backupAudio.loop = true;
+          backupAudio.volume = 0.5;
+          
+          backupAudio.addEventListener('canplaythrough', () => {
+            console.log('备用方法：旋转音效加载完成');
+            spinAudio.value = backupAudio;
+            isSpinAudioLoaded.value = true;
+          });
+          
+          backupAudio.addEventListener('error', (err) => {
+            console.error('备用方法：旋转音效加载失败:', err);
+          });
+          
+          backupAudio.load();
+        }
+      });
+      
+      // 预加载音频
+      spinAudio.value.load();
+    } catch (error) {
+      console.error('创建旋转音效失败:', error);
+      isSpinAudioLoaded.value = false;
+    }
+  } else {
+    console.log('未设置旋转音效');
+  }
+  
+  if (settings.sounds?.win?.url) {
+    try {
+      let winAudioUrl = settings.sounds.win.url;
+      
+      
+      console.log('加载中奖音效:', winAudioUrl);
+      
+      // 首先尝试使用DOM元素
+      if (winAudioEl.value) {
+        winAudioEl.value.src = winAudioUrl;
+        winAudioEl.value.loop = false; // 中奖音效不循环
+        winAudioEl.value.volume = 0.6;
+        winAudio.value = winAudioEl.value;
+      } else {
+        // 备用方案：直接创建新的Audio对象
+        console.log('找不到中奖音效DOM元素，创建新的Audio对象');
+        winAudio.value = new Audio(winAudioUrl);
+        winAudio.value.loop = false;
+        winAudio.value.volume = 0.6;
+      }
+      
+      // 监听加载完成事件
+      winAudio.value.addEventListener('canplaythrough', () => {
+        console.log('中奖音效加载完成');
+        isWinAudioLoaded.value = true;
+      });
+      
+      // 监听错误事件
+      winAudio.value.addEventListener('error', (e) => {
+        console.error('中奖音效加载失败:', e, winAudio.value?.error);
+        isWinAudioLoaded.value = false;
+        
+        // 尝试使用备用方法加载
+        if (typeof Audio !== 'undefined') {
+          console.log('尝试使用备用方法加载中奖音效');
+          const backupAudio = new Audio();
+          backupAudio.src = winAudioUrl;
+          backupAudio.loop = false;
+          backupAudio.volume = 0.6;
+          
+          backupAudio.addEventListener('canplaythrough', () => {
+            console.log('备用方法：中奖音效加载完成');
+            winAudio.value = backupAudio;
+            isWinAudioLoaded.value = true;
+          });
+          
+          backupAudio.addEventListener('error', (err) => {
+            console.error('备用方法：中奖音效加载失败:', err);
+          });
+          
+          backupAudio.load();
+        }
+      });
+      
+      // 预加载音频
+      winAudio.value.load();
+    } catch (error) {
+      console.error('创建中奖音效失败:', error);
+      isWinAudioLoaded.value = false;
+    }
+  } else {
+    console.log('未设置中奖音效');
+  }
+}
+
+// 播放旋转音效
+async function playSpinSound() {
+  if (!spinAudio.value) {
+    console.log('旋转音效未初始化');
+    return;
+  }
+  
+  if (!isSpinAudioLoaded.value) {
+    console.log('旋转音效未加载完成，重新尝试加载');
+    // 尝试重新加载
+    try {
+      spinAudio.value.load();
+      await new Promise(resolve => setTimeout(resolve, 500));
+    } catch (e) {
+      console.error('重新加载旋转音效失败:', e);
+      return;
+    }
+  }
+  
+  try {
+    console.log('开始播放旋转音效');
+    // 确保音频已就绪
+    spinAudio.value.currentTime = 0;
+    const playPromise = spinAudio.value.play();
+    
+    if (playPromise !== undefined) {
+      playPromise.then(() => {
+        console.log('旋转音效开始播放');
+        isSpinAudioPlaying.value = true;
+      }).catch(error => {
+        console.error('播放旋转音效失败:', error);
+        
+        // 如果是用户交互错误，则添加点击一次后重新尝试
+        if (error.name === 'NotAllowedError') {
+          console.log('需要用户交互才能播放音频，将在下一次用户交互时尝试');
+          
+          // 一次性事件监听器，在用户下一次交互时尝试播放
+          const playAfterInteraction = () => {
+            try {
+              if (spinAudio.value) {
+                spinAudio.value.currentTime = 0;
+                spinAudio.value.play()
+                  .then(() => {
+                    isSpinAudioPlaying.value = true;
+                  })
+                  .catch(e => {
+                    console.error('用户交互后播放失败:', e);
+                  });
+              }
+            } catch (e) {
+              console.error('用户交互后播放处理失败:', e);
+            }
+            document.removeEventListener('click', playAfterInteraction);
+          };
+          
+          document.addEventListener('click', playAfterInteraction, { once: true });
+        }
+      });
+    }
+  } catch (error) {
+    console.error('播放旋转音效出现异常:', error);
+  }
+}
+
+// 停止旋转音效
+function stopSpinSound() {
+  if (spinAudio.value && isSpinAudioPlaying.value) {
+    console.log('停止旋转音效');
+    spinAudio.value.pause();
+    spinAudio.value.currentTime = 0;
+    isSpinAudioPlaying.value = false;
+  }
+}
+
+// 播放中奖音效
+async function playWinSound() {
+  if (!winAudio.value) {
+    console.log('中奖音效未初始化');
+    return;
+  }
+  
+  if (!isWinAudioLoaded.value) {
+    console.log('中奖音效未加载完成，重新尝试加载');
+    // 尝试重新加载
+    try {
+      winAudio.value.load();
+      await new Promise(resolve => setTimeout(resolve, 500));
+    } catch (e) {
+      console.error('重新加载中奖音效失败:', e);
+      return;
+    }
+  }
+  
+  try {
+    console.log('开始播放中奖音效');
+    // 确保音频重置到开始位置
+    winAudio.value.currentTime = 0;
+    const playPromise = winAudio.value.play();
+    
+    if (playPromise !== undefined) {
+      playPromise.then(() => {
+        console.log('中奖音效开始播放');
+      }).catch(error => {
+        console.error('播放中奖音效失败:', error);
+        
+        // 如果是用户交互错误，则添加点击一次后重新尝试
+        if (error.name === 'NotAllowedError') {
+          console.log('需要用户交互才能播放音频，将在下一次用户交互时尝试');
+          
+          // 一次性事件监听器，在用户下一次交互时尝试播放
+          const playAfterInteraction = () => {
+            try {
+              if (winAudio.value) {
+                winAudio.value.currentTime = 0;
+                winAudio.value.play()
+                  .catch(e => {
+                    console.error('用户交互后播放失败:', e);
+                  });
+              }
+            } catch (e) {
+              console.error('用户交互后播放处理失败:', e);
+            }
+            document.removeEventListener('click', playAfterInteraction);
+          };
+          
+          document.addEventListener('click', playAfterInteraction, { once: true });
+        }
+      });
+    }
+  } catch (error) {
+    console.error('播放中奖音效出现异常:', error);
+  }
 }
 </script>
 
