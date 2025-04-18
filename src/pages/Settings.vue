@@ -726,22 +726,22 @@ async function playSelectedSound(type: 'spin' | 'win'): Promise<void> {
     const soundName = settings.sounds[type].name;
     audioMessage.value = `正在准备播放${type === 'spin' ? '旋转' : '中奖'}音效: ${soundName}`;
     showAudioMessage.value = true;
-    
     // 获取并转换音效URL
     let soundUrl = settings.sounds[type].url;
     
     // 使用Tauri的资源转换功能处理文件路径
-    if (tauriApi.convertFileSrc) {
-      try {
-        soundUrl = tauriApi.convertFileSrc(soundUrl);
-      } catch (err: any) {
-        console.error('转换URL失败:', err);
-        audioMessage.value = `转换音频URL失败: ${err?.message || '未知错误'}`;
-        showAudioMessage.value = true;
-        setTimeout(() => { showAudioMessage.value = false; }, 3000);
-        return;
-      }
-    }
+    // if (tauriApi.convertFileSrc) {
+      // try {
+        // soundUrl = tauriApi.convertFileSrc(soundUrl);
+        
+      // } catch (err: any) {
+      //   console.error('转换URL失败:', err);
+      //   audioMessage.value = `转换音频URL失败: ${err?.message || '未知错误'}`;
+      //   showAudioMessage.value = true;
+      //   setTimeout(() => { showAudioMessage.value = false; }, 3000);
+      //   return;
+      // }
+    // }
     
     // 创建新的Audio实例
     const audio = new Audio();
