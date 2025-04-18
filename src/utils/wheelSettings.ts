@@ -38,6 +38,10 @@ export interface WheelSettings {
     spin: SoundSetting;
     win: SoundSetting;
   };
+  // 新增：转盘旋转时间设置（单位：毫秒）
+  spinDuration: number;
+  // 新增：是否启用高亮边框效果
+  enableHighlight: boolean;
 }
 
 // 设置存储键名
@@ -61,7 +65,11 @@ const defaultSettings: WheelSettings = {
       name: '默认中奖音效',
       url: '/Users/coolm/softs/temp_files/sounds/cjyx_02.mp3'
     }
-  }
+  },
+  // 新增：默认转盘旋转时间3秒
+  spinDuration: 3000,
+  // 新增：默认启用高亮边框效果
+  enableHighlight: true
 };
 
 // 从本地存储加载设置
@@ -157,6 +165,16 @@ export function useWheelSettings() {
     settings.sounds[type] = sound;
   };
   
+  // 新增：更新转盘旋转时间的方法
+  const updateSpinDuration = (duration: number) => {
+    settings.spinDuration = duration;
+  };
+  
+  // 新增：更新是否启用高亮边框效果的方法
+  const updateEnableHighlight = (enable: boolean) => {
+    settings.enableHighlight = enable;
+  };
+  
   // 重置设置
   const resetSettings = () => {
     Object.assign(settings, defaultSettings);
@@ -173,6 +191,8 @@ export function useWheelSettings() {
     updatePrizes,
     updatePrizeWords,
     updateSound,
+    updateSpinDuration,
+    updateEnableHighlight,
     resetSettings,
     isInitialized
   };

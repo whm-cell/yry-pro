@@ -10,7 +10,46 @@
       :buttons="buttons"
       @start="startCallback"
       @end="endCallback"
-    />
+      @rotating="rotatingCallback"
+    >
+      <!-- 添加高亮边框覆盖层 -->
+      <template #item="{index, transform, background, imgs, fonts}">
+        <div
+          class="prize-item"
+          :style="{background, transform}"
+          :class="{'highlight': highlightIndex === index}"
+        >
+          <div
+            class="wheel-item-border"
+            :class="{'active': highlightIndex === index}"
+          ></div>
+          <!-- 图片内容 -->
+          <div v-for="(img, i) in imgs" :key="i">
+            <img
+              :src="img.src"
+              :style="{
+                width: img.width,
+                top: img.top
+              }"
+            />
+          </div>
+          <!-- 文字内容 -->
+          <div 
+            v-for="(font, i) in fonts" 
+            :key="i"
+            :style="{
+              color: font.fontColor,
+              fontSize: font.fontSize,
+              lineHeight: font.lineHeight || font.fontSize,
+              top: font.top,
+              fontWeight: font.fontWeight
+            }"
+          >
+            {{font.text}}
+          </div>
+        </div>
+      </template>
+    </LuckyWheel>
     
     <!-- 图片展示区域 -->
     <div 
@@ -110,8 +149,6 @@ import { ref, computed, onMounted, onBeforeUnmount, reactive, markRaw, watch } f
 import { invoke } from '@tauri-apps/api/core';
 // @ts-ignore
 import { convertFileSrc } from '@tauri-apps/api/core';
-// 移除错误的导入
-// import { ImageUploader } from './ImageUploader.vue';
 
 // 直接导入图片
 import applePng from './ct-converted.png'  // 使用@别名指向src目录
@@ -173,6 +210,10 @@ const isSliding = ref(false);
 const isTransitioning = ref(false); // 添加过渡状态锁，防止在过渡期间触发其他操作
 let autoSlideTimer: number | null = null; // 添加自动滑动计时器
 let autoCloseInterval: number | null = null; // 添加进度条更新计时器
+
+// 新增：用于高亮边框的状态
+const highlightIndex = ref<number | null>(null);
+const isRotating = ref(false);
 
 // 自动关闭倒计时
 const autoCloseSecondsLeft = ref(5);
@@ -882,6 +923,10 @@ function startCallback(): void {
   
   // 只有在图片没有显示时才允许开始转盘
   if (!showImageDisplay.value && myLucky.value) {
+    // 设置转盘旋转状态为开始
+    isRotating.value = true;
+    
+    // 开始转盘旋转
     (myLucky.value as any).play();
     
     // 播放旋转音效
@@ -893,10 +938,23 @@ function startCallback(): void {
       if (myLucky.value) {
         (myLucky.value as any).stop(selectedIndex);
       }
-    }, 3000);
+    }, settings.spinDuration); // 使用设置中的转盘旋转时间
   } else {
     // 如果转盘无法开始旋转，确保停止任何可能正在播放的音效
     stopSpinSound();
+  }
+}
+
+// 添加转盘旋转中回调
+function rotatingCallback(data: any): void {
+  // 只有启用高亮边框效果时才处理
+  if (!settings.enableHighlight) {
+    return;
+  }
+  
+  // 清空之前的高亮索引
+  if (data.currIndex !== highlightIndex.value) {
+    highlightIndex.value = data.currIndex;
   }
 }
 
@@ -906,6 +964,14 @@ function endCallback(prize: any): void {
   
   // 停止旋转音效
   stopSpinSound();
+  
+  // 设置转盘旋转状态为结束
+  isRotating.value = false;
+  
+  // 清空高亮索引
+  setTimeout(() => {
+    highlightIndex.value = null;
+  }, 1000); // 在转盘停止1秒后移除高亮效果
   
   // 获取中奖索引
   let prizeIndex = -1;
@@ -1526,571 +1592,6 @@ async function playWinSound() {
 }
 </script>
 
-<style scoped>
-.lucky-container {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  height: 100%;
-  width: 100%;
-  overflow: visible;
-}
-
-/* 抽奖记录 */
-.prize-records {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  width: 200px;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 12px;
-  padding: 15px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  z-index: 10;
-}
-
-.prize-records h3 {
-  margin-top: 0;
-  margin-bottom: 10px;
-  color: #e17055;
-  font-size: 18px;
-  text-align: center;
-  border-bottom: 2px solid #fab1a0;
-  padding-bottom: 8px;
-}
-
-.records-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.record-item {
-  display: flex;
-  justify-content: space-between;
-  font-size: 14px;
-  padding: 5px 0;
-  border-bottom: 1px dashed #dfe6e9;
-}
-
-.record-item:last-child {
-  border-bottom: none;
-}
-
-/* 重置按钮 */
-.reset-button {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
-  background: #ff7675;
-  color: white;
-  border-radius: 50px;
-  padding: 10px 20px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  transition: all 0.3s ease;
-  z-index: 20;
-}
-
-.reset-button:hover {
-  background: #e17055;
-  transform: translateY(-2px);
-}
-
-.reset-button svg {
-  width: 20px;
-  height: 20px;
-}
-
-/* 完成抽奖提示 */
-.completion-tip {
-  position: absolute;
-  bottom: 80px;
-  right: 20px;
-  background: rgba(254, 211, 48, 0.9);
-  border-radius: 8px;
-  padding: 10px 15px;
-  display: flex;
-  align-items: center;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  z-index: 10;
-  animation: bounce 1s ease infinite;
-}
-
-.completion-message {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.completion-message svg {
-  color: #2ecc71;
-}
-
-@keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
-}
-
-/* 图片展示区域 */
-.image-display {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 50;
-  opacity: 0;
-  visibility: hidden;
-  /* 使过渡更平滑，确保visibility在opacity完全消失后才改变 */
-  transition: opacity 0.5s ease, visibility 0s 0.5s;
-  will-change: opacity, transform;
-  overflow: hidden;
-  pointer-events: auto;
-}
-
-.image-display.active {
-  opacity: 1;
-  visibility: visible;
-  transition: opacity 0.5s ease, visibility 0s;
-}
-
-/* 修改滑动效果，简化过渡 */
-.image-display.sliding {
-  transform: translateX(-120vw);
-  /* 仅对transform应用过渡，不要对opacity应用延迟过渡 */
-  transition: transform 4s cubic-bezier(0.12, 0.25, 0.1, 1);
-}
-
-/* 添加一个处理滑动结束的新类 */
-.image-display.sliding-end {
-  opacity: 0;
-  /* 确保opacity动画在transform完成之后快速发生 */
-  transition: opacity 0.3s ease, visibility 0s 0.3s;
-}
-
-.prize-image {
-  position: relative;
-  width: 500px;
-  height: 500px;
-  transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease-in;
-  cursor: pointer;
-  transform-origin: center;
-  transform: translateX(0) scale(0.8);
-  opacity: 0;
-  will-change: transform, opacity;
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-  -webkit-transform-style: preserve-3d;
-  transform-style: preserve-3d;
-}
-
-.prize-image.enlarged {
-  transform: translateX(0) scale(1); /* 放大但保持在中央 */
-  opacity: 1; /* 显示 */
-}
-
-/* 添加缩放级别类 */
-.prize-image.scale-70 {
-  transform: translateX(0) scale(0.7); /* 缩小到70% */
-}
-
-.prize-image.scale-40 {
-  transform: translateX(0) scale(0.4); /* 缩小到40% */
-}
-
-/* 移除个别滑动效果，使用整体滑动 */
-.prize-image.sliding {
-  opacity: 1; /* 保持可见 */
-  transform: translateX(0) scale(1); /* 保持位置和大小不变 */
-  pointer-events: none; /* 防止在滑动时被点击 */
-  transition: none; /* 移除过渡效果，跟随父容器移动 */
-}
-
-/* 确保图片顺利显示，不要使用中间状态 */
-.image-display.active .prize-image {
-  transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease;
-}
-
-/* 为移动设备优化显示和动画 */
-@media (max-width: 768px) {
-  .prize-image {
-    width: 90vw; /* 使用视口宽度的百分比 */
-    height: auto; /* 高度自适应 */
-    max-height: 80vh; /* 最大高度不超过视口高度的80% */
-  }
-  
-  .prize-content img {
-    width: 100%;
-    height: auto;
-    max-height: 70vh;
-    object-fit: contain;
-  }
-}
-
-/* 为特小屏幕设备优化动画 */
-@media (max-width: 320px) {
-  .prize-image {
-    transform: translateX(0) scale(0.8); /* 初始位置在中央 */
-  }
-  
-  .image-display.sliding {
-    transform: translateX(-150vw); /* 小屏幕可能需要更大的移动距离 */
-  }
-}
-
-.heart-background {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background-color: transparent;
-  overflow: hidden;
-}
-
-.heart-shape {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: #e84393;
-  border-radius: 50%;
-  animation: heartbeat 1.5s infinite ease-in-out;
-}
-
-.prize-content {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 2;
-  opacity: 0; /* 初始透明 */
-  transition: opacity 0.3s ease 0.2s; /* 延迟显示内容，让容器先出现 */
-}
-
-.prize-image.enlarged .prize-content {
-  opacity: 1; /* 放大时显示内容 */
-}
-
-.prize-content img {
-  width: 500px;
-  height: 500px;
-  object-fit: contain;
-  margin-bottom: 15px;
-  filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.3));
-  animation: float 3s infinite ease-in-out;
-}
-
-.prize-name {
-  color: white;
-  font-size: 24px;
-  font-weight: bold;
-  text-align: center;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-  margin-bottom: 10px;
-}
-
-.tap-to-close {
-  color: white;
-  font-size: 14px;
-  opacity: 0.8;
-  margin-top: 20px;
-  padding: 5px 15px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 20px;
-  animation: pulse 2s infinite;
-}
-
-.congratulation-text {
-  position: absolute;
-  top: 40px;
-  left: 0;
-  width: 100%;
-  text-align: center;
-  color: white;
-  font-size: 28px;
-  font-weight: bold;
-  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
-  z-index: 3;
-  animation: slideDown 0.8s ease-out;
-}
-
-@keyframes pulse {
-  0% { opacity: 0.6; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.05); }
-  100% { opacity: 0.6; transform: scale(1); }
-}
-
-@keyframes slideDown {
-  0% { transform: translateY(-20px); opacity: 0; }
-  100% { transform: translateY(0); opacity: 1; }
-}
-
-@keyframes heartbeat {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
-}
-
-/* 云朵装饰 */
-.cloud {
-  position: absolute;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 50%;
-  filter: blur(4px);
-}
-
-.cloud-1 {
-  width: 60px;
-  height: 60px;
-  top: 10%;
-  left: 10%;
-  animation: float 4s infinite ease-in-out;
-}
-
-.cloud-2 {
-  width: 40px;
-  height: 40px;
-  top: 20%;
-  right: 15%;
-  animation: float 5s 1s infinite ease-in-out;
-}
-
-.cloud-3 {
-  width: 35px;
-  height: 35px;
-  bottom: 25%;
-  right: 20%;
-  animation: float 3s 0.5s infinite ease-in-out;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-
-/* 星星装饰 */
-.star {
-  position: absolute;
-  color: #ffeaa7;
-  text-shadow: 0 0 10px #fdcb6e, 0 0 20px #fdcb6e;
-  animation: twinkle 2s infinite ease-in-out;
-}
-
-.star-1 {
-  top: 15%;
-  right: 20%;
-  font-size: 28px;
-  animation-delay: 0.2s;
-}
-
-.star-2 {
-  bottom: 20%;
-  left: 15%;
-  font-size: 22px;
-  animation-delay: 0.5s;
-}
-
-.star-3 {
-  top: 40%;
-  left: 10%;
-  font-size: 20px;
-  animation-delay: 0.8s;
-}
-
-@keyframes twinkle {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(0.8); }
-}
-
-/* 工具提示 */
-.tooltip {
-  position: fixed;
-  bottom: 80px;
-  left: 50%;
-  transform: translateX(-50%) translateY(20px);
-  background-color: rgba(52, 73, 94, 0.9);
-  color: #fff;
-  padding: 10px 15px;
-  border-radius: 6px;
-  font-size: 14px;
-  z-index: 100;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.3s ease;
-  max-width: 90%;
-  text-align: center;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-}
-
-.tooltip.active {
-  opacity: 1;
-  visibility: visible;
-  transform: translateX(-50%) translateY(0);
-}
-
-.tooltip:after {
-  content: '';
-  position: absolute;
-  bottom: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  border-width: 10px 10px 0;
-  border-style: solid;
-  border-color: rgba(52, 73, 94, 0.9) transparent transparent;
-}
-
-/* 自动关闭计时器样式 */
-.auto-close-indicator {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  width: 36px;
-  height: 36px;
-  z-index: 10;
-}
-
-.circular-timer {
-  transform: rotate(-90deg);
-  width: 36px;
-  height: 36px;
-}
-
-.circle-bg {
-  fill: none;
-  stroke: rgba(255, 255, 255, 0.3);
-  stroke-width: 2.8;
-}
-
-.circle {
-  fill: none;
-  stroke: white;
-  stroke-width: 2.8;
-  stroke-linecap: round;
-  transition: stroke-dasharray 0.1s linear;
-}
-
-.timer-text {
-  fill: white;
-  font-size: 10px;
-  text-anchor: middle;
-  transform: rotate(90deg);
-  transform-origin: center;
-  font-family: Arial, sans-serif;
-  font-weight: bold;
-}
-
-/* 上传按钮样式 */
-.upload-button {
-  position: fixed;
-  bottom: 80px;
-  left: 20px;
-  padding: 10px 16px;
-  background-color: #60a5fa;
-  color: white;
-  border-radius: 30px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
-  cursor: pointer;
-  transition: all 0.3s;
-  z-index: 100;
-}
-
-.upload-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
-  background-color: #4d94f9;
-}
-
-.upload-button:active {
-  transform: translateY(1px);
-}
-
-/* 图片上传对话框样式 */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  width: 90%;
-  max-width: 600px;
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-}
-
-.modal-header {
-  padding: 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 18px;
-  color: #374151;
-}
-
-.close-button {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  color: #6b7280;
-  padding: 4px;
-  border-radius: 50%;
-  transition: all 0.2s;
-}
-
-.close-button:hover {
-  background-color: #f3f4f6;
-  color: #374151;
-}
-
-.modal-body {
-  padding: 16px;
-  max-height: 80vh;
-  overflow-y: auto;
-}
-
-/* 添加点击次数提示样式 */
-.click-indicator {
-  position: absolute;
-  bottom: 15px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: rgba(0, 0, 0, 0.6);
-  color: white;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 14px;
-  z-index: 10;
-  animation: pulse 2s infinite;
-}
+<style>
+@import '../styles/luckyWheel.css';
 </style>

@@ -15,14 +15,22 @@
         </svg>
       </div>
       
+      <!-- 设置按钮 -->
+      <div class="absolute top-8 right-8">
+        <button @click="toggleSettings" class="settings-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+      </div>
+      
       <div class="flex flex-col md:flex-row h-full">
         
         <!-- 右侧转盘 -->
         <div class="w-full flex flex-col items-center justify-center animate-fadeIn-delay">
           <!-- 转盘组件 -->
           <LuckyWheelComp ref="wheelRef" />
-          
-          
         </div>
       </div>
       
@@ -35,11 +43,42 @@
         <div class="text-4xl animate-bounce-delay-5">🦊</div>
       </div>
     </div>
+    
+    <!-- 设置面板 -->
+    <div class="settings-panel" :class="{ 'show': showSettings }">
+      <div class="settings-header">
+        <h3>转盘设置</h3>
+        <button @click="toggleSettings" class="settings-close-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="settings-content">
+        <WheelSettings />
+      </div>
+    </div>
+    
+    <!-- 设置面板遮罩 -->
+    <div class="settings-overlay" :class="{ 'show': showSettings }" @click="toggleSettings"></div>
   </div>
 </template>
 
 <script setup lang="ts">
-import LuckyWheelComp from '../components/LuckyWheel.vue';
+import { ref, defineAsyncComponent } from 'vue';
+
+// 使用异步组件导入
+const LuckyWheelComp = defineAsyncComponent(() => import('../components/LuckyWheel.vue'));
+const WheelSettings = defineAsyncComponent(() => import('../components/WheelSettings.vue'));
+
+// 设置面板状态
+const showSettings = ref(false);
+
+// 切换设置面板显示状态
+function toggleSettings() {
+  showSettings.value = !showSettings.value;
+}
 </script>
 
 <style scoped>
@@ -163,5 +202,102 @@ import LuckyWheelComp from '../components/LuckyWheel.vue';
   50% {
     transform: translateY(-10px);
   }
+}
+
+/* 设置按钮样式 */
+.settings-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background-color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  color: #e17055;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.settings-btn:hover {
+  transform: rotate(30deg);
+  background-color: #e17055;
+  color: #fff;
+}
+
+/* 设置面板样式 */
+.settings-panel {
+  position: fixed;
+  top: 0;
+  right: -400px;
+  width: 380px;
+  height: 100vh;
+  background-color: white;
+  box-shadow: -5px 0 25px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  overflow-y: auto;
+  padding: 0;
+}
+
+.settings-panel.show {
+  right: 0;
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.settings-header h3 {
+  margin: 0;
+  font-size: 20px;
+  color: #e17055;
+}
+
+.settings-close-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #636e72;
+  padding: 5px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.settings-close-btn:hover {
+  background-color: #f0f0f0;
+  color: #e17055;
+}
+
+.settings-content {
+  padding: 20px;
+}
+
+/* 设置面板遮罩 */
+.settings-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0s 0.3s;
+}
+
+.settings-overlay.show {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.3s ease, visibility 0s;
 }
 </style> 
