@@ -1,5 +1,3 @@
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-
 pub mod util;
 
 use std::{
@@ -26,9 +24,7 @@ fn greet(name: &str) -> String {
 // 确保images目录存在
 #[tauri::command]
 fn ensure_images_dir(_app_handle: tauri::AppHandle) -> Result<String, String> {
-    //  let app_dir = util::path::paths().app_local_data_dir().to_string_lossy().into_owned();
-    let app_dir = String::from("/Users/coolm/softs/temp_files");
-    let images_dir = PathBuf::from(&app_dir).join("images");
+    let images_dir = PathBuf::from(&util::special_tools::get_base_storage_path()).join("images");
 
     // 确保目录存在
     if !images_dir.exists() {
@@ -46,8 +42,7 @@ fn save_image(
     file_data: String,
     file_name: String,
 ) -> Result<String, String> {
-    let app_dir = String::from("/Users/coolm/softs/temp_files");
-    let images_dir = PathBuf::from(&app_dir).join("images");
+    let images_dir = PathBuf::from(util::special_tools::get_base_storage_path()).join("images");
 
     // 确保目录存在
     if !images_dir.exists() {
@@ -71,8 +66,7 @@ fn save_image(
 // 获取images目录中的图片列表
 #[tauri::command]
 fn list_images(_app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
-    let app_dir = String::from("/Users/coolm/softs/temp_files");
-    let images_dir = PathBuf::from(&app_dir).join("images");
+    let images_dir = PathBuf::from(&util::special_tools::get_base_storage_path()).join("images");
 
     // 如果目录不存在，创建它
     if !images_dir.exists() {
@@ -108,8 +102,7 @@ fn list_images(_app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
 // 确保sounds目录存在
 #[tauri::command]
 fn ensure_sounds_dir(_app_handle: tauri::AppHandle) -> Result<String, String> {
-    let app_dir = String::from("/Users/coolm/softs/temp_files");
-    let sounds_dir = PathBuf::from(&app_dir).join("sounds");
+    let sounds_dir = PathBuf::from(&util::special_tools::get_base_storage_path()).join("sounds");
 
     // 确保目录存在
     if !sounds_dir.exists() {
@@ -127,8 +120,7 @@ fn save_sound(
     file_data: String,
     file_name: String,
 ) -> Result<String, String> {
-    let app_dir = String::from("/Users/coolm/softs/temp_files");
-    let sounds_dir = PathBuf::from(&app_dir).join("sounds");
+    let sounds_dir = PathBuf::from(&util::special_tools::get_base_storage_path()).join("sounds");
 
     // 确保目录存在
     if !sounds_dir.exists() {
@@ -152,8 +144,7 @@ fn save_sound(
 // 获取sounds目录中的音频文件列表
 #[tauri::command]
 fn list_sounds(_app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
-    let app_dir = String::from("/Users/coolm/softs/temp_files");
-    let sounds_dir = PathBuf::from(&app_dir).join("sounds");
+    let sounds_dir = PathBuf::from(&util::special_tools::get_base_storage_path()).join("sounds");
 
     // 如果目录不存在，创建它
     if !sounds_dir.exists() {
@@ -183,6 +174,86 @@ fn list_sounds(_app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
     }
 
     Ok(sounds)
+}
+
+// 保存音频文件（分块上传）
+#[tauri::command]
+fn save_sound_file(
+    _app_handle: tauri::AppHandle,
+    name: String,
+    data: Vec<u8>,
+    offset: u64,
+    final_: bool,
+) -> Result<String, String> {
+    let sounds_dir = PathBuf::from(util::special_tools::get_base_storage_path()).join("sounds");
+
+    // 确保目录存在
+    if !sounds_dir.exists() {
+        fs::create_dir_all(&sounds_dir).map_err(|e| e.to_string())?;
+    }
+
+    // 构建文件路径
+    let file_path = sounds_dir.join(&name);
+    
+    // 创建或追加到文件
+    let file = if offset == 0 {
+        // 如果是第一个块，创建新文件
+        fs::OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(&file_path)
+            .map_err(|e| e.to_string())?
+    } else {
+        // 否则追加到现有文件
+        fs::OpenOptions::new()
+            .write(true)
+            .append(true)
+            .open(&file_path)
+            .map_err(|e| e.to_string())?
+    };
+
+    // 使用标准库的seek和write
+    use std::io::{Seek, SeekFrom, Write};
+    
+    // 设置写入位置
+    let mut file = file;
+    if offset > 0 {
+        file.seek(SeekFrom::Start(offset)).map_err(|e| e.to_string())?;
+    }
+    
+    // 写入数据块
+    file.write_all(&data).map_err(|e| e.to_string())?;
+    
+    // 确保数据写入磁盘
+    file.flush().map_err(|e| e.to_string())?;
+    
+    // 如果是最后一个块，返回完整路径
+    if final_ {
+        Ok(file_path.to_string_lossy().to_string())
+    } else {
+        Ok("继续上传".to_string())
+    }
+}
+
+// 删除音频文件
+#[tauri::command]
+fn delete_sound_file(
+    _app_handle: tauri::AppHandle,
+    name: String,
+) -> Result<bool, String> {
+    let sounds_dir = PathBuf::from(&util::special_tools::get_base_storage_path()).join("sounds");
+    let file_path = sounds_dir.join(&name);
+    
+    // 检查文件是否存在
+    if !file_path.exists() {
+        return Err(format!("文件不存在: {}", name));
+    }
+    
+    // 删除文件
+    fs::remove_file(&file_path).map_err(|e| e.to_string())?;
+    
+    Ok(true)
 }
 
 // 添加单词记录
@@ -302,6 +373,8 @@ pub fn run() {
             list_images,
             ensure_sounds_dir,
             save_sound,
+            save_sound_file,
+            delete_sound_file,
             list_sounds,
             add_vocabulary,
             get_all_vocabulary,

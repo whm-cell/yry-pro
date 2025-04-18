@@ -349,12 +349,15 @@
                   <label class="block text-gray-700 font-medium mb-2">转盘旋转音效</label>
                   <div class="flex items-center">
                     <div class="flex-grow">
-                      <div class="text-sm text-gray-600 truncate">{{ getSelectedSoundName('spin') }}</div>
+                      <div class="text-sm text-gray-600 truncate" :class="{'text-orange-500': !isAudioSet('spin')}">
+                        {{ getSelectedSoundName('spin') }}
+                      </div>
                     </div>
                     <div class="flex">
                       <button 
                         @click="playSelectedSound('spin')" 
                         class="mr-2 px-3 py-1 bg-orange-100 text-orange-700 rounded border border-orange-300 hover:bg-orange-200 transition-colors"
+                        :disabled="!isAudioSet('spin')"
                       >
                         试听
                       </button>
@@ -362,7 +365,7 @@
                         @click="openSoundUploader('spin')" 
                         class="px-3 py-1 bg-orange-100 text-orange-700 rounded border border-orange-300 hover:bg-orange-200 transition-colors"
                       >
-                        选择
+                        {{ isAudioSet('spin') ? '更改' : '选择' }}
                       </button>
                     </div>
                   </div>
@@ -373,12 +376,15 @@
                   <label class="block text-gray-700 font-medium mb-2">中奖音效</label>
                   <div class="flex items-center">
                     <div class="flex-grow">
-                      <div class="text-sm text-gray-600 truncate">{{ getSelectedSoundName('win') }}</div>
+                      <div class="text-sm text-gray-600 truncate" :class="{'text-orange-500': !isAudioSet('win')}">
+                        {{ getSelectedSoundName('win') }}
+                      </div>
                     </div>
                     <div class="flex">
                       <button 
                         @click="playSelectedSound('win')" 
                         class="mr-2 px-3 py-1 bg-orange-100 text-orange-700 rounded border border-orange-300 hover:bg-orange-200 transition-colors"
+                        :disabled="!isAudioSet('win')"
                       >
                         试听
                       </button>
@@ -386,7 +392,7 @@
                         @click="openSoundUploader('win')" 
                         class="px-3 py-1 bg-orange-100 text-orange-700 rounded border border-orange-300 hover:bg-orange-200 transition-colors"
                       >
-                        选择
+                        {{ isAudioSet('win') ? '更改' : '选择' }}
                       </button>
                     </div>
                   </div>
@@ -449,7 +455,7 @@
       </div>
       
       <div class="sound-uploader-content">
-        <SoundUploader @sound-selected="handleSoundSelected" />
+        <SoundUploader @sound-selected="handleSoundSelected" @cancel="handleSoundCancel" />
       </div>
     </div>
   </div>
@@ -689,23 +695,27 @@ const audioPlayer = ref<HTMLAudioElement | null>(null);
 // 获取当前选中音效名称
 function getSelectedSoundName(type: 'spin' | 'win'): string {
   if (!settings.sounds || !settings.sounds[type]) {
-    return '加载中...';
+    return '未设置';
   }
   
   const sound = settings.sounds[type];
   if (sound.type === 'preset') {
-    return sound.name === 'spin' ? '预设-转盘旋转音效' : '预设-中奖音效';
+    return `预设: ${sound.name}`;
   } else {
-    return `自定义音效: ${sound.name}`;
+    return `自定义: ${sound.name.split('_').slice(1).join('_')}`;
   }
+}
+
+// 检查音效是否已设置
+function isAudioSet(type: 'spin' | 'win'): boolean {
+  return !!(settings.sounds && settings.sounds[type]);
 }
 
 // 播放选中的音效
 async function playSelectedSound(type: 'spin' | 'win'): Promise<void> {
   // 检查音效设置是否存在
-  if (!settings.sounds || !settings.sounds[type]) {
-    console.warn('音效设置未加载完成');
-    audioMessage.value = '音效未加载完成，请稍后再试';
+  if (!isAudioSet(type)) {
+    audioMessage.value = '请先选择音效';
     showAudioMessage.value = true;
     setTimeout(() => { showAudioMessage.value = false; }, 3000);
     return;
@@ -836,6 +846,16 @@ function closeSoundUploader(): void {
 // 处理音效选择
 function handleSoundSelected(sound: SoundSetting): void {
   updateSound(selectedSoundType.value, sound);
+  closeSoundUploader();
+  
+  // 显示成功消息
+  audioMessage.value = `已设置${selectedSoundType.value === 'spin' ? '旋转' : '中奖'}音效: ${sound.name}`;
+  showAudioMessage.value = true;
+  setTimeout(() => { showAudioMessage.value = false; }, 3000);
+}
+
+// 取消选择音效
+function handleSoundCancel(): void {
   closeSoundUploader();
 }
 
