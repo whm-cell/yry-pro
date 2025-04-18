@@ -143,18 +143,18 @@ fn save_sound(
 
 // 获取sounds目录中的音频文件列表
 #[tauri::command]
-fn list_sounds(_app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
-    let sounds_dir = PathBuf::from(&util::special_tools::get_base_storage_path()).join("sounds");
+fn list_sounds(_app_handle: tauri::AppHandle) -> Result<Vec<(String, String)>, String> {
+    let sounds_dir_path = PathBuf::from(&util::special_tools::get_base_storage_path()).join("sounds");
 
     // 如果目录不存在，创建它
-    if !sounds_dir.exists() {
-        fs::create_dir_all(&sounds_dir).map_err(|e| e.to_string())?;
+    if !sounds_dir_path.exists() {
+        fs::create_dir_all(&sounds_dir_path).map_err(|e| e.to_string())?;
         return Ok(Vec::new());
     }
 
     // 读取目录内容
     let mut sounds = Vec::new();
-    for entry in fs::read_dir(sounds_dir).map_err(|e| e.to_string())? {
+    for entry in fs::read_dir(&sounds_dir_path).map_err(|e| e.to_string())? {
         let entry = entry.map_err(|e| e.to_string())?;
         let path = entry.path();
         if path.is_file() {
@@ -168,7 +168,8 @@ fn list_sounds(_app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
                 || file_name.ends_with(".wav")
                 || file_name.ends_with(".ogg")
             {
-                sounds.push(file_name.to_string());
+                let file_path = sounds_dir_path.join(file_name);
+                sounds.push((file_name.to_string(), file_path.to_string_lossy().to_string()));
             }
         }
     }

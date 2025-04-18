@@ -83,20 +83,20 @@
       </h3>
       <div class="grid grid-cols-2 gap-2">
         <div 
-          v-for="audioName in audioList" 
-          :key="audioName"
-          @click="selectAudio(audioName)"
+          v-for="audioTuple in audioList" 
+          :key="audioTuple[0]"
+          @click="selectAudio(audioTuple)"
           class="audio-item"
-          :class="{ 'selected': selectedAudioName === audioName }"
+          :class="{ 'selected': selectedAudioName === audioTuple[0] }"
         >
           <div class="audio-icon">🎵</div>
           <div class="audio-info">
-            <div class="audio-name">{{ getShortName(audioName) }}</div>
+            <div class="audio-name">{{ getShortName(audioTuple[0]) }}</div>
             <div class="flex items-center">
-              <button @click.stop="playAudio(audioName)" class="play-btn mr-1">
+              <button @click.stop="playAudio(audioTuple)" class="play-btn mr-1">
                 ▶
               </button>
-              <button @click.stop="deleteAudio(audioName)" class="delete-btn">
+              <button @click.stop="deleteAudio(audioTuple[0])" class="delete-btn">
                 🗑️
               </button>
             </div>
@@ -172,7 +172,7 @@ const audioPreview = ref<string | null>(null);
 const isUploading = ref(false);
 const uploadProgress = ref(0);
 const isDragging = ref(false);
-const audioList = ref<string[]>([]);
+const audioList = ref<[string, string][]>([]);
 const loadingAudios = ref(true);
 const selectedAudioName = ref<string | null>(null);
 const selectedPreset = ref<string | null>(null);
@@ -221,9 +221,11 @@ async function checkPresetSounds() {
       preset.available = exists;
       
       if (exists) {
-        // 尝试转换本地文件路径为Tauri可访问的URL
+        // 使用assetProtocol和convertFileSrc正确处理外部文件路径
         try {
+          // 必须使用convertFileSrc来让Tauri正确处理安全权限
           const url = convertFileSrc(preset.url);
+          console.log(`预设音效转换后路径: ${url}`);
           preset.url = url;
         } catch (err) {
           console.warn(`无法转换音效URL: ${preset.url}`, err);
@@ -244,7 +246,7 @@ async function refreshAudioList() {
     // 确保音频目录存在
     await invoke('ensure_sounds_dir');
     // 获取音频列表
-    const sounds = await invoke<string[]>('list_sounds');
+    const sounds = await invoke<[string, string][]>('list_sounds');
     console.log('sounds', sounds);
     audioList.value = sounds || [];
   } catch (error) {
@@ -262,16 +264,6 @@ function showMessage(msg: string, type: 'info' | 'error' = 'info') {
   setTimeout(() => {
     message.value = '';
   }, 3000);
-}
-
-// 获取音频URL
-function getAudioUrl(audioName: string) {
-  try {
-    return convertFileSrc(`${appLocalDataDir}/sounds/${audioName}`);
-  } catch (error) {
-    console.error('获取音频URL失败:', error);
-    return '';
-  }
 }
 
 // 获取音频简短名称
@@ -395,6 +387,12 @@ async function uploadFile(file: File) {
     // 更新音频列表
     await refreshAudioList();
     
+    // 找到新上传的文件并选中它
+    const newUploadedAudio = audioList.value.find(tuple => tuple[0] === safeFileName);
+    if (newUploadedAudio) {
+      await selectAudio(newUploadedAudio);
+    }
+    
     // 显示成功消息
     showMessage('音频文件上传成功', 'info');
     
@@ -431,21 +429,24 @@ function playPresetSound(preset: any) {
     previewAudio = null;
   }
   
+  console.log('播放预设音效:', preset.url);
+  // 确保使用带有asset://协议的URL
   previewAudio = new Audio(preset.url);
   previewAudio.volume = 0.5;
   previewAudio.play().catch(error => {
     console.error('播放预设音效失败:', error);
-    showMessage('播放音效失败，请检查音频文件', 'error');
+    showMessage(`播放音效失败: ${error}`, 'error');
   });
 }
 
 // 选择已上传的音频
-function selectAudio(audioName: string) {
+async function selectAudio(audioTuple: [string, string]) {
   // 停止当前播放的音频
   if (previewAudio) {
     previewAudio.pause();
   }
   
+  const [audioName, audioPath] = audioTuple;
   selectedAudioName.value = audioName;
   selectedPreset.value = null;
   
@@ -454,8 +455,9 @@ function selectAudio(audioName: string) {
   }
   
   try {
-    const url = getAudioUrl(audioName);
-    console.log('url', url);
+    // 直接使用文件路径
+    const url = convertFileSrc(audioPath);
+    console.log('选择音频URL:', url);
     audioPreview.value = url;
     audioFile.value = null;
   } catch (error) {
@@ -465,14 +467,17 @@ function selectAudio(audioName: string) {
 }
 
 // 播放已上传的音频
-function playAudio(audioName: string) {
+async function playAudio(audioTuple: [string, string]) {
   if (previewAudio) {
     previewAudio.pause();
     previewAudio = null;
   }
   
   try {
-    const url = getAudioUrl(audioName);
+    const [_, audioPath] = audioTuple;
+    // 直接使用文件路径
+    const url = convertFileSrc(audioPath);
+    console.log('播放上传音效:', url);
     previewAudio = new Audio(url);
     previewAudio.volume = 0.5;
     previewAudio.play().catch(error => {
@@ -542,7 +547,7 @@ async function confirmAudioSelection() {
     if (preset) {
       const soundSetting = {
         name: preset.name,
-        url: preset.url,
+        url: preset.url, // 这里已经是转换后的URL
         type: 'preset',
         description: preset.description
       };
@@ -551,14 +556,24 @@ async function confirmAudioSelection() {
   } else if (selectedAudioName.value) {
     // 如果选择了已上传的音效
     try {
-      const soundPath = `${await appLocalDataDir()}/sounds/${selectedAudioName.value}`;
-      const soundSetting = {
-        name: selectedAudioName.value,
-        url: soundPath,
-        type: 'custom',
-        description: '自定义音效'
-      };
-      emit('sound-selected', soundSetting);
+      // 从audioList中找到对应的路径
+      const selectedAudio = audioList.value.find(tuple => tuple[0] === selectedAudioName.value);
+      
+      if (selectedAudio) {
+        const [name, path] = selectedAudio;
+        // 确保转换为asset协议URL
+        const soundUrl = convertFileSrc(path);
+        
+        const soundSetting = {
+          name: name,
+          url: soundUrl, // 使用转换后的URL
+          type: 'custom',
+          description: '自定义音效'
+        };
+        emit('sound-selected', soundSetting);
+      } else {
+        showMessage('找不到选中的音频文件', 'error');
+      }
     } catch (error) {
       console.error('获取音频路径失败:', error);
       showMessage('获取音频文件路径失败', 'error');
