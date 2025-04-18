@@ -462,37 +462,7 @@
 import { ref, reactive, markRaw, h, computed, onMounted } from 'vue';
 import { useWheelSettings, DrawMode, WordConfig, SoundSetting } from '../utils/wheelSettings';
 import SoundUploader from '../components/SoundUploader.vue';
-
-// 初始化API对象
-const tauriApi = ref<any>(null);
-
-// 在onMounted中初始化Tauri API
-function initTauriApi() {
-  // 检查全局window对象是否有__TAURI__
-  // 这是判断当前是否在Tauri环境的标准方法
-  const isTauriAvailable = typeof window !== 'undefined' && 
-                          // @ts-ignore
-                          window.__TAURI__ !== undefined;
-  
-  if (isTauriAvailable) {
-    console.log('检测到Tauri环境，尝试加载API');
-    // 使用动态导入，不提前声明类型
-    // @ts-ignore - 忽略模块解析错误
-    import('@tauri-apps/api/core')
-      .then((tauriModule) => {
-        tauriApi.value = {
-          invoke: tauriModule.invoke,
-          convertFileSrc: tauriModule.convertFileSrc
-        };
-        console.log('Tauri API加载成功');
-      })
-      .catch((err) => {
-        console.warn('无法导入Tauri API:', err);
-      });
-  } else {
-    console.warn('不在Tauri环境中运行，Tauri API不可用');
-  }
-}
+import * as tauriApi from '@tauri-apps/api/core';
 
 // 获取转盘设置
 const { 
@@ -743,87 +713,116 @@ async function playSelectedSound(type: 'spin' | 'win'): Promise<void> {
   try {
     // 显示音效信息
     const soundName = settings.sounds[type].name;
-    audioMessage.value = `正在播放${type === 'spin' ? '旋转' : '中奖'}音效: ${soundName}`;
+    audioMessage.value = `正在准备播放${type === 'spin' ? '旋转' : '中奖'}音效: ${soundName}`;
     showAudioMessage.value = true;
-    
-    // 确保音频元素存在
-    if (!audioPlayer.value) {
-      console.error('音频播放器元素未找到，尝试重新获取');
-      const audioElement = document.querySelector('audio');
-      if (audioElement) {
-        audioPlayer.value = audioElement as HTMLAudioElement;
-      } else {
-        throw new Error('找不到音频播放器元素');
-      }
-    }
     
     // 获取音效URL
     let soundUrl = settings.sounds[type].url;
-    console.log('准备播放音效URL:', soundUrl);
+    console.log('原始音效URL:', soundUrl);
     
-    // 如果有Tauri API，尝试转换文件URL
-    if (tauriApi.value && !soundUrl.startsWith('http')) {
-      try {
-        soundUrl = tauriApi.value.convertFileSrc(soundUrl);
-        console.log('转换后的URL:', soundUrl);
-      } catch (err) {
-        console.warn('转换URL失败，使用原始路径:', err);
-      }
-    }
-    
-    // 创建新的Audio实例来播放音效
-    const tempAudio = new Audio();
-    tempAudio.volume = 0.5;
-    tempAudio.src = soundUrl;
-    
-    // 绑定事件
-    tempAudio.addEventListener('ended', () => {
-      console.log('音效播放完成');
-    });
-    
-    tempAudio.addEventListener('error', (e) => {
-      console.error('音效加载错误:', e);
-      audioMessage.value = '音效加载失败，请检查文件路径或权限';
-      showAudioMessage.value = true;
-    });
-    
-    // 播放音效并同时更新DOM中的audio元素
-    if (audioPlayer.value) {
-      audioPlayer.value.src = soundUrl;
-      audioPlayer.value.volume = 0.5;
-    }
-    
-    // 播放音效
+    // 使用内置音效或转换URL
     try {
-      await tempAudio.play();
-      console.log(`成功播放${type}音效:`, settings.sounds[type].name);
-    } catch (playError: any) {
-      console.error('播放失败:', playError);
-      audioMessage.value = `播放失败: ${playError.message || '未知错误'}`;
-      
-      // 尝试在用户交互后自动播放
-      const playAfterInteraction = () => {
-        tempAudio.play().catch(e => console.error('第二次尝试播放失败:', e));
-        document.removeEventListener('click', playAfterInteraction);
-      };
-      
-      document.addEventListener('click', playAfterInteraction, { once: true });
-      audioMessage.value = '需要用户交互才能播放声音，请点击页面任意位置';
+      // 转换URL而不是直接访问文件系统
+      if (tauriApi.convertFileSrc) {
+        // 使用Tauri的资源转换而不是文件读取
+        soundUrl = tauriApi.convertFileSrc(soundUrl);
+        console.log('转换后的URL:', soundUrl);
+      } else {
+        console.warn('Tauri API不可用，无法转换URL');
+      }
+    } catch (err: any) {
+      console.error('转换URL失败:', err);
+      audioMessage.value = `转换音频URL失败: ${err?.message || '未知错误'}`;
+      showAudioMessage.value = true;
+      setTimeout(() => { showAudioMessage.value = false; }, 3000);
+      return;
     }
     
-    // 3秒后隐藏消息
-    setTimeout(() => {
-      showAudioMessage.value = false;
-    }, 3000);
+    // 创建新的Audio实例
+    const audio = new Audio();
+    
+    // 设置音频事件处理
+    console.log('设置音频事件监听...');
+    const audioPromise = new Promise((resolve, reject) => {
+      let hasError = false;
+      
+      audio.addEventListener('loadeddata', () => {
+        console.log('音频加载完成');
+        if (!hasError) {
+          resolve(audio);
+        }
+      });
+      
+      audio.addEventListener('error', (e) => {
+        hasError = true;
+        console.error('音频加载错误:', e, audio.error);
+        reject(new Error(`音频加载失败: ${audio.error?.message || '未知错误'}`));
+      });
+      
+      // 设置超时
+      setTimeout(() => {
+        if (!hasError) {
+          reject(new Error('音频加载超时'));
+        }
+      }, 5000);
+    });
+    
+    // 设置音频源并等待加载
+    console.log('设置音频源:', soundUrl);
+    audio.src = soundUrl;
+    audio.volume = 0.5;
+    
+    try {
+      await audioPromise;
+      console.log('音频准备就绪，尝试播放');
+      
+      try {
+        await audio.play();
+        console.log('音频开始播放');
+        
+        // 播放完成后的清理
+        audio.addEventListener('ended', () => {
+          console.log('音频播放完成');
+          audio.remove();
+          audioMessage.value = '播放完成';
+          showAudioMessage.value = true;
+          setTimeout(() => { showAudioMessage.value = false; }, 1500);
+        });
+        
+      } catch (playError: any) {
+        if (playError.name === 'NotAllowedError') {
+          audioMessage.value = '需要用户交互才能播放声音，请点击页面任意位置';
+          showAudioMessage.value = true;
+          
+          const playAfterInteraction = async () => {
+            try {
+              await audio.play();
+              console.log('用户交互后播放成功');
+            } catch (e) {
+              console.error('用户交互后播放失败:', e);
+              audioMessage.value = '播放失败，请检查音频文件是否正确';
+              showAudioMessage.value = true;
+            }
+            document.removeEventListener('click', playAfterInteraction);
+          };
+          
+          document.addEventListener('click', playAfterInteraction, { once: true });
+        } else {
+          throw playError;
+        }
+      }
+    } catch (error: any) {
+      console.error('音频处理失败:', error);
+      audioMessage.value = `音频处理失败: ${error.message || '未知错误'}`;
+      showAudioMessage.value = true;
+      audio.remove();
+    }
+    
   } catch (error: any) {
     console.error('播放音效失败:', error);
     audioMessage.value = `播放音效失败: ${error.message || '未知错误'}`;
     showAudioMessage.value = true;
-    
-    // 3秒后隐藏消息
-    setTimeout(() => {
-      showAudioMessage.value = false;
-    }, 3000);
+    setTimeout(() => { showAudioMessage.value = false; }, 3000);
   }
 }
 
@@ -848,9 +847,6 @@ function handleSoundSelected(sound: SoundSetting): void {
 onMounted(async () => {
   console.log('Settings组件已挂载，音频播放器状态:', audioPlayer.value ? '已初始化' : '未初始化');
   
-  // 初始化Tauri API
-  initTauriApi();
-  
   // 检查audio元素是否成功绑定
   if (!audioPlayer.value) {
     console.error('警告：audio元素未成功绑定，试听功能可能不可用');
@@ -863,78 +859,236 @@ onMounted(async () => {
   }
   
   try {
-    // 本地音频文件路径
-    const spinFilePath = '/Users/coolm/softs/temp_files/sounds/cjyx_01.mp3';
-    const winFilePath = '/Users/coolm/softs/temp_files/sounds/cjyx_02.mp3';
-    
-    // 设置音效 - 直接使用本地文件路径
-    const sound: SoundSetting = {
-      type: 'preset',
-      name: '默认旋转音效',
-      url: spinFilePath
-    };
-    
-    const winSound: SoundSetting = {
-      type: 'preset',
-      name: '默认中奖音效',
-      url: winFilePath
-    };
-    
-    // 使用设置好的默认音效
-    console.log('设置本地音效文件:', spinFilePath);
-    
-    // 检查是否已有音效设置，如果没有则设置
-    if (!settings.sounds) {
-      settings.sounds = {
-        spin: sound,
-        win: winSound
-      };
-    } else {
-      // 单独设置 spin 或 win 音效
-      if (!settings.sounds.spin || settings.sounds.spin.url !== spinFilePath) {
-        updateSound('spin', sound);
-      }
-      if (!settings.sounds.win || settings.sounds.win.url !== winFilePath) {
-        updateSound('win', winSound);
-      }
-    }
-    
-    // 显示设置完成消息
-    audioMessage.value = "音效设置已加载，请点击试听按钮";
-    showAudioMessage.value = true;
-    setTimeout(() => {
-      showAudioMessage.value = false;
-    }, 3000);
-    
-    console.log('默认音效已设置');
-    
-    // 将本地音效路径转换为Tauri可访问的URL
-    if (tauriApi.value && tauriApi.value.convertFileSrc) {
+    // 确保音频目录存在
+    if (tauriApi.invoke) {
       try {
-        const spinUrl = tauriApi.value.convertFileSrc(spinFilePath);
-        const winUrl = tauriApi.value.convertFileSrc(winFilePath);
-        
-        // 更新为转换后的URL
-        sound.url = spinUrl;
-        winSound.url = winUrl;
-        
-        // 更新设置
-        updateSound('spin', sound);
-        updateSound('win', winSound);
-        
-        console.log('音效URL已转换:', spinUrl);
-        
-        // 预加载音效
-        if (audioPlayer.value) {
-          audioPlayer.value.src = spinUrl;
-          audioPlayer.value.load();
-        }
+        const soundsDir = await tauriApi.invoke('ensure_sounds_dir');
+        console.log('音频目录已确认:', soundsDir);
       } catch (err) {
-        console.warn('转换文件URL失败:', err);
+        console.warn('确认音频目录失败:', err);
       }
     }
+    
+    // 列出可用的音频文件
+    if (tauriApi.invoke) {
+      try {
+        const availableSounds = await tauriApi.invoke('list_sounds');
+        console.log('可用的音频文件:', availableSounds);
+        
+        // 如果有音频文件，可以在这里更新UI显示
+      } catch (err) {
+        console.warn('获取音频文件列表失败:', err);
+      }
+    }
+    
+    // 添加: 直接测试音频播放
+    console.log("开始直接测试音频播放...");
+    
+    // 测试直接通过Audio对象播放
+    const testDirectPlay = async (soundPath: string) => {
+      try {
+        console.log(`直接测试播放: ${soundPath}`);
+        const testAudio = new Audio();
+        
+        // 监听错误事件
+        testAudio.addEventListener('error', (e) => {
+          console.error('测试音频错误:', e.type, testAudio.error);
+          console.error('错误详情:', {
+            code: testAudio.error?.code,
+            message: testAudio.error?.message,
+          });
+        });
+        
+        // 监听加载事件
+        testAudio.addEventListener('loadeddata', () => {
+          console.log('测试音频加载成功!');
+        });
+        
+        // 设置源
+        testAudio.src = soundPath;
+        
+        // 尝试加载
+        console.log('等待音频加载...');
+        // 不要立即播放，先测试加载
+      } catch (error) {
+        console.error('测试音频播放失败:', error);
+      }
+    };
+    
+    // 测试Tauri转换的URL播放
+    const testTauriPlay = async (soundPath: string) => {
+      if (tauriApi.convertFileSrc) {
+        try {
+          const convertedUrl = tauriApi.convertFileSrc(soundPath);
+          console.log(`测试Tauri转换后URL播放: ${convertedUrl}`);
+          
+          const testAudio = new Audio();
+          
+          // 监听错误事件
+          testAudio.addEventListener('error', (e) => {
+            console.error('Tauri转换URL测试音频错误:', e.type, testAudio.error);
+            console.error('错误详情:', {
+              code: testAudio.error?.code,
+              message: testAudio.error?.message,
+            });
+          });
+          
+          // 监听加载事件
+          testAudio.addEventListener('loadeddata', () => {
+            console.log('Tauri转换URL测试音频加载成功!');
+          });
+          
+          // 设置源
+          testAudio.src = convertedUrl;
+          
+          // 尝试加载
+          console.log('等待Tauri转换URL音频加载...');
+        } catch (error) {
+          console.error('测试Tauri转换URL播放失败:', error);
+        }
+      }
+    };
+    
+    // 测试特定音频文件
+    const testFile = "/Users/coolm/softs/temp_files/sounds/cjyx_02.mp3";
+    await testDirectPlay(testFile);
+    await testTauriPlay(testFile);
+    
+    // 添加: 测试其他方法
+    try {
+      console.log("测试其他音频加载方法...");
+      
+      // 尝试使用 fetch API 加载音频
+      console.log("尝试使用 fetch API 加载音频...");
+      try {
+        const response = await fetch(`file://${testFile}`);
+        console.log("Fetch 响应状态:", response.status);
+        if (!response.ok) {
+          console.error("Fetch 加载失败:", response.statusText);
+        } else {
+          console.log("Fetch 加载成功!");
+        }
+      } catch (e) {
+        console.error("Fetch 加载出错:", e);
+      }
+      
+      // 测试使用 Blob URL
+      console.log("尝试使用 Blob URL...");
+      if (tauriApi.invoke) {
+        try {
+          // 尝试读取文件内容
+          const fileContent = await tauriApi.invoke('plugin:fs|read_binary', { path: testFile });
+          if (fileContent) {
+            console.log("文件读取成功，创建 Blob...", typeof fileContent);
+            
+            // 处理二进制数据
+            let binaryData;
+            if (typeof fileContent === 'string') {
+              // Base64字符串
+              const binaryString = atob(fileContent);
+              const bytes = new Uint8Array(binaryString.length);
+              for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+              }
+              binaryData = bytes.buffer;
+            } else if (fileContent instanceof ArrayBuffer) {
+              binaryData = fileContent;
+            } else if (ArrayBuffer.isView(fileContent)) {
+              binaryData = fileContent.buffer;
+            } else if (Array.isArray(fileContent)) {
+              binaryData = new Uint8Array(fileContent).buffer;
+            } else {
+              // 记录返回数据结构
+              console.log('fileContent结构:', JSON.stringify(fileContent).substring(0, 100) + '...');
+              
+              if (fileContent && typeof fileContent === 'object' && 'data' in fileContent) {
+                const dataArray = (fileContent as any).data;
+                if (Array.isArray(dataArray)) {
+                  binaryData = new Uint8Array(dataArray).buffer;
+                }
+              }
+            }
+            
+            if (!binaryData) {
+              console.error('无法解析文件内容');
+              return;
+            }
+            
+            const blob = new Blob([binaryData], { type: 'audio/mpeg' });
+            const blobUrl = URL.createObjectURL(blob);
+            console.log("Blob URL:", blobUrl);
+            
+            // 测试播放
+            const blobAudio = new Audio();
+            blobAudio.addEventListener('loadeddata', () => {
+              console.log("Blob 音频加载成功!");
+            });
+            blobAudio.addEventListener('error', (e) => {
+              console.error("Blob 音频加载失败:", e);
+            });
+            blobAudio.src = blobUrl;
+          }
+        } catch (e) {
+          console.error("读取文件内容失败:", e);
+        }
+      }
+    } catch (e) {
+      console.error("测试其他音频加载方法失败:", e);
+    }
+    
+    // 检查当前音效文件是否存在
+    const testAudio = async (soundPath: string): Promise<boolean> => {
+      return new Promise((resolve) => {
+          if (tauriApi.convertFileSrc) {
+          try {
+            const audio = new Audio();
+            audio.src = tauriApi.convertFileSrc(soundPath);
+            
+            audio.addEventListener('canplaythrough', () => {
+              console.log('音频文件可用:', soundPath);
+              resolve(true);
+            });
+            
+            audio.addEventListener('error', () => {
+              console.warn('音频文件不可用:', soundPath);
+              resolve(false);
+            });
+            
+            // 设置超时，防止无限等待
+            setTimeout(() => resolve(false), 2000);
+          } catch (e) {
+            console.error('测试音频文件失败:', e);
+            resolve(false);
+          }
+        } else {
+          resolve(false);
+        }
+      });
+    };
+    
+    // 验证当前设置的音效文件
+    if (settings.sounds && settings.sounds.spin && settings.sounds.spin.url) {
+      const spinExists = await testAudio(settings.sounds.spin.url);
+      if (!spinExists) {
+        console.warn('当前设置的旋转音效不可用:', settings.sounds.spin.url);
+        audioMessage.value = "当前旋转音效不可用，请重新选择";
+        showAudioMessage.value = true;
+        setTimeout(() => { showAudioMessage.value = false; }, 3000);
+      }
+    }
+    
+    if (settings.sounds && settings.sounds.win && settings.sounds.win.url) {
+      const winExists = await testAudio(settings.sounds.win.url);
+      if (!winExists) {
+        console.warn('当前设置的中奖音效不可用:', settings.sounds.win.url);
+        audioMessage.value = "当前中奖音效不可用，请重新选择";
+        showAudioMessage.value = true;
+        setTimeout(() => { showAudioMessage.value = false; }, 3000);
+      }
+    }
+    
   } catch (error: any) {
-    console.error('加载默认音效失败:', error);
+    console.error('音效初始化失败:', error);
   }
 });
 </script>
