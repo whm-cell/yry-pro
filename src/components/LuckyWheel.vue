@@ -17,11 +17,11 @@
         <div
           class="prize-item"
           :style="{background, transform}"
-          :class="{'highlight': highlightIndex === index}"
+          :class="{'highlight': settings.enableHighlight && highlightIndex === index}"
         >
           <div
             class="wheel-item-border"
-            :class="{'active': highlightIndex === index}"
+            :class="{'active': settings.enableHighlight && highlightIndex === index}"
           ></div>
           <!-- 图片内容 -->
           <div v-for="(img, i) in imgs" :key="i">
@@ -947,12 +947,8 @@ function startCallback(): void {
 
 // 添加转盘旋转中回调
 function rotatingCallback(data: any): void {
-  // 只有启用高亮边框效果时才处理
-  if (!settings.enableHighlight) {
-    return;
-  }
-  
-  // 清空之前的高亮索引
+  // 不管是否启用高亮边框效果，都记录当前索引
+  // 这样当用户打开高亮边框效果设置时，可以立即看到效果
   if (data.currIndex !== highlightIndex.value) {
     highlightIndex.value = data.currIndex;
   }
