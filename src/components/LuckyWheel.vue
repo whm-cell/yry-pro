@@ -144,7 +144,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, reactive, markRaw, watch } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount,  watch } from 'vue';
 // @ts-ignore
 import { invoke } from '@tauri-apps/api/core';
 // @ts-ignore
@@ -472,7 +472,7 @@ const loadVocabularyFromDatabase = async () => {
       usedColorIndices = [];
       
       // 确保默认奖品使用不同颜色
-      prizes.value = defaultPrizes.map((prize, index) => {
+      prizes.value = defaultPrizes.map((prize) => {
         // 为"Magic Bag"保留原来的颜色
         if (prize.prizeInfo.name === "Magic Bag") {
           return prize;
@@ -490,7 +490,7 @@ const loadVocabularyFromDatabase = async () => {
     usedColorIndices = [];
     
     // 确保默认奖品使用不同颜色
-    prizes.value = defaultPrizes.map((prize, index) => {
+    prizes.value = defaultPrizes.map((prize) => {
       // 为"Magic Bag"保留原来的颜色
       if (prize.prizeInfo.name === "Magic Bag") {
         return prize;

@@ -159,7 +159,6 @@
 
 <script setup lang="ts" name="SoundUploader">
 import { ref, onMounted, defineExpose } from 'vue';
-import { appLocalDataDir } from '@tauri-apps/api/path';
 import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 
 // 定义事件

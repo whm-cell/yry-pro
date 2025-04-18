@@ -11,7 +11,10 @@
     {
       "identifier": "fs:scope",
       "permissions": [
-        "fs:scope:app"
+        "fs:scope:app",
+        "$APPLOCALDATA/**",
+        "$RESOURCE/**",
+        "$APPDATA/**"
       ]
     },
     "fs:allow-exists",

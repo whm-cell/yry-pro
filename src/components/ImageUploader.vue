@@ -217,9 +217,6 @@ async function uploadFile(file: File) {
     const ext = file.name.split('.').pop() || 'jpg';
     const fileName = `image_${timestamp}.${ext}`;
     
-    // 读取文件为base64
-    const fileContent = await readFileAsDataURL(file);
-    
     // 上传到后端
     // 模拟上传进度
     const interval = setInterval(() => {
@@ -230,10 +227,10 @@ async function uploadFile(file: File) {
     }, 100);
     
     // 调用Rust函数保存文件
-    const savedPath = await invoke<string>('save_image', { 
-      fileData: fileContent,
-      fileName: fileName
-    });
+    // const savedPath = await invoke<string>('save_image', { 
+    //   fileData: fileContent,
+    //   fileName: fileName
+    // });
     
     // 完成上传
     uploadProgress.value = 100;
@@ -250,15 +247,6 @@ async function uploadFile(file: File) {
   }
 }
 
-// 读取文件为DataURL
-function readFileAsDataURL(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(new Error('文件读取失败'));
-    reader.readAsDataURL(file);
-  });
-}
 
 // 选择已上传的图片
 function selectImage(imageName: string) {

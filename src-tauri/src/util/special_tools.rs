@@ -14,7 +14,7 @@ pub fn get_base_storage_path() -> PathBuf {
         PathBuf::from("/Users/coolm/softs/temp_files")
     } else {
         // 生产环境使用 AppData 目录
-        path::paths().data_path()
+        path::paths().app_data_dir()
     }
 }
 

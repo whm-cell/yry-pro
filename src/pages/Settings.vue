@@ -465,8 +465,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, markRaw, h, computed, onMounted } from 'vue';
-import { useWheelSettings, DrawMode, WordConfig, SoundSetting } from '../utils/wheelSettings';
+import { ref, reactive, markRaw, h, onMounted } from 'vue';
+import { useWheelSettings, DrawMode,  SoundSetting } from '../utils/wheelSettings';
 import SoundUploader from '../components/SoundUploader.vue';
 import * as tauriApi from '@tauri-apps/api/core';
 
@@ -476,12 +476,9 @@ const {
   updateDrawMode, 
   updateLockAfterComplete,
   updateMaxDraws,
-  updatePrizeWords,
   updateSound
 } = useWheelSettings();
 
-// 添加自定义音效路径
-const customSoundPath = ref('');
 
 // 抽奖模式列表
 const drawModes = [
