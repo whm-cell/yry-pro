@@ -6,6 +6,8 @@ use std::{
 };
 use tokio::sync::OnceCell;
 use util::{database::{Database, VocabularyRecord, SystemSetting}, special_tools};
+use tauri::Manager;
+use tauri::Emitter;
 
 // 全局数据库连接
 static DB: OnceCell<Database> = OnceCell::const_new();
@@ -360,13 +362,101 @@ async fn update_vocabulary_color(id: i64, color: String) -> Result<bool, String>
     db.update_vocabulary_color(id, color).await.map_err(|e| e.to_string())
 }
 
+// 获取最近日志
+#[tauri::command]
+fn get_recent_logs() -> Result<Vec<String>, String> {
+    use std::fs;
+    let log_path = util::special_tools::get_log_file_path();
+    
+    if !log_path.exists() {
+        return Ok(vec!["暂无日志记录".to_string()]);
+    }
+    
+    match fs::read_to_string(&log_path) {
+        Ok(content) => {
+            // 获取最后100行
+            let all_lines: Vec<&str> = content.lines().collect();
+            let start_idx = if all_lines.len() > 100 {
+                all_lines.len() - 100
+            } else {
+                0
+            };
+            
+            Ok(all_lines[start_idx..].iter().map(|&s| s.to_string()).collect())
+        },
+        Err(e) => {
+            Err(format!("读取日志文件失败: {}", e))
+        }
+    }
+}
+
+// 记录自定义日志并发送到前端
+#[tauri::command]
+fn log_message(app_handle: tauri::AppHandle, level: String, message: String) -> Result<(), String> {
+    // 根据级别记录日志
+    match level.as_str() {
+        "error" => log::error!("{}", message),
+        "warn" => log::warn!("{}", message),
+        "info" => log::info!("{}", message),
+        "debug" => log::debug!("{}", message),
+        "trace" => log::trace!("{}", message),
+        _ => log::info!("{}", message),
+    }
+    
+    // 获取窗口并发送事件
+    if let Some(window) = app_handle.get_webview_window("main") {
+        let _ = window.emit("log-event", format!("[{}] {}", level.to_uppercase(), message));
+    }
+    
+    // 同时也将日志写入文件
+    let log_path = util::special_tools::get_log_file_path();
+    let log_dir = log_path.parent().unwrap();
+    if !log_dir.exists() {
+        std::fs::create_dir_all(log_dir).map_err(|e| e.to_string())?;
+    }
+    
+    use std::fs::OpenOptions;
+    use std::io::Write;
+    
+    // 添加时间戳
+    use chrono::Local;
+    let now = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let log_entry = format!("[{}] [{}] {}\n", now, level.to_uppercase(), message);
+    
+    let mut file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(log_path)
+        .map_err(|e| e.to_string())?;
+    
+    file.write_all(log_entry.as_bytes()).map_err(|e| e.to_string())?;
+    
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // 初始化日志系统
+    let log_path = util::special_tools::get_log_file_path();
+    let log_dir = log_path.parent().unwrap();
+    if !log_dir.exists() {
+        std::fs::create_dir_all(log_dir).expect("无法创建日志目录");
+    }
+
+    // 启动应用
     tauri::Builder::default()
+        .plugin(tauri_plugin_log::Builder::default().build())
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_log::Builder::new().build())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init())
+        .setup(|app| {
+            // 写入初始日志
+            log::info!("应用启动成功");
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.emit("log-event", "应用启动成功");
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             greet,
             ensure_images_dir,
@@ -388,6 +478,8 @@ pub fn run() {
             get_all_system_settings,
             update_system_setting,
             update_vocabulary_color,
+            get_recent_logs,
+            log_message,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

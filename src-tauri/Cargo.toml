@@ -30,5 +30,7 @@ base64 = "0.22.1"
 anyhow = "1.0.98"
 sqlx = { version = "0.7", features = ["runtime-tokio", "sqlite", "macros"] }
 tokio = { version = "1", features = ["full"] }
+chrono = "0.4"
+log = "0.4"
 
 

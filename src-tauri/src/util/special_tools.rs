@@ -41,7 +41,41 @@ pub fn get_image_path(image_name: &str) -> PathBuf {
     image_path
 }
 
+/// 获取日志文件路径
+pub fn get_log_file_path() -> PathBuf {
+    let log_dir = ensure_storage_path("logs").expect("无法创建日志目录");
+    
+    // 使用日期创建日志文件名
+    use chrono::Local;
+    let today = Local::now().format("%Y-%m-%d").to_string();
+    log_dir.join(format!("app-{}.log", today))
+}
 
+/// 读取最近的日志
+pub fn read_recent_logs(lines: usize) -> Vec<String> {
+    let log_path = get_log_file_path();
+    
+    if !log_path.exists() {
+        return vec!["没有找到日志文件".to_string()];
+    }
+    
+    match std::fs::read_to_string(&log_path) {
+        Ok(content) => {
+            // 获取最后N行
+            let all_lines: Vec<&str> = content.lines().collect();
+            let start_idx = if all_lines.len() > lines {
+                all_lines.len() - lines
+            } else {
+                0
+            };
+            
+            all_lines[start_idx..].iter().map(|&s| s.to_string()).collect()
+        },
+        Err(e) => {
+            vec![format!("读取日志文件失败: {}", e)]
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {

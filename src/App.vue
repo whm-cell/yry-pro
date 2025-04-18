@@ -6,12 +6,16 @@ import Sidebar from "./components/Sidebar.vue";
 import EnglishWordLottery from "./pages/EnglishWordLottery.vue";
 import Settings from "./pages/Settings.vue";
 import VocabularyManager from "./components/VocabularyManager.vue";
+import LogViewer from "./components/LogViewer.vue";
 
 // 当前活动页面
 const activePage = ref('englishWordLottery');
 
 // 侧边栏折叠状态
 const sidebarCollapsed = ref(true);
+
+// 日志窗口显示状态
+const logViewerVisible = ref(false);
 
 // 切换页面
 const changePage = (page: string) => {
@@ -21,6 +25,11 @@ const changePage = (page: string) => {
 // 切换侧边栏折叠状态
 const toggleSidebar = () => {
   sidebarCollapsed.value = !sidebarCollapsed.value;
+};
+
+// 切换日志窗口显示状态
+const toggleLogViewer = () => {
+  logViewerVisible.value = !logViewerVisible.value;
 };
 
 // 背景装饰
@@ -64,6 +73,12 @@ const decorations = [
         @toggle-sidebar="toggleSidebar" 
       />
       
+      <!-- 日志查看器 -->
+      <LogViewer 
+        :visible="logViewerVisible" 
+        @close="toggleLogViewer"
+      />
+      
       <!-- 页面内容区域 -->
       <div 
         class="content-container flex-1 overflow-hidden relative bg-white bg-opacity-80 transition-all duration-300"
@@ -71,6 +86,16 @@ const decorations = [
       >
         <!-- 彩带装饰 -->
         <div class="absolute top-0 right-0 w-full h-6 bg-gradient-to-r from-red-300 via-yellow-300 to-green-300 opacity-70"></div>
+        
+        <!-- 日志查看器开关按钮 -->
+        <button 
+          @click="toggleLogViewer" 
+          class="absolute top-8 right-6 bg-gradient-to-r from-purple-400 to-indigo-500 text-white px-3 py-1.5 rounded-lg shadow-lg z-10 opacity-90 hover:opacity-100 transition-all duration-300 transform hover:scale-105 flex items-center gap-2 text-sm"
+          title="显示/隐藏日志"
+        >
+          <i class="fas fa-terminal"></i>
+          <span>系统日志</span>
+        </button>
         
         <!-- 页面内容 -->
         <div class="h-full overflow-auto pt-8 pb-4 px-2">
