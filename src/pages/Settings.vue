@@ -354,13 +354,13 @@
                     <div class="flex">
                       <button 
                         @click="playSelectedSound('spin')" 
-                        class="mr-2 px-3 py-1 bg-orange-100 text-orange-700 rounded border border-orange-300"
+                        class="mr-2 px-3 py-1 bg-orange-100 text-orange-700 rounded border border-orange-300 hover:bg-orange-200 transition-colors"
                       >
                         试听
                       </button>
                       <button 
                         @click="openSoundUploader('spin')" 
-                        class="px-3 py-1 bg-orange-100 text-orange-700 rounded border border-orange-300"
+                        class="px-3 py-1 bg-orange-100 text-orange-700 rounded border border-orange-300 hover:bg-orange-200 transition-colors"
                       >
                         选择
                       </button>
@@ -378,18 +378,29 @@
                     <div class="flex">
                       <button 
                         @click="playSelectedSound('win')" 
-                        class="mr-2 px-3 py-1 bg-orange-100 text-orange-700 rounded border border-orange-300"
+                        class="mr-2 px-3 py-1 bg-orange-100 text-orange-700 rounded border border-orange-300 hover:bg-orange-200 transition-colors"
                       >
                         试听
                       </button>
                       <button 
                         @click="openSoundUploader('win')" 
-                        class="px-3 py-1 bg-orange-100 text-orange-700 rounded border border-orange-300"
+                        class="px-3 py-1 bg-orange-100 text-orange-700 rounded border border-orange-300 hover:bg-orange-200 transition-colors"
                       >
                         选择
                       </button>
                     </div>
                   </div>
+                </div>
+                
+                <!-- 添加音频消息提示 -->
+                <div 
+                  v-if="showAudioMessage" 
+                  class="p-3 rounded-md text-center transition-all duration-300 font-medium flex items-center justify-center"
+                  :class="audioMessage.includes('失败') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'"
+                >
+                  <span v-if="audioMessage.includes('失败')" class="mr-2">⚠️</span>
+                  <span v-else class="mr-2">🔊</span>
+                  {{ audioMessage }}
                 </div>
                 
                 <p class="text-sm text-gray-500 mt-2">
@@ -442,18 +453,46 @@
       </div>
     </div>
   </div>
+  
+  <!-- 隐藏的音频元素 -->
+  <audio ref="audioPlayer" style="display:none"></audio>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, markRaw, h, computed, onMounted } from 'vue';
 import { useWheelSettings, DrawMode, WordConfig, SoundSetting } from '../utils/wheelSettings';
-import * as fs from '@tauri-apps/plugin-fs';
-import { invoke } from '@tauri-apps/api/core';
-import { convertFileSrc } from '@tauri-apps/api/core';
-import { appLocalDataDir } from '@tauri-apps/api/path';
-import { debug } from '@tauri-apps/plugin-log';
-import { playSound } from '../utils/wheelUtils';
 import SoundUploader from '../components/SoundUploader.vue';
+
+// 初始化API对象
+const tauriApi = ref<any>(null);
+
+// 在onMounted中初始化Tauri API
+function initTauriApi() {
+  // 检查全局window对象是否有__TAURI__
+  // 这是判断当前是否在Tauri环境的标准方法
+  const isTauriAvailable = typeof window !== 'undefined' && 
+                          // @ts-ignore
+                          window.__TAURI__ !== undefined;
+  
+  if (isTauriAvailable) {
+    console.log('检测到Tauri环境，尝试加载API');
+    // 使用动态导入，不提前声明类型
+    // @ts-ignore - 忽略模块解析错误
+    import('@tauri-apps/api/core')
+      .then((tauriModule) => {
+        tauriApi.value = {
+          invoke: tauriModule.invoke,
+          convertFileSrc: tauriModule.convertFileSrc
+        };
+        console.log('Tauri API加载成功');
+      })
+      .catch((err) => {
+        console.warn('无法导入Tauri API:', err);
+      });
+  } else {
+    console.warn('不在Tauri环境中运行，Tauri API不可用');
+  }
+}
 
 // 获取转盘设置
 const { 
@@ -464,6 +503,9 @@ const {
   updatePrizeWords,
   updateSound
 } = useWheelSettings();
+
+// 添加自定义音效路径
+const customSoundPath = ref('');
 
 // 抽奖模式列表
 const drawModes = [
@@ -667,6 +709,13 @@ async function decreaseMaxDraws(): Promise<void> {
 const selectedSoundType = ref<'spin' | 'win'>('spin');
 const showSoundUploader = ref(false);
 
+// 添加消息提示的状态
+const audioMessage = ref('');
+const showAudioMessage = ref(false);
+
+// 音频播放器引用
+const audioPlayer = ref<HTMLAudioElement | null>(null);
+
 // 获取当前选中音效名称
 function getSelectedSoundName(type: 'spin' | 'win'): string {
   if (!settings.sounds || !settings.sounds[type]) {
@@ -682,12 +731,100 @@ function getSelectedSoundName(type: 'spin' | 'win'): string {
 }
 
 // 播放选中的音效
-function playSelectedSound(type: 'spin' | 'win'): void {
+async function playSelectedSound(type: 'spin' | 'win'): Promise<void> {
   if (!settings.sounds || !settings.sounds[type]) {
     console.warn('音效设置未加载完成');
+    audioMessage.value = '音效未加载完成，请稍后再试';
+    showAudioMessage.value = true;
+    setTimeout(() => { showAudioMessage.value = false; }, 3000);
     return;
   }
-  playSound(type, 0.5);
+  
+  try {
+    // 显示音效信息
+    const soundName = settings.sounds[type].name;
+    audioMessage.value = `正在播放${type === 'spin' ? '旋转' : '中奖'}音效: ${soundName}`;
+    showAudioMessage.value = true;
+    
+    // 确保音频元素存在
+    if (!audioPlayer.value) {
+      console.error('音频播放器元素未找到，尝试重新获取');
+      const audioElement = document.querySelector('audio');
+      if (audioElement) {
+        audioPlayer.value = audioElement as HTMLAudioElement;
+      } else {
+        throw new Error('找不到音频播放器元素');
+      }
+    }
+    
+    // 获取音效URL
+    let soundUrl = settings.sounds[type].url;
+    console.log('准备播放音效URL:', soundUrl);
+    
+    // 如果有Tauri API，尝试转换文件URL
+    if (tauriApi.value && !soundUrl.startsWith('http')) {
+      try {
+        soundUrl = tauriApi.value.convertFileSrc(soundUrl);
+        console.log('转换后的URL:', soundUrl);
+      } catch (err) {
+        console.warn('转换URL失败，使用原始路径:', err);
+      }
+    }
+    
+    // 创建新的Audio实例来播放音效
+    const tempAudio = new Audio();
+    tempAudio.volume = 0.5;
+    tempAudio.src = soundUrl;
+    
+    // 绑定事件
+    tempAudio.addEventListener('ended', () => {
+      console.log('音效播放完成');
+    });
+    
+    tempAudio.addEventListener('error', (e) => {
+      console.error('音效加载错误:', e);
+      audioMessage.value = '音效加载失败，请检查文件路径或权限';
+      showAudioMessage.value = true;
+    });
+    
+    // 播放音效并同时更新DOM中的audio元素
+    if (audioPlayer.value) {
+      audioPlayer.value.src = soundUrl;
+      audioPlayer.value.volume = 0.5;
+    }
+    
+    // 播放音效
+    try {
+      await tempAudio.play();
+      console.log(`成功播放${type}音效:`, settings.sounds[type].name);
+    } catch (playError: any) {
+      console.error('播放失败:', playError);
+      audioMessage.value = `播放失败: ${playError.message || '未知错误'}`;
+      
+      // 尝试在用户交互后自动播放
+      const playAfterInteraction = () => {
+        tempAudio.play().catch(e => console.error('第二次尝试播放失败:', e));
+        document.removeEventListener('click', playAfterInteraction);
+      };
+      
+      document.addEventListener('click', playAfterInteraction, { once: true });
+      audioMessage.value = '需要用户交互才能播放声音，请点击页面任意位置';
+    }
+    
+    // 3秒后隐藏消息
+    setTimeout(() => {
+      showAudioMessage.value = false;
+    }, 3000);
+  } catch (error: any) {
+    console.error('播放音效失败:', error);
+    audioMessage.value = `播放音效失败: ${error.message || '未知错误'}`;
+    showAudioMessage.value = true;
+    
+    // 3秒后隐藏消息
+    setTimeout(() => {
+      showAudioMessage.value = false;
+    }, 3000);
+  }
 }
 
 // 打开音效选择器
@@ -706,6 +843,100 @@ function handleSoundSelected(sound: SoundSetting): void {
   updateSound(selectedSoundType.value, sound);
   closeSoundUploader();
 }
+
+// 加载自定义默认音效
+onMounted(async () => {
+  console.log('Settings组件已挂载，音频播放器状态:', audioPlayer.value ? '已初始化' : '未初始化');
+  
+  // 初始化Tauri API
+  initTauriApi();
+  
+  // 检查audio元素是否成功绑定
+  if (!audioPlayer.value) {
+    console.error('警告：audio元素未成功绑定，试听功能可能不可用');
+    // 可选：尝试手动获取DOM中的audio元素
+    const audioElement = document.querySelector('audio');
+    if (audioElement) {
+      console.log('找到了audio元素，尝试手动绑定');
+      audioPlayer.value = audioElement as HTMLAudioElement;
+    }
+  }
+  
+  try {
+    // 本地音频文件路径
+    const spinFilePath = '/Users/coolm/softs/temp_files/sounds/cjyx_01.mp3';
+    const winFilePath = '/Users/coolm/softs/temp_files/sounds/cjyx_02.mp3';
+    
+    // 设置音效 - 直接使用本地文件路径
+    const sound: SoundSetting = {
+      type: 'preset',
+      name: '默认旋转音效',
+      url: spinFilePath
+    };
+    
+    const winSound: SoundSetting = {
+      type: 'preset',
+      name: '默认中奖音效',
+      url: winFilePath
+    };
+    
+    // 使用设置好的默认音效
+    console.log('设置本地音效文件:', spinFilePath);
+    
+    // 检查是否已有音效设置，如果没有则设置
+    if (!settings.sounds) {
+      settings.sounds = {
+        spin: sound,
+        win: winSound
+      };
+    } else {
+      // 单独设置 spin 或 win 音效
+      if (!settings.sounds.spin || settings.sounds.spin.url !== spinFilePath) {
+        updateSound('spin', sound);
+      }
+      if (!settings.sounds.win || settings.sounds.win.url !== winFilePath) {
+        updateSound('win', winSound);
+      }
+    }
+    
+    // 显示设置完成消息
+    audioMessage.value = "音效设置已加载，请点击试听按钮";
+    showAudioMessage.value = true;
+    setTimeout(() => {
+      showAudioMessage.value = false;
+    }, 3000);
+    
+    console.log('默认音效已设置');
+    
+    // 将本地音效路径转换为Tauri可访问的URL
+    if (tauriApi.value && tauriApi.value.convertFileSrc) {
+      try {
+        const spinUrl = tauriApi.value.convertFileSrc(spinFilePath);
+        const winUrl = tauriApi.value.convertFileSrc(winFilePath);
+        
+        // 更新为转换后的URL
+        sound.url = spinUrl;
+        winSound.url = winUrl;
+        
+        // 更新设置
+        updateSound('spin', sound);
+        updateSound('win', winSound);
+        
+        console.log('音效URL已转换:', spinUrl);
+        
+        // 预加载音效
+        if (audioPlayer.value) {
+          audioPlayer.value.src = spinUrl;
+          audioPlayer.value.load();
+        }
+      } catch (err) {
+        console.warn('转换文件URL失败:', err);
+      }
+    }
+  } catch (error: any) {
+    console.error('加载默认音效失败:', error);
+  }
+});
 </script>
 
 <style scoped>

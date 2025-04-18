@@ -53,13 +53,13 @@ const defaultSettings: WheelSettings = {
   sounds: {
     spin: {
       type: 'preset',
-      name: 'spin',
-      url: 'https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3'
+      name: '默认旋转音效',
+      url: '/Users/coolm/softs/temp_files/sounds/cjyx_01.mp3'
     },
     win: {
       type: 'preset',
-      name: 'win',
-      url: 'https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3'
+      name: '默认中奖音效',
+      url: '/Users/coolm/softs/temp_files/sounds/cjyx_02.mp3'
     }
   }
 };

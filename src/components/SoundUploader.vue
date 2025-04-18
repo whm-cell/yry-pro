@@ -129,17 +129,17 @@ const selectedPreset = ref<string | null>(null);
 const message = ref('');
 const messageType = ref<'info' | 'error'>('info');
 
-// 预设音效
+// 预设音效 - 使用本地路径
 const presetSounds = [
   { 
-    name: 'spin', 
-    url: 'https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3',
+    name: '默认旋转音效', 
+    url: '/Users/coolm/softs/temp_files/sounds/cjyx_01.mp3',
     icon: '🎮',
     description: '转盘旋转音效'
   },
   { 
-    name: 'win', 
-    url: 'https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3',
+    name: '默认中奖音效', 
+    url: '/Users/coolm/softs/temp_files/sounds/cjyx_02.mp3',
     icon: '🏆',
     description: '中奖音效'
   }
@@ -151,6 +151,23 @@ let previewAudio: HTMLAudioElement | null = null;
 // 组件加载时获取音频列表
 onMounted(async () => {
   await refreshAudioList();
+  
+  // 尝试转换本地文件路径为Tauri可访问的URL
+  try {
+    const { convertFileSrc } = await import('@tauri-apps/api/core');
+    
+    // 更新预设音效URL
+    for (const preset of presetSounds) {
+      try {
+        const url = await convertFileSrc(preset.url);
+        preset.url = url;
+      } catch (err) {
+        console.warn(`无法转换音效URL: ${preset.url}`, err);
+      }
+    }
+  } catch (err) {
+    console.warn('无法导入Tauri API，使用原始文件路径', err);
+  }
 });
 
 // 刷新音频列表
@@ -336,7 +353,10 @@ function playPresetSound(preset: typeof presetSounds[0]) {
   // 创建新的音频播放
   const audio = new Audio(preset.url);
   previewAudio = audio;
-  audio.play().catch(e => console.error('无法播放音频', e));
+  audio.play().catch(e => {
+    console.error('无法播放音频', e);
+    showMessage(`无法播放音频: ${e.message || '未知错误'}`, 'error');
+  });
 }
 
 // 确认音频选择

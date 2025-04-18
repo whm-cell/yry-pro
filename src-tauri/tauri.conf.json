@@ -24,7 +24,8 @@
         "enable": true,
         "scope": {
           "allow": [
-            "/Users/coolm/softs/temp_files/images/**"
+            "/Users/coolm/softs/temp_files/images/**",
+            "/Users/coolm/softs/temp_files/audio/**"
           ]
         }
       }
