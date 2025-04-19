@@ -67,13 +67,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }} # 如果需要签名
           TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }} # 如果需要签名
+          TAURI_TARGET: ${{ matrix.platform.target }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'App v${{ github.ref_name }}'
           releaseBody: 'See the assets to download this version and install.'
           releaseDraft: false
           prerelease: false
-          args: --target ${{ matrix.platform.target }} --verbose
+          args: --verbose
 
       - name: Upload artifacts (Linux)
         if: matrix.platform.os == 'ubuntu-latest'
