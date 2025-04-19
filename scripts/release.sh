@@ -23,9 +23,34 @@ fi
 echo "正在同步版本号..."
 pnpm run sync-version ${VERSION}
 
+# 触发Cargo.lock更新
+echo "触发Cargo.lock更新..."
+(cd src-tauri && cargo check --quiet)
+
+# 等待Cargo.lock更新
+echo "等待Cargo.lock更新 (5秒)..."
+sleep 5
+
+# 检查Cargo.lock文件是否存在
+CARGO_LOCK_PATH="src-tauri/Cargo.lock"
+if [ -f "$CARGO_LOCK_PATH" ]; then
+  echo "Cargo.lock文件存在，将被添加到提交..."
+else
+  echo "警告: $CARGO_LOCK_PATH 文件不存在！"
+  echo "这很不寻常，请手动检查项目结构。"
+fi
+
 # 提交版本更改
 echo "正在提交版本更改..."
-git add package.json src-tauri/Cargo.toml src-tauri/Cargo.lock
+git add package.json src-tauri/Cargo.toml
+
+# 强制添加Cargo.lock，即使它在.gitignore中
+if [ -f "$CARGO_LOCK_PATH" ]; then
+  echo "添加Cargo.lock文件（使用-f强制添加）..."
+  git add -f "$CARGO_LOCK_PATH"
+fi
+
+# 提交更改
 git commit -m "chore: 更新版本号至 ${VERSION}"
 
 # 推送更改
