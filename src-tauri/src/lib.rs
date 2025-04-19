@@ -34,7 +34,7 @@ fn ensure_images_dir(_app_handle: tauri::AppHandle) -> Result<String, String> {
     Ok(images_dir.to_string_lossy().to_string())
 }
 
-// 保存图片到images目录
+// 保存图片到images目录 01
 #[tauri::command]
 #[allow(deprecated)]
 fn save_image(
