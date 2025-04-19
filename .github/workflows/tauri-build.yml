@@ -49,8 +49,7 @@ jobs:
 
       - name: 同步版本号
         run: |
-          mkdir -p scripts
-          node scripts/sync-version.js ${{ env.VERSION }}
+          node scripts/sync-version.cjs ${{ env.VERSION }}
         shell: bash
 
       - name: 安装Rust
