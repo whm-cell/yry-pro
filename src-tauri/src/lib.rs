@@ -298,6 +298,7 @@ async fn add_vocabulary(
         phonetic: None,
         example: None,
         color,
+        is_default: false,
     };
 
     db.add_vocabulary(record).await.map_err(|e| e.to_string())

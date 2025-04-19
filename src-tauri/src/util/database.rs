@@ -21,6 +21,7 @@ pub struct VocabularyRecord {
     pub phonetic: Option<String>,
     pub example: Option<String>,
     pub color: Option<String>,
+    pub is_default: bool,
 }
 
 /// 系统设置结构体
@@ -63,6 +64,7 @@ impl Database {
                 phonetic TEXT,
                 example TEXT,
                 color TEXT,
+                is_default BOOLEAN DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )",
         )
@@ -70,23 +72,23 @@ impl Database {
         .await
         .context("创建单词表失败")?;
 
-        // 检查color列是否存在，如果不存在则添加
+        // 检查is_default列是否存在，如果不存在则添加
         let column_exists = sqlx::query("PRAGMA table_info(vocabulary)")
             .map(|row: sqlx::sqlite::SqliteRow| {
                 let column_name: String = row.get("name");
-                column_name == "color"
+                column_name == "is_default"
             })
             .fetch_all(&pool)
             .await
-            .context("检查color列是否存在失败")?
+            .context("检查is_default列是否存在失败")?
             .iter()
             .any(|&exists| exists);
 
         if !column_exists {
-            sqlx::query("ALTER TABLE vocabulary ADD COLUMN color TEXT")
+            sqlx::query("ALTER TABLE vocabulary ADD COLUMN is_default BOOLEAN DEFAULT 0")
                 .execute(&pool)
                 .await
-                .context("添加color列失败")?;
+                .context("添加is_default列失败")?;
         }
 
         // 初始化活动单词表
@@ -179,16 +181,30 @@ impl Database {
             let image_path = special_tools::get_image_path(image);
             
             sqlx::query(
-                "INSERT INTO vocabulary (word, translation, image_path, color) VALUES (?, ?, ?, ?)"
+                "INSERT INTO vocabulary (word, translation, image_path, color, is_default) VALUES (?, ?, ?, ?, ?)"
             )
             .bind(word)
             .bind(translation)
             .bind(image_path.to_string_lossy().to_string())
             .bind(color)
+            .bind(true)  // 设置为默认单词
             .execute(pool)
             .await
             .context(format!("添加默认单词失败: {}", word))?;
         }
+
+        // 确保默认单词是活动状态
+        let default_word_id = sqlx::query("SELECT id FROM vocabulary WHERE is_default = 1")
+            .map(|row: sqlx::sqlite::SqliteRow| row.get::<i64, _>("id"))
+            .fetch_one(pool)
+            .await
+            .context("获取默认单词ID失败")?;
+
+        sqlx::query("INSERT OR REPLACE INTO active_words (word_id) VALUES (?)")
+            .bind(default_word_id)
+            .execute(pool)
+            .await
+            .context("设置默认单词为活动状态失败")?;
 
         Ok(())
     }
@@ -196,8 +212,8 @@ impl Database {
     /// 添加单词记录
     pub async fn add_vocabulary(&self, record: VocabularyRecord) -> Result<i64> {
         let result = sqlx::query(
-            "INSERT INTO vocabulary (word, translation, image_path, phonetic, example, color) 
-             VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO vocabulary (word, translation, image_path, phonetic, example, color, is_default) 
+             VALUES (?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(&record.word)
         .bind(&record.translation)
@@ -205,6 +221,7 @@ impl Database {
         .bind(&record.phonetic)
         .bind(&record.example)
         .bind(&record.color)
+        .bind(&record.is_default)
         .execute(&self.pool)
         .await
         .context("添加单词记录失败")?;
@@ -215,7 +232,7 @@ impl Database {
     /// 获取所有单词记录
     pub async fn get_all_vocabulary(&self) -> Result<Vec<VocabularyRecord>> {
         let records = sqlx::query(
-            "SELECT id, word, translation, image_path, phonetic, example, color FROM vocabulary",
+            "SELECT id, word, translation, image_path, phonetic, example, color, is_default FROM vocabulary",
         )
         .map(|row: sqlx::sqlite::SqliteRow| VocabularyRecord {
             id: Some(row.get("id")),
@@ -225,6 +242,7 @@ impl Database {
             phonetic: row.get("phonetic"),
             example: row.get("example"),
             color: row.get("color"),
+            is_default: row.get("is_default"),
         })
         .fetch_all(&self.pool)
         .await
@@ -236,7 +254,7 @@ impl Database {
     /// 根据ID获取单词记录
     pub async fn get_vocabulary_by_id(&self, id: i64) -> Result<Option<VocabularyRecord>> {
         let record = sqlx::query(
-            "SELECT id, word, translation, image_path, phonetic, example, color FROM vocabulary WHERE id = ?"
+            "SELECT id, word, translation, image_path, phonetic, example, color, is_default FROM vocabulary WHERE id = ?"
         )
         .bind(id)
         .map(|row: sqlx::sqlite::SqliteRow| {
@@ -248,6 +266,7 @@ impl Database {
                 phonetic: row.get("phonetic"),
                 example: row.get("example"),
                 color: row.get("color"),
+                is_default: row.get("is_default"),
             }
         })
         .fetch_optional(&self.pool)
@@ -259,6 +278,18 @@ impl Database {
 
     /// 删除单词记录
     pub async fn delete_vocabulary(&self, id: i64) -> Result<bool> {
+        // 检查是否是默认单词
+        let is_default = sqlx::query("SELECT is_default FROM vocabulary WHERE id = ?")
+            .bind(id)
+            .map(|row: sqlx::sqlite::SqliteRow| row.get::<bool, _>("is_default"))
+            .fetch_optional(&self.pool)
+            .await
+            .context("检查是否是默认单词失败")?;
+
+        if let Some(true) = is_default {
+            return Err(anyhow::anyhow!("默认单词不能删除"));
+        }
+
         let result = sqlx::query("DELETE FROM vocabulary WHERE id = ?")
             .bind(id)
             .execute(&self.pool)
@@ -270,6 +301,18 @@ impl Database {
 
     /// 更新单词颜色
     pub async fn update_vocabulary_color(&self, id: i64, color: String) -> Result<bool> {
+        // 检查是否是默认单词
+        let is_default = sqlx::query("SELECT is_default FROM vocabulary WHERE id = ?")
+            .bind(id)
+            .map(|row: sqlx::sqlite::SqliteRow| row.get::<bool, _>("is_default"))
+            .fetch_optional(&self.pool)
+            .await
+            .context("检查是否是默认单词失败")?;
+
+        if let Some(true) = is_default {
+            return Err(anyhow::anyhow!("默认单词不能修改颜色"));
+        }
+
         let result = sqlx::query("UPDATE vocabulary SET color = ? WHERE id = ?")
             .bind(color)
             .bind(id)
@@ -282,6 +325,18 @@ impl Database {
 
     /// 更新单词信息
     pub async fn update_vocabulary(&self, id: i64, word: String, translation: String, image_path: String, color: Option<String>) -> Result<bool> {
+        // 检查是否是默认单词
+        let is_default = sqlx::query("SELECT is_default FROM vocabulary WHERE id = ?")
+            .bind(id)
+            .map(|row: sqlx::sqlite::SqliteRow| row.get::<bool, _>("is_default"))
+            .fetch_optional(&self.pool)
+            .await
+            .context("检查是否是默认单词失败")?;
+
+        if let Some(true) = is_default {
+            return Err(anyhow::anyhow!("默认单词不能修改"));
+        }
+
         let result = sqlx::query(
             "UPDATE vocabulary SET word = ?, translation = ?, image_path = ?, color = ? WHERE id = ?"
         )
@@ -300,7 +355,7 @@ impl Database {
     /// 获取所有活动单词
     pub async fn get_active_words(&self) -> Result<Vec<VocabularyRecord>> {
         let records = sqlx::query(
-            "SELECT v.id, v.word, v.translation, v.image_path, v.phonetic, v.example, v.color
+            "SELECT v.id, v.word, v.translation, v.image_path, v.phonetic, v.example, v.color, v.is_default
              FROM vocabulary v
              INNER JOIN active_words a ON v.id = a.word_id
              ORDER BY a.added_at DESC
@@ -314,6 +369,7 @@ impl Database {
             phonetic: row.get("phonetic"),
             example: row.get("example"),
             color: row.get("color"),
+            is_default: row.get("is_default"),
         })
         .fetch_all(&self.pool)
         .await
@@ -324,6 +380,18 @@ impl Database {
 
     /// 添加活动单词
     pub async fn add_active_word(&self, word_id: i64) -> Result<bool> {
+        // 检查是否是默认单词
+        let is_default = sqlx::query("SELECT is_default FROM vocabulary WHERE id = ?")
+            .bind(word_id)
+            .map(|row: sqlx::sqlite::SqliteRow| row.get::<bool, _>("is_default"))
+            .fetch_optional(&self.pool)
+            .await
+            .context("检查是否是默认单词失败")?;
+
+        if let Some(true) = is_default {
+            return Err(anyhow::anyhow!("默认单词已经是活动状态"));
+        }
+
         // 检查活动单词数量，最多允许5个
         let count = sqlx::query("SELECT COUNT(*) as count FROM active_words")
             .map(|row: sqlx::sqlite::SqliteRow| {
@@ -351,6 +419,18 @@ impl Database {
 
     /// 移除活动单词
     pub async fn remove_active_word(&self, word_id: i64) -> Result<bool> {
+        // 检查是否是默认单词
+        let is_default = sqlx::query("SELECT is_default FROM vocabulary WHERE id = ?")
+            .bind(word_id)
+            .map(|row: sqlx::sqlite::SqliteRow| row.get::<bool, _>("is_default"))
+            .fetch_optional(&self.pool)
+            .await
+            .context("检查是否是默认单词失败")?;
+
+        if let Some(true) = is_default {
+            return Err(anyhow::anyhow!("默认单词不能移除活动状态"));
+        }
+
         let result = sqlx::query("DELETE FROM active_words WHERE word_id = ?")
             .bind(word_id)
             .execute(&self.pool)

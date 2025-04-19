@@ -90,10 +90,15 @@
         <div 
           v-for="word in activeWords" 
           :key="word.id" 
-          class="bg-blue-100 px-3 py-1 rounded-full flex items-center"
+          :class="[
+            'px-3 py-1 rounded-full flex items-center', 
+            word.is_default ? 'bg-yellow-100 border border-yellow-300' : 'bg-blue-100'
+          ]"
         >
           <span class="font-medium">{{ word.word }}</span>
+          <span v-if="word.is_default" class="ml-1 text-xs text-orange-500">(默认)</span>
           <button 
+            v-if="!word.is_default"
             @click="removeActiveWord(word.id)" 
             class="ml-2 text-red-500 hover:text-red-700"
           >
@@ -141,6 +146,7 @@
                   <div class="w-6 h-6 rounded mr-2" :style="{backgroundColor: item.color || '#636e72'}"></div>
                   <span>{{ item.color || '#636e72' }}</span>
                   <button 
+                    v-if="!item.is_default"
                     @click="openColorEditor(item)" 
                     class="ml-2 text-blue-600 hover:text-blue-900"
                   >
@@ -150,12 +156,14 @@
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 space-x-2">
                 <button 
+                  v-if="!item.is_default"
                   @click="openEditDialog(item)" 
                   class="text-green-600 hover:text-green-900"
                 >
                   编辑
                 </button>
                 <button 
+                  v-if="!item.is_default || !isWordActive(item.id)"
                   @click="toggleActiveWord(item)" 
                   class="text-blue-600 hover:text-blue-900"
                   :disabled="isActiveWordUpdating"
@@ -163,12 +171,14 @@
                   {{ isWordActive(item.id) ? '取消活动' : '设为活动' }}
                 </button>
                 <button 
+                  v-if="!item.is_default"
                   @click="deleteVocabulary(item.id)" 
                   class="text-red-600 hover:text-red-900"
                   :disabled="isDeleting"
                 >
                   删除
                 </button>
+                <span v-if="item.is_default" class="text-gray-400">默认单词</span>
               </td>
             </tr>
           </tbody>
@@ -322,6 +332,7 @@ const newWord = ref({
   word: '',
   translation: '',
   color: '#636e72', // 默认颜色值
+  is_default: false // 添加is_default字段
 });
 const selectedImage = ref(null);
 const imagePreview = ref('');
@@ -343,7 +354,8 @@ const editDialog = ref({
   currentImageSrc: '',
   selectedImage: null,
   imagePreview: '',
-  originalFileName: ''
+  originalFileName: '',
+  is_default: false
 });
 const isEditing = ref(false);
 
@@ -456,13 +468,14 @@ const saveVocabulary = async () => {
       word: newWord.value.word,
       translation: newWord.value.translation,
       imagePath: fileName,
-      color: newWord.value.color, // 添加颜色值
+      color: newWord.value.color,
+      is_default: newWord.value.is_default // 传递is_default字段
     });
     
     console.log('单词保存结果:', result);
     
     // 3. 重置表单
-    newWord.value = { word: '', translation: '', color: '#636e72' };
+    newWord.value = { word: '', translation: '', color: '#636e72', is_default: false };
     selectedImage.value = null;
     imagePreview.value = '';
     
@@ -509,6 +522,11 @@ const isWordActive = (wordId) => {
 // 切换单词活动状态
 const toggleActiveWord = async (word) => {
   if (isWordActive(word.id)) {
+    // 检查是否为默认单词
+    if (word.is_default) {
+      await message('默认单词不能被移除活动状态', { title: '提示' });
+      return;
+    }
     await removeActiveWord(word.id);
   } else {
     await addActiveWord(word);
@@ -539,6 +557,13 @@ const addActiveWord = async (word) => {
 // 移除活动单词
 const removeActiveWord = async (wordId) => {
   try {
+    // 先检查是否为默认单词
+    const wordToRemove = vocabularyList.value.find(w => w.id === wordId);
+    if (wordToRemove && wordToRemove.is_default) {
+      await message('默认单词不能被移除活动状态', { title: '提示' });
+      return;
+    }
+    
     isActiveWordUpdating.value = true;
     await invoke('remove_active_word', { wordId });
     activeWords.value = activeWords.value.filter(w => w.id !== wordId);
@@ -613,7 +638,8 @@ const openEditDialog = (word) => {
     currentImageSrc: word.image_path ? convertFileSrc(word.image_path) : '',
     selectedImage: null,
     imagePreview: '',
-    originalFileName: imageFileName
+    originalFileName: imageFileName,
+    is_default: word.is_default
   };
 };
 
