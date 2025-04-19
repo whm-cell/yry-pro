@@ -73,8 +73,7 @@ jobs:
           releaseBody: 'See the assets to download this version and install.'
           releaseDraft: false
           prerelease: false
-          target: ${{ matrix.platform.target }}
-          args: --verbose
+          args: --target ${{ matrix.platform.target }} --verbose
 
       - name: Upload artifacts (Linux)
         if: matrix.platform.os == 'ubuntu-latest'
