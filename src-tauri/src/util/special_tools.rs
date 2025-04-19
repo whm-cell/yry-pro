@@ -14,7 +14,15 @@ pub fn get_base_storage_path() -> PathBuf {
         PathBuf::from("/Users/coolm/softs/temp_files")
     } else {
         // 生产环境使用 AppData 目录
-        path::paths().app_data_dir()
+        // 获取应用数据目录，如果路径对象未初始化，则使用临时目录作为备选
+        let app_data = path::paths().app_data_dir();
+        if app_data.as_os_str().is_empty() {
+            // 路径为空，可能是未初始化
+            println!("警告：应用数据目录未初始化，使用临时目录");
+            std::env::temp_dir().join("ai_mate_data")
+        } else {
+            app_data
+        }
     }
 }
 

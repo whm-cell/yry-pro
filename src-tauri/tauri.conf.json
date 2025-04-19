@@ -29,7 +29,7 @@
           "allow": [
             "/Users/coolm/softs/temp_files/images/**",
             "/Users/coolm/softs/temp_files/sounds/**",
-            "$APPLOCALDATA/**", "$RESOURCE/**",
+            "$APPLOCALDATA/**", 
             "$APPDATA/**"
           ]
         }

@@ -9,19 +9,47 @@
     "core:default",
     "opener:default",
     {
-      "identifier": "fs:scope",
-      "permissions": [
-        "fs:scope:app",
+      "identifier":"fs:allow-exists",
+      "allow": [
         "$APPLOCALDATA/**",
-        "$RESOURCE/**",
         "$APPDATA/**"
       ]
     },
-    "fs:allow-exists",
-    "fs:allow-create",
-    "fs:allow-read",
-    "fs:allow-write",
-    "fs:allow-watch",
+    {
+      "identifier":"fs:allow-create",
+      "allow": [
+        "$APPLOCALDATA/**",
+        "$APPDATA/**"
+      ]
+    },
+    {
+      "identifier":"fs:allow-write",
+      "allow": [
+        "$APPLOCALDATA/**",
+        "$APPDATA/**"
+      ]
+    },
+    {
+      "identifier":"fs:allow-read",
+      "allow": [
+        "$APPLOCALDATA/**",
+        "$APPDATA/**"
+      ]
+    },
+    {
+      "identifier":"fs:allow-watch",
+      "allow": [
+        "$APPLOCALDATA/**",
+        "$APPDATA/**"
+      ]
+    },
+    {
+      "identifier": "fs:allow-read-text-file",
+      "allow": [
+        "$APPLOCALDATA/**",
+        "$APPDATA/**"
+      ]
+    },
     "log:default",
     "dialog:default"
   ]

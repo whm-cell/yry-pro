@@ -42,22 +42,32 @@ fn save_image(
     file_data: String,
     file_name: String,
 ) -> Result<String, String> {
-    let images_dir = PathBuf::from(util::special_tools::get_base_storage_path()).join("images");
+    let base_path = util::special_tools::get_base_storage_path();
+    let images_dir = base_path.join("images");
 
     // 确保目录存在
-    if !images_dir.exists() {
-        fs::create_dir_all(&images_dir).map_err(|e| e.to_string())?;
+    if !base_path.exists() {
+        fs::create_dir_all(&base_path).map_err(|e| format!("创建基础目录失败: {}", e.to_string()))?;
     }
+    
+    if !images_dir.exists() {
+        fs::create_dir_all(&images_dir).map_err(|e| format!("创建图片目录失败: {}", e.to_string()))?;
+    }
+
+    // 测试目录写入权限
+    let test_file = images_dir.join(".write_test");
+    fs::write(&test_file, b"test").map_err(|e| format!("写入测试失败，可能没有写入权限: {}", e.to_string()))?;
+    fs::remove_file(test_file).map_err(|e| format!("删除测试文件失败: {}", e.to_string()))?;
 
     // 解码Base64数据
     let prefix_removed = file_data.split(",").nth(1).unwrap_or(&file_data);
-    let image_data = base64::decode(prefix_removed).map_err(|e| e.to_string())?;
+    let image_data = base64::decode(prefix_removed).map_err(|e| format!("Base64解码失败: {}", e.to_string()))?;
 
     // 构建文件路径
     let file_path = images_dir.join(&file_name);
 
     // 写入文件
-    fs::write(&file_path, image_data).map_err(|e| e.to_string())?;
+    fs::write(&file_path, image_data).map_err(|e| format!("写入图片文件失败: {}", e.to_string()))?;
 
     // 返回保存的文件路径
     Ok(file_path.to_string_lossy().to_string())
@@ -186,13 +196,26 @@ fn save_sound_file(
     offset: u64,
     final_: bool,
 ) -> Result<String, String> {
-    let sounds_dir = PathBuf::from(util::special_tools::get_base_storage_path()).join("sounds");
+    let base_path = util::special_tools::get_base_storage_path();
+    let sounds_dir = base_path.join("sounds");
 
-    // 确保目录存在
-    if !sounds_dir.exists() {
-        fs::create_dir_all(&sounds_dir).map_err(|e| e.to_string())?;
+    // 确保基础目录存在
+    if !base_path.exists() {
+        fs::create_dir_all(&base_path).map_err(|e| format!("创建基础目录失败: {}", e.to_string()))?;
     }
 
+    // 确保声音目录存在
+    if !sounds_dir.exists() {
+        fs::create_dir_all(&sounds_dir).map_err(|e| format!("创建声音目录失败: {}", e.to_string()))?;
+    }
+
+    // 测试目录写入权限
+    if offset == 0 {  // 只在第一个块时测试权限
+        let test_file = sounds_dir.join(".write_test");
+        fs::write(&test_file, b"test").map_err(|e| format!("写入测试失败，可能没有写入权限: {}", e.to_string()))?;
+        fs::remove_file(test_file).map_err(|e| format!("删除测试文件失败: {}", e.to_string()))?;
+    }
+    
     // 构建文件路径
     let file_path = sounds_dir.join(&name);
     
@@ -204,14 +227,14 @@ fn save_sound_file(
             .create(true)
             .truncate(true)
             .open(&file_path)
-            .map_err(|e| e.to_string())?
+            .map_err(|e| format!("创建音频文件失败: {}", e.to_string()))?
     } else {
         // 否则追加到现有文件
         fs::OpenOptions::new()
             .write(true)
             .append(true)
             .open(&file_path)
-            .map_err(|e| e.to_string())?
+            .map_err(|e| format!("打开音频文件失败: {}", e.to_string()))?
     };
 
     // 使用标准库的seek和write
@@ -220,14 +243,14 @@ fn save_sound_file(
     // 设置写入位置
     let mut file = file;
     if offset > 0 {
-        file.seek(SeekFrom::Start(offset)).map_err(|e| e.to_string())?;
+        file.seek(SeekFrom::Start(offset)).map_err(|e| format!("设置文件位置失败: {}", e.to_string()))?;
     }
     
     // 写入数据块
-    file.write_all(&data).map_err(|e| e.to_string())?;
+    file.write_all(&data).map_err(|e| format!("写入音频数据失败: {}", e.to_string()))?;
     
     // 确保数据写入磁盘
-    file.flush().map_err(|e| e.to_string())?;
+    file.flush().map_err(|e| format!("刷新文件缓冲失败: {}", e.to_string()))?;
     
     // 如果是最后一个块，返回完整路径
     if final_ {
@@ -367,6 +390,11 @@ pub fn run() {
         .plugin(tauri_plugin_log::Builder::new().build())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init())
+        .setup(|app| {
+            // 初始化路径
+            util::path::init_paths(app)?;
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             greet,
             ensure_images_dir,
