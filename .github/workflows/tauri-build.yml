@@ -40,6 +40,12 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          run_install: false
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -59,7 +65,7 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Install app dependencies
-        run: npm install # 根据你的项目包管理器调整为 yarn 或 pnpm 如果需要
+        run: pnpm install
 
       - name: Build Tauri App
         uses: tauri-apps/tauri-action@v0
