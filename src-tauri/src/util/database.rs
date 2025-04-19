@@ -352,6 +352,20 @@ impl Database {
         Ok(result.rows_affected() > 0)
     }
 
+    /// 仅更新单词图片 (允许更新默认单词图片)
+    pub async fn update_vocabulary_image(&self, id: i64, image_path: String) -> Result<bool> {
+        let result = sqlx::query(
+            "UPDATE vocabulary SET image_path = ? WHERE id = ?"
+        )
+        .bind(image_path)
+        .bind(id)
+        .execute(&self.pool)
+        .await
+        .context("更新单词图片失败")?;
+
+        Ok(result.rows_affected() > 0)
+    }
+
     /// 获取所有活动单词
     pub async fn get_active_words(&self) -> Result<Vec<VocabularyRecord>> {
         let records = sqlx::query(

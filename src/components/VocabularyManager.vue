@@ -163,6 +163,13 @@
                   编辑
                 </button>
                 <button 
+                  v-if="item.is_default"
+                  @click="openEditImageDialog(item)" 
+                  class="text-green-600 hover:text-green-900"
+                >
+                  修改图片
+                </button>
+                <button 
                   v-if="!item.is_default || !isWordActive(item.id)"
                   @click="toggleActiveWord(item)" 
                   class="text-blue-600 hover:text-blue-900"
@@ -317,6 +324,65 @@
         </div>
       </div>
     </div>
+
+    <!-- 图片编辑对话框 -->
+    <div v-if="imageEditDialog.visible" class="fixed inset-0 flex items-center justify-center z-50">
+      <div class="fixed inset-0 bg-black bg-opacity-50" @click="imageEditDialog.visible = false"></div>
+      <div class="bg-white p-6 rounded-lg shadow-lg relative z-10 w-[500px] max-h-[90vh] overflow-y-auto">
+        <h3 class="text-lg font-semibold mb-4">修改单词图片</h3>
+        
+        <!-- 当前图片 -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">当前图片</label>
+          <div v-if="imageEditDialog.currentImagePath" class="w-32 h-32 overflow-hidden rounded-md">
+            <img :src="imageEditDialog.currentImageSrc" class="w-full h-full object-cover" alt="当前单词图片" />
+          </div>
+          <span v-else class="text-gray-500">暂无图片</span>
+        </div>
+        
+        <!-- 图片上传 -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">选择新图片</label>
+          <div class="flex items-center">
+            <div class="relative">
+              <input 
+                type="file" 
+                accept="image/*" 
+                @change="handleImageEditSelect" 
+                class="absolute inset-0 opacity-0 cursor-pointer"
+              />
+              <button 
+                class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md"
+              >
+                选择新图片
+              </button>
+            </div>
+            <span v-if="imageEditDialog.selectedImage" class="ml-3 text-sm text-gray-600">
+              已选择: {{ imageEditDialog.selectedImage.name }}
+            </span>
+            <div v-if="imageEditDialog.imagePreview" class="ml-4 w-16 h-16 overflow-hidden rounded-md">
+              <img :src="imageEditDialog.imagePreview" class="w-full h-full object-cover" />
+            </div>
+          </div>
+        </div>
+        
+        <div class="flex justify-end space-x-2">
+          <button 
+            @click="imageEditDialog.visible = false" 
+            class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md"
+          >
+            取消
+          </button>
+          <button 
+            @click="saveImageEdit" 
+            class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            :disabled="isImageEditing"
+          >
+            {{ isImageEditing ? '保存中...' : '保存修改' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -366,6 +432,22 @@ const colorEditDialog = ref({
   color: '',
 });
 const isColorUpdating = ref(false);
+
+// 图片编辑对话框状态
+const imageEditDialog = ref({
+  visible: false,
+  wordId: null,
+  word: '',
+  translation: '',
+  color: '',
+  currentImagePath: '',
+  currentImageSrc: '',
+  selectedImage: null,
+  imagePreview: '',
+  originalFileName: '',
+  is_default: false
+});
+const isImageEditing = ref(false);
 
 // 获取单词列表
 const loadVocabularyList = async () => {
@@ -427,6 +509,21 @@ const handleEditImageSelect = (event) => {
   const reader = new FileReader();
   reader.onload = (e) => {
     editDialog.value.imagePreview = e.target.result;
+  };
+  reader.readAsDataURL(file);
+};
+
+// 处理图片编辑选择
+const handleImageEditSelect = (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  imageEditDialog.value.selectedImage = file;
+  
+  // 创建预览
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    imageEditDialog.value.imagePreview = e.target.result;
   };
   reader.readAsDataURL(file);
 };
@@ -695,6 +792,90 @@ const saveVocabularyEdit = async () => {
     await message('修改单词失败: ' + error, { title: '错误' });
   } finally {
     isEditing.value = false;
+  }
+};
+
+// 打开图片编辑对话框
+const openEditImageDialog = (word) => {
+  // 从完整路径中提取文件名
+  let imageFileName = '';
+  if (word.image_path) {
+    // 提取文件名部分
+    imageFileName = word.image_path.split('/').pop();
+  }
+  
+  imageEditDialog.value = {
+    visible: true,
+    wordId: word.id,
+    word: word.word,
+    translation: word.translation,
+    color: word.color || '#636e72',
+    currentImagePath: word.image_path,
+    currentImageSrc: word.image_path ? convertFileSrc(word.image_path) : '',
+    selectedImage: null,
+    imagePreview: '',
+    originalFileName: imageFileName,
+    is_default: word.is_default
+  };
+};
+
+// 保存图片编辑
+const saveImageEdit = async () => {
+  if (!imageEditDialog.value.selectedImage) {
+    await message('请选择新图片', { title: '提示' });
+    return;
+  }
+  
+  try {
+    isImageEditing.value = true;
+    
+    // 上传新图片
+    const reader = new FileReader();
+    reader.readAsDataURL(imageEditDialog.value.selectedImage);
+    
+    const imageData = await new Promise((resolve, reject) => {
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+    });
+    
+    const fileName = Date.now() + '_' + imageEditDialog.value.selectedImage.name;
+    const imagePath = await invoke('save_image', { 
+      fileData: imageData, 
+      fileName: fileName 
+    });
+    
+    console.log('新图片已保存:', imagePath);
+    
+    // 根据是否是默认单词选择不同的API更新单词信息
+    if (imageEditDialog.value.is_default) {
+      // 如果是默认单词，只更新图片
+      await invoke('update_vocabulary_image', {
+        id: imageEditDialog.value.wordId,
+        imagePath: fileName  // 只传递文件名，后端会处理完整路径
+      });
+    } else {
+      // 如果不是默认单词，更新所有信息
+      await invoke('update_vocabulary', {
+        id: imageEditDialog.value.wordId,
+        word: imageEditDialog.value.word,
+        translation: imageEditDialog.value.translation,
+        imagePath: fileName,  // 只传递文件名，后端会处理完整路径
+        color: imageEditDialog.value.color
+      });
+    }
+    
+    // 更新本地列表中的信息
+    await loadVocabularyList();
+    await loadActiveWords();
+    
+    imageEditDialog.value.visible = false;
+    await message('单词图片修改成功', { title: '成功' });
+    
+  } catch (error) {
+    console.error('修改单词图片失败:', error);
+    await message('修改单词图片失败: ' + error, { title: '错误' });
+  } finally {
+    isImageEditing.value = false;
   }
 };
 </script>

@@ -400,6 +400,20 @@ async fn update_vocabulary(id: i64, word: String, translation: String, image_pat
     }
 }
 
+// 仅更新单词图片 (允许更新默认单词图片)
+#[tauri::command]
+async fn update_vocabulary_image(id: i64, image_path: String) -> Result<bool, String> {
+    let db = get_db().await;
+    
+    // 确保使用完整的图片路径
+    let full_image_path = special_tools::get_image_path(&image_path);
+    
+    match db.update_vocabulary_image(id, full_image_path.to_string_lossy().to_string()).await {
+        Ok(success) => Ok(success),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -434,6 +448,7 @@ pub fn run() {
             update_system_setting,
             update_vocabulary_color,
             update_vocabulary,
+            update_vocabulary_image,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
