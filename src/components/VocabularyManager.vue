@@ -150,6 +150,12 @@
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 space-x-2">
                 <button 
+                  @click="openEditDialog(item)" 
+                  class="text-green-600 hover:text-green-900"
+                >
+                  编辑
+                </button>
+                <button 
                   @click="toggleActiveWord(item)" 
                   class="text-blue-600 hover:text-blue-900"
                   :disabled="isActiveWordUpdating"
@@ -205,6 +211,102 @@
         </div>
       </div>
     </div>
+
+    <!-- 单词编辑对话框 -->
+    <div v-if="editDialog.visible" class="fixed inset-0 flex items-center justify-center z-50">
+      <div class="fixed inset-0 bg-black bg-opacity-50" @click="editDialog.visible = false"></div>
+      <div class="bg-white p-6 rounded-lg shadow-lg relative z-10 w-[600px] max-h-[90vh] overflow-y-auto">
+        <h3 class="text-lg font-semibold mb-4">编辑单词</h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">单词</label>
+            <input 
+              v-model="editDialog.word" 
+              type="text" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">翻译</label>
+            <input 
+              v-model="editDialog.translation" 
+              type="text" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+        
+        <!-- 颜色选择器 -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">颜色</label>
+          <div class="flex items-center">
+            <input 
+              v-model="editDialog.color" 
+              type="color" 
+              class="w-12 h-8 cursor-pointer border border-gray-300 rounded"
+            />
+            <input 
+              v-model="editDialog.color" 
+              type="text" 
+              class="ml-3 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <div class="ml-3 w-8 h-8 rounded" :style="{backgroundColor: editDialog.color}"></div>
+          </div>
+        </div>
+        
+        <!-- 当前图片 -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">当前图片</label>
+          <div v-if="editDialog.currentImagePath" class="w-24 h-24 overflow-hidden rounded-md">
+            <img :src="editDialog.currentImageSrc" class="w-full h-full object-cover" alt="当前单词图片" />
+          </div>
+          <span v-else class="text-gray-500">暂无图片</span>
+        </div>
+        
+        <!-- 图片上传 -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">更新图片</label>
+          <div class="flex items-center">
+            <div class="relative">
+              <input 
+                type="file" 
+                accept="image/*" 
+                @change="handleEditImageSelect" 
+                class="absolute inset-0 opacity-0 cursor-pointer"
+              />
+              <button 
+                class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md"
+              >
+                选择新图片
+              </button>
+            </div>
+            <span v-if="editDialog.selectedImage" class="ml-3 text-sm text-gray-600">
+              已选择: {{ editDialog.selectedImage.name }}
+            </span>
+            <div v-if="editDialog.imagePreview" class="ml-4 w-16 h-16 overflow-hidden rounded-md">
+              <img :src="editDialog.imagePreview" class="w-full h-full object-cover" />
+            </div>
+          </div>
+        </div>
+        
+        <div class="flex justify-end space-x-2">
+          <button 
+            @click="editDialog.visible = false" 
+            class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md"
+          >
+            取消
+          </button>
+          <button 
+            @click="saveVocabularyEdit" 
+            class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            :disabled="isEditing"
+          >
+            {{ isEditing ? '保存中...' : '保存修改' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -229,6 +331,21 @@ const isDeleting = ref(false);
 const vocabularyList = ref([]);
 const activeWords = ref([]);
 const isActiveWordUpdating = ref(false);
+
+// 编辑对话框状态
+const editDialog = ref({
+  visible: false,
+  wordId: null,
+  word: '',
+  translation: '',
+  color: '#636e72',
+  currentImagePath: '',
+  currentImageSrc: '',
+  selectedImage: null,
+  imagePreview: '',
+  originalFileName: ''
+});
+const isEditing = ref(false);
 
 // 颜色编辑对话框状态
 const colorEditDialog = ref({
@@ -283,6 +400,21 @@ const handleImageSelect = (event) => {
   const reader = new FileReader();
   reader.onload = (e) => {
     imagePreview.value = e.target.result;
+  };
+  reader.readAsDataURL(file);
+};
+
+// 处理编辑图片选择
+const handleEditImageSelect = (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  editDialog.value.selectedImage = file;
+  
+  // 创建预览
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    editDialog.value.imagePreview = e.target.result;
   };
   reader.readAsDataURL(file);
 };
@@ -459,6 +591,84 @@ const saveColorChange = async () => {
     await message('修改颜色失败: ' + error, { title: '错误' });
   } finally {
     isColorUpdating.value = false;
+  }
+};
+
+// 打开编辑对话框
+const openEditDialog = (word) => {
+  // 从完整路径中提取文件名
+  let imageFileName = '';
+  if (word.image_path) {
+    // 提取文件名部分
+    imageFileName = word.image_path.split('/').pop();
+  }
+  
+  editDialog.value = {
+    visible: true,
+    wordId: word.id,
+    word: word.word,
+    translation: word.translation,
+    color: word.color || '#636e72',
+    currentImagePath: word.image_path,
+    currentImageSrc: word.image_path ? convertFileSrc(word.image_path) : '',
+    selectedImage: null,
+    imagePreview: '',
+    originalFileName: imageFileName
+  };
+};
+
+// 保存单词编辑
+const saveVocabularyEdit = async () => {
+  if (!editDialog.value.word || !editDialog.value.translation) {
+    await message('单词和翻译不能为空', { title: '提示' });
+    return;
+  }
+  
+  try {
+    isEditing.value = true;
+    
+    let fileName = editDialog.value.originalFileName;
+    
+    // 如果选择了新图片，先上传
+    if (editDialog.value.selectedImage) {
+      const reader = new FileReader();
+      reader.readAsDataURL(editDialog.value.selectedImage);
+      
+      const imageData = await new Promise((resolve, reject) => {
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+      });
+      
+      fileName = Date.now() + '_' + editDialog.value.selectedImage.name;
+      const imagePath = await invoke('save_image', { 
+        fileData: imageData, 
+        fileName: fileName 
+      });
+      
+      console.log('新图片已保存:', imagePath);
+    }
+    
+    // 更新单词信息
+    await invoke('update_vocabulary', {
+      id: editDialog.value.wordId,
+      word: editDialog.value.word,
+      translation: editDialog.value.translation,
+      imagePath: fileName,  // 只传递文件名，后端会处理完整路径
+      color: editDialog.value.color
+    });
+    
+    // 更新本地列表中的信息
+    await loadVocabularyList();
+    await loadActiveWords();
+    
+    editDialog.value.visible = false;
+    await message('单词修改成功', { title: '成功' });
+    
+  } catch (error) {
+    console.error('修改单词失败:', error);
+    await message('修改单词失败: ' + error, { title: '错误' });
+  } finally {
+    isEditing.value = false;
   }
 };
 </script>

@@ -119,6 +119,9 @@ impl Database {
 
         // 初始化默认设置
         Self::init_default_settings(&pool).await?;
+        
+        // 初始化默认单词数据
+        Self::init_default_vocabulary(&pool).await?;
 
         Ok(Self { pool })
     }
@@ -145,6 +148,46 @@ impl Database {
             .execute(pool)
             .await
             .context("添加默认max_prize_draws设置失败")?;
+        }
+
+        Ok(())
+    }
+
+    /// 初始化默认单词数据
+    async fn init_default_vocabulary(pool: &SqlitePool) -> Result<()> {
+        // 检查是否已有单词数据
+        let has_vocabulary = sqlx::query("SELECT COUNT(*) as count FROM vocabulary")
+            .map(|row: sqlx::sqlite::SqliteRow| {
+                row.get::<i64, _>("count") > 0
+            })
+            .fetch_one(pool)
+            .await
+            .context("检查单词数据是否存在失败")?;
+
+        // 如果已有数据，不添加默认数据
+        if has_vocabulary {
+            return Ok(());
+        }
+
+        // 添加一些默认单词
+        let default_words = [
+            ("☆", "礼袋", "lidai.jpg", "#ffbad8"),
+        ];
+
+        for (word, translation, image, color) in default_words {
+            // 构建图片完整路径
+            let image_path = special_tools::get_image_path(image);
+            
+            sqlx::query(
+                "INSERT INTO vocabulary (word, translation, image_path, color) VALUES (?, ?, ?, ?)"
+            )
+            .bind(word)
+            .bind(translation)
+            .bind(image_path.to_string_lossy().to_string())
+            .bind(color)
+            .execute(pool)
+            .await
+            .context(format!("添加默认单词失败: {}", word))?;
         }
 
         Ok(())
@@ -233,6 +276,23 @@ impl Database {
             .execute(&self.pool)
             .await
             .context("更新单词颜色失败")?;
+
+        Ok(result.rows_affected() > 0)
+    }
+
+    /// 更新单词信息
+    pub async fn update_vocabulary(&self, id: i64, word: String, translation: String, image_path: String, color: Option<String>) -> Result<bool> {
+        let result = sqlx::query(
+            "UPDATE vocabulary SET word = ?, translation = ?, image_path = ?, color = ? WHERE id = ?"
+        )
+        .bind(word)
+        .bind(translation)
+        .bind(image_path)
+        .bind(color)
+        .bind(id)
+        .execute(&self.pool)
+        .await
+        .context("更新单词信息失败")?;
 
         Ok(result.rows_affected() > 0)
     }
