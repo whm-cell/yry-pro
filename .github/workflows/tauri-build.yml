@@ -1,4 +1,4 @@
-name: Tauri App Build and Release
+name: Tauri应用构建与发布
 
 on:
   push:
@@ -28,28 +28,39 @@ jobs:
     runs-on: ${{ matrix.platform.os }}
 
     steps:
-      - name: Checkout repository
+      - name: 检出代码仓库
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: 设置Node.js环境
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install pnpm
+      - name: 安装pnpm
         uses: pnpm/action-setup@v2
         with:
           version: 8
           run_install: false
 
-      - name: Install Rust
+      - name: 从标签提取版本号
+        id: extract_version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
+        shell: bash
+
+      - name: 同步版本号
+        run: |
+          mkdir -p scripts
+          node scripts/sync-version.js ${{ env.VERSION }}
+        shell: bash
+
+      - name: 安装Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           target: ${{ matrix.platform.target }}
           toolchain: stable
           components: rustfmt, clippy
 
-      - name: Cache Rust dependencies
+      - name: 缓存Rust依赖
         uses: actions/cache@v4
         with:
           path: |
@@ -60,10 +71,10 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Install app dependencies
+      - name: 安装应用依赖
         run: pnpm install
 
-      - name: Build Tauri App
+      - name: 构建Tauri应用
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -73,13 +84,13 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'AiMate ${{ github.ref_name }}'
-          releaseBody: 'See the assets to download this version and install.'
+          releaseBody: '点击下方资源下载并安装此版本。'
           releaseDraft: false
           prerelease: false
           args: --verbose
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload artifacts (macOS)
+      - name: 上传构建产物（macOS）
         if: matrix.platform.os == 'macos-latest'
         uses: actions/upload-artifact@v4
         with:
@@ -88,7 +99,7 @@ jobs:
             target/release/bundle/macos/*.app
             target/release/bundle/dmg/*.dmg
 
-      - name: Upload artifacts (Windows)
+      - name: 上传构建产物（Windows）
         if: matrix.platform.os == 'windows-latest'
         uses: actions/upload-artifact@v4
         with:
