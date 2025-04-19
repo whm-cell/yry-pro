@@ -25,7 +25,7 @@ pnpm run sync-version ${VERSION}
 
 # 提交版本更改
 echo "正在提交版本更改..."
-git add package.json src-tauri/Cargo.toml
+git add package.json src-tauri/Cargo.toml src-tauri/Cargo.lock
 git commit -m "chore: 更新版本号至 ${VERSION}"
 
 # 推送更改
