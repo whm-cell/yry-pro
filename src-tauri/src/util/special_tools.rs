@@ -9,13 +9,8 @@ pub fn is_dev_environment() -> bool {
 
 /// 获取基础存储路径
 pub fn get_base_storage_path() -> PathBuf {
-    if is_dev_environment() {
-        // 开发环境使用固定路径
-        PathBuf::from("/Users/coolm/softs/temp_files")
-    } else {
-        // 生产环境使用 AppData 目录
-        path::paths().app_data_dir()
-    }
+    // 不再使用硬编码路径，始终使用应用程序数据目录
+    path::paths().app_data_dir()
 }
 
 /// 获取特定类型文件的存储路径

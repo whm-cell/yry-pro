@@ -27,8 +27,6 @@
         "enable": true,
         "scope": {
           "allow": [
-            "/Users/coolm/softs/temp_files/images/**",
-            "/Users/coolm/softs/temp_files/sounds/**",
             "$APPLOCALDATA/**", "$RESOURCE/**",
             "$APPDATA/**"
           ]
@@ -62,7 +60,8 @@
       },
       "files": {},
       "hardenedRuntime": true,
-      "minimumSystemVersion": "10.13"
+      "minimumSystemVersion": "10.15",
+      "entitlements": "./Entitlements.plist"
       
     },"windows": {
       "allowDowngrades": true,
