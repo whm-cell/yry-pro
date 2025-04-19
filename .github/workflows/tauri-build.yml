@@ -72,7 +72,7 @@ jobs:
           TAURI_TARGET: ${{ matrix.platform.target }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: 'App v${{ github.ref_name }}'
+          releaseName: 'AiMate ${{ github.ref_name }}'
           releaseBody: 'See the assets to download this version and install.'
           releaseDraft: false
           prerelease: false
