@@ -122,18 +122,18 @@
     </div>
     
     <!-- 添加抽奖记录展示 -->
-    <div class="prize-records" :style="{ display: 'block', opacity: 1 }">
-      <h3>单词转盘记录</h3>
-      <div class="records-list">
-        <div v-for="(count, name) in prizeRecords" :key="name" class="record-item">
-          <span>{{ name }}:</span>
-          <span>{{ count }}次</span>
+    <div class="prize-records" :class="{ 'collapsed': !isRecordsExpanded }">
+      <h3 @click="toggleRecords" class="records-title">
+        单词转盘记录
+        <span class="toggle-icon">{{ isRecordsExpanded ? '▼' : '▶' }}</span>
+      </h3>
+      <div class="records-content-wrapper">
+        <div class="records-list">
+          <div v-for="(count, name) in prizeRecords" :key="name" class="record-item">
+            <span>{{ name }}:</span>
+            <span>{{ count }}次</span>
+          </div>
         </div>
-      </div>
-      <!-- 添加调试信息 -->
-      <div class="debug-info">
-        <p>记录数: {{ Object.keys(prizeRecords).length }}</p>
-        <button @click="forceUpdateRecords">刷新记录</button>
       </div>
     </div>
     
@@ -324,6 +324,14 @@ const prizeRecordsRaw = ref<Record<string, number>>({});
 const allPrizesDrawnOnce = ref(false);
 // 标记是否已完成抽奖
 const isCompletedFlag = ref(false);
+
+// 添加折叠/展开的状态变量
+const isRecordsExpanded = ref(false); // 默认折叠
+
+// 切换记录展开/折叠状态
+function toggleRecords(): void {
+  isRecordsExpanded.value = !isRecordsExpanded.value;
+}
 
 // 检查是否是魔法礼袋词条
 const isMagicBagItem = (item: any): boolean => {
@@ -597,14 +605,6 @@ function initializePrizeRecords() {
   console.log('初始化后的记录:', prizeRecordsRaw.value);
 }
 
-// 强制更新记录
-function forceUpdateRecords(): void {
-  console.log('强制更新前的记录:', JSON.stringify(prizeRecordsRaw.value));
-  // 手动刷新一次奖品记录
-  initializePrizeRecords();
-  console.log('强制更新后的记录:', JSON.stringify(prizeRecordsRaw.value));
-  showTip('记录已刷新', 1500);
-}
 
 // 检查是否所有普通奖品都至少抽中一次
 function checkAllPrizesDrawnOnce(): boolean {
@@ -1595,4 +1595,101 @@ async function playWinSound() {
 
 <style>
 @import '../styles/luckyWheel.css';
+
+/* 抽奖记录样式 */
+.prize-records {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  width: 200px;
+  max-height: 300px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.prize-records.collapsed {
+  max-height: 40px;
+}
+
+.records-title {
+  cursor: pointer;
+  margin: 0 0 10px 0;
+  user-select: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #e67e22;
+  position: relative;
+  z-index: 2;
+}
+
+.toggle-icon {
+  font-size: 12px;
+}
+
+/* 添加一个记录内容的包装器 */
+.records-content-wrapper {
+  position: relative;
+  max-height: 250px;
+  transition: max-height 0.3s ease-out;
+  overflow: hidden;
+  width: 100%;
+}
+
+/* 使用多层嵌套来彻底隐藏滚动条 */
+.records-list {
+  position: relative;
+  max-height: 250px;
+  width: calc(100% + 30px); /* 增加宽度以容纳并隐藏滚动条 */
+  box-sizing: border-box;
+  overflow-y: auto; /* 允许滚动 */
+  padding-right: 30px; /* 右侧留出滚动条宽度 */
+  transition: opacity 0.5s ease; /* 渐变显示内容 */
+  opacity: 1;
+  margin: 0;
+}
+
+/* 折叠状态样式 */
+.prize-records.collapsed .records-content-wrapper {
+  max-height: 0;
+}
+
+.prize-records.collapsed .records-list {
+  opacity: 0;
+  margin: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.record-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+  font-size: 14px;
+  border-bottom: 1px dashed #eee;
+  padding-bottom: 5px;
+  white-space: nowrap; /* 防止文本换行 */
+  overflow: hidden; /* 隐藏溢出 */
+  text-overflow: ellipsis; /* 添加省略号 */
+}
+
+/* 自定义滚动条使其完全不可见 */
+.records-list::-webkit-scrollbar {
+  width: 0; 
+  background: transparent;
+}
+
+.records-list::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+/* 对于Firefox */
+.records-list {
+  scrollbar-width: none;
+}
 </style>
