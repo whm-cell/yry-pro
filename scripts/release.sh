@@ -42,7 +42,7 @@ fi
 
 # 提交版本更改
 echo "正在提交版本更改..."
-git add package.json src-tauri/Cargo.toml
+git add package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json
 
 # 强制添加Cargo.lock，即使它在.gitignore中
 if [ -f "$CARGO_LOCK_PATH" ]; then
