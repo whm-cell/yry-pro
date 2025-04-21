@@ -946,6 +946,7 @@ function startCallback(): void {
 // 添加转盘旋转中回调
 function rotatingCallback(data: any): void {
   // Placeholder for potential future rotating logic
+  console.log('转盘旋转中:', data);
 }
 
 // 结束转动回调
