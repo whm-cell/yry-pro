@@ -86,7 +86,7 @@ jobs:
           releaseBody: '点击下方资源下载并安装此版本。'
           releaseDraft: false
           prerelease: false
-          args: --verbose --debug
+          args: --verbose
           token: ${{ secrets.GITHUB_TOKEN }} # 同样使用个人访问令牌
 
       - name: 发布失败时的诊断步骤
