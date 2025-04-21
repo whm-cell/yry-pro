@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import { ref } from "vue";
-// WindowHeader 组件可能不存在，暂时注释掉相关代码
-// import WindowHeader from "./components/WindowHeader.vue";
 import Sidebar from "./components/Sidebar.vue";
 import EnglishWordLottery from "./pages/EnglishWordLottery.vue";
 import Settings from "./pages/Settings.vue";

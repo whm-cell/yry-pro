@@ -8,254 +8,20 @@
         <div class="w-64 bg-gray-50 rounded-xl mr-6 p-4 shadow-sm">
           <div class="text-lg font-bold text-gray-700 mb-4">设置菜单</div>
           <ul class="space-y-1">
+            <!-- 英语转盘设置（唯一菜单项） -->
             <li 
-              v-for="section in settingSections" 
-              :key="section.id"
-              @click="activeSection = section.id"
-              class="px-4 py-3 rounded-lg cursor-pointer transition-all flex items-center"
-              :class="activeSection === section.id ? 'bg-purple-100 text-purple-700' : 'hover:bg-gray-100 text-gray-600'"
+              class="px-4 py-3 rounded-lg cursor-pointer transition-all flex items-center bg-purple-100 text-purple-700"
             >
-              <component :is="section.icon" class="w-5 h-5 mr-2" />
-              <span>{{ section.name }}</span>
+              <component :is="WheelIcon" class="w-5 h-5 mr-2" />
+              <span>英语转盘设置</span>
             </li>
           </ul>
         </div>
 
         <!-- 右侧设置内容 -->
         <div class="flex-grow bg-gray-50 rounded-xl p-6 overflow-y-auto">
-          <!-- 系统外观设置 -->
-          <div v-if="activeSection === 'appearance'" class="space-y-6">
-            <h3 class="text-xl font-bold text-gray-800 mb-4">系统外观设置</h3>
-            
-            <!-- 主题色调 -->
-            <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
-              <h4 class="text-lg font-medium text-gray-700 mb-3">主题色调</h4>
-              <div class="grid grid-cols-2 gap-4">
-                <div 
-                  v-for="theme in themes" 
-                  :key="theme.id"
-                  @click="updateTheme(theme.id)"
-                  class="relative rounded-lg overflow-hidden border-2 cursor-pointer transition-all"
-                  :class="systemSettings.theme === theme.id ? 'border-purple-500 shadow-md' : 'border-transparent hover:border-gray-300'"
-                >
-                  <div class="h-20" :style="{background: theme.gradient}"></div>
-                  <div class="p-3 bg-white">
-                    <div class="font-medium">{{ theme.name }}</div>
-                    <div class="text-xs text-gray-500">{{ theme.description }}</div>
-                  </div>
-                  <div 
-                    v-if="systemSettings.theme === theme.id"
-                    class="absolute top-2 right-2 bg-purple-500 text-white rounded-full p-1"
-                  >
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <!-- 字体设置 -->
-            <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
-              <h4 class="text-lg font-medium text-gray-700 mb-3">字体设置</h4>
-              <div class="grid grid-cols-1 gap-4">
-                <div>
-                  <label class="block text-gray-600 mb-2">字体大小</label>
-                  <div class="flex items-center">
-                    <button 
-                      @click="decreaseFontSize" 
-                      class="px-3 py-1 bg-gray-100 text-gray-700 rounded-l border border-gray-300"
-                      :disabled="systemSettings.fontSize <= 12"
-                    >-</button>
-                    <span class="px-4 py-1 bg-white border-t border-b border-gray-300">{{ systemSettings.fontSize }}px</span>
-                    <button 
-                      @click="increaseFontSize" 
-                      class="px-3 py-1 bg-gray-100 text-gray-700 rounded-r border border-gray-300"
-                      :disabled="systemSettings.fontSize >= 20"
-                    >+</button>
-                  </div>
-                </div>
-                
-                <div>
-                  <label class="block text-gray-600 mb-2">字体样式</label>
-                  <div class="grid grid-cols-3 gap-2">
-                    <div 
-                      v-for="font in fonts" 
-                      :key="font.id"
-                      @click="updateFont(font.id)"
-                      class="px-3 py-2 rounded border cursor-pointer text-center"
-                      :class="systemSettings.font === font.id ? 'bg-purple-50 border-purple-300 text-purple-700' : 'bg-white border-gray-200 hover:border-gray-300'"
-                      :style="{fontFamily: font.family}"
-                    >
-                      {{ font.name }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <!-- 界面模式 -->
-            <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
-              <h4 class="text-lg font-medium text-gray-700 mb-3">界面模式</h4>
-              <div class="flex items-center space-x-4">
-                <div 
-                  @click="updateMode('light')" 
-                  class="flex-1 p-4 rounded-lg border-2 cursor-pointer text-center"
-                  :class="systemSettings.mode === 'light' ? 'bg-orange-50 border-orange-300' : 'bg-white border-gray-200 hover:border-gray-300'"
-                >
-                  <div class="text-2xl mb-1">☀️</div>
-                  <div class="font-medium">浅色模式</div>
-                </div>
-                <div 
-                  @click="updateMode('dark')" 
-                  class="flex-1 p-4 rounded-lg border-2 cursor-pointer text-center"
-                  :class="systemSettings.mode === 'dark' ? 'bg-indigo-50 border-indigo-300' : 'bg-white border-gray-200 hover:border-gray-300'"
-                >
-                  <div class="text-2xl mb-1">🌙</div>
-                  <div class="font-medium">深色模式</div>
-                </div>
-                <div 
-                  @click="updateMode('auto')" 
-                  class="flex-1 p-4 rounded-lg border-2 cursor-pointer text-center"
-                  :class="systemSettings.mode === 'auto' ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200 hover:border-gray-300'"
-                >
-                  <div class="text-2xl mb-1">🔄</div>
-                  <div class="font-medium">自动模式</div>
-                </div>
-              </div>
-              <p class="mt-2 text-sm text-gray-500">自动模式将根据系统设置自动切换浅色/深色模式</p>
-            </div>
-            
-            <!-- 动画效果 -->
-            <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
-              <div class="flex items-center justify-between mb-3">
-                <h4 class="text-lg font-medium text-gray-700">界面动画</h4>
-                <div class="relative inline-block w-12 align-middle select-none transition duration-200 ease-in">
-                  <input 
-                    type="checkbox" 
-                    :checked="systemSettings.animations" 
-                    @change="toggleAnimations" 
-                    class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
-                  />
-                  <label 
-                    class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"
-                    :class="systemSettings.animations ? 'bg-green-500' : ''"
-                  ></label>
-                </div>
-              </div>
-              <p class="text-sm text-gray-500">启用或禁用系统界面过渡动画效果</p>
-            </div>
-          </div>
-          
-          <!-- AI设置 -->
-          <div v-if="activeSection === 'ai'" class="space-y-6">
-            <h3 class="text-xl font-bold text-gray-800 mb-4">AI助手设置</h3>
-            
-            <!-- AI模型选择 -->
-            <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
-              <h4 class="text-lg font-medium text-gray-700 mb-3">AI模型</h4>
-              <div class="space-y-3">
-                <div 
-                  v-for="model in aiModels" 
-                  :key="model.id"
-                  @click="updateAiModel(model.id)"
-                  class="relative flex items-center p-4 rounded-lg border-2 cursor-pointer transition-all"
-                  :class="aiSettings.model === model.id ? 'bg-blue-50 border-blue-300 shadow-sm' : 'bg-white border-gray-200 hover:border-gray-300'"
-                >
-                  <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center mr-4 text-blue-600">
-                    {{ model.icon }}
-                  </div>
-                  <div class="flex-grow">
-                    <div class="font-medium">{{ model.name }}</div>
-                    <div class="text-sm text-gray-500">{{ model.description }}</div>
-                  </div>
-                  <div 
-                    class="w-6 h-6 rounded-full flex items-center justify-center border-2"
-                    :class="aiSettings.model === model.id ? 'bg-blue-500 border-blue-500' : 'border-gray-300'"
-                  >
-                    <svg v-if="aiSettings.model === model.id" class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M5 13L9 17L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                  </div>
-                </div>
-              </div>
-              <p class="mt-2 text-sm text-gray-500">选择不同的AI模型将影响智能助手的能力和速度</p>
-            </div>
-            
-            <!-- AI语言设置 -->
-            <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
-              <h4 class="text-lg font-medium text-gray-700 mb-3">AI语言偏好</h4>
-              <div class="flex items-center mb-4">
-                <label class="flex-grow text-gray-600">AI回答语言</label>
-                <select 
-                  v-model="aiSettings.language" 
-                  class="py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="zh">中文</option>
-                  <option value="en">英文</option>
-                  <option value="auto">自动检测</option>
-                </select>
-              </div>
-              
-              <div class="mt-4">
-                <label class="text-gray-600 block mb-2">响应详细程度</label>
-                <div class="flex items-center justify-between">
-                  <span class="text-sm text-gray-500">简洁</span>
-                  <input 
-                    type="range" 
-                    v-model="aiSettings.verbosity" 
-                    min="1" 
-                    max="5" 
-                    class="w-2/3 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                  />
-                  <span class="text-sm text-gray-500">详细</span>
-                </div>
-              </div>
-            </div>
-            
-            <!-- AI功能设置 -->
-            <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
-              <h4 class="text-lg font-medium text-gray-700 mb-3">AI功能设置</h4>
-              <div class="space-y-3">
-                <div class="flex items-center">
-                  <label class="flex-grow text-gray-600">自动建议</label>
-                  <div class="relative inline-block w-12 align-middle select-none transition duration-200 ease-in">
-                    <input 
-                      type="checkbox" 
-                      :checked="aiSettings.autoSuggestions" 
-                      @change="toggleAutoSuggestions" 
-                      class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
-                    />
-                    <label 
-                      class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"
-                      :class="aiSettings.autoSuggestions ? 'bg-blue-500' : ''"
-                    ></label>
-                  </div>
-                </div>
-                <p class="text-sm text-gray-500 ml-0">启用后，AI将在适当时机提供智能建议</p>
-                
-                <div class="flex items-center mt-4">
-                  <label class="flex-grow text-gray-600">学习数据收集</label>
-                  <div class="relative inline-block w-12 align-middle select-none transition duration-200 ease-in">
-                    <input 
-                      type="checkbox" 
-                      :checked="aiSettings.dataCollection" 
-                      @change="toggleDataCollection" 
-                      class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
-                    />
-                    <label 
-                      class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"
-                      :class="aiSettings.dataCollection ? 'bg-blue-500' : ''"
-                    ></label>
-                  </div>
-                </div>
-                <p class="text-sm text-gray-500 ml-0">允许系统收集使用数据以改进AI功能（不包含个人信息）</p>
-              </div>
-            </div>
-          </div>
-          
           <!-- 转盘设置 -->
-          <div v-if="activeSection === 'wheel'" class="space-y-6">
+          <div class="space-y-6">
             <h3 class="text-xl font-bold text-gray-800 mb-4">英语转盘设置</h3>
             
             <!-- 抽奖模式设置 -->
@@ -415,32 +181,6 @@
               </div>
             </div>
           </div>
-          
-          <!-- 关于系统 -->
-          <div v-if="activeSection === 'about'" class="space-y-6">
-            <h3 class="text-xl font-bold text-gray-800 mb-4">关于系统</h3>
-            
-            <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-              <div class="flex items-center justify-center mb-6">
-                <div class="w-24 h-24 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg">
-                  YRY
-                </div>
-              </div>
-              
-              <div class="text-center mb-6">
-                <h4 class="text-xl font-bold text-gray-800">英语大转盘系统</h4>
-                <p class="text-gray-500">版本 1.0.0</p>
-              </div>
-              
-              <div class="space-y-4 text-center">
-                <p class="text-gray-600">本系统旨在提供交互式的英语学习体验，通过游戏化的方式激发学习兴趣。</p>
-                <p class="text-gray-600">Copyright © 2023 YRY教育科技</p>
-                <button class="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition-colors">
-                  检查更新
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -465,8 +205,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, markRaw, h, onMounted } from 'vue';
-import { useWheelSettings, DrawMode,  SoundSetting } from '../utils/wheelSettings';
+import { ref, markRaw, h, onMounted } from 'vue';
+import { useWheelSettings, DrawMode, SoundSetting } from '../utils/wheelSettings';
 import SoundUploader from '../components/SoundUploader.vue';
 import * as tauriApi from '@tauri-apps/api/core';
 
@@ -478,7 +218,6 @@ const {
   updateMaxDraws,
   updateSound
 } = useWheelSettings();
-
 
 // 抽奖模式列表
 const drawModes = [
@@ -496,6 +235,7 @@ const drawModes = [
   }
 ];
 
+// 创建图标组件
 const WheelIcon = markRaw({
   render() {
     return h('svg', {
@@ -513,150 +253,6 @@ const WheelIcon = markRaw({
     ]);
   }
 });
-
-// 设置分类列表
-const settingSections = [
-  // { id: 'appearance', name: '系统外观', icon: AppearanceIcon },
-  // { id: 'ai', name: 'AI助手设置', icon: AiIcon },
-  { id: 'wheel', name: '英语转盘设置', icon: WheelIcon },
-  // { id: 'about', name: '关于系统', icon: AboutIcon }
-];
-
-// 当前激活的设置分类
-const activeSection = ref('wheel');
-
-// 系统外观设置
-interface SystemSettings {
-  theme: string;
-  fontSize: number;
-  font: string;
-  mode: 'light' | 'dark' | 'auto';
-  animations: boolean;
-}
-
-const systemSettings = reactive<SystemSettings>({
-  theme: 'purple',
-  fontSize: 14,
-  font: 'default',
-  mode: 'light',
-  animations: true
-});
-
-// 主题选项
-const themes = [
-  { 
-    id: 'purple', 
-    name: '梦幻紫', 
-    description: '明亮活泼的紫色主题',
-    gradient: 'linear-gradient(135deg, #a78bfa, #7c3aed)'
-  },
-  { 
-    id: 'blue', 
-    name: '海洋蓝', 
-    description: '清新稳重的蓝色主题',
-    gradient: 'linear-gradient(135deg, #93c5fd, #3b82f6)'
-  },
-  { 
-    id: 'green', 
-    name: '自然绿', 
-    description: '舒适平和的绿色主题',
-    gradient: 'linear-gradient(135deg, #6ee7b7, #059669)'
-  },
-  { 
-    id: 'orange', 
-    name: '活力橙', 
-    description: '充满活力的橙色主题',
-    gradient: 'linear-gradient(135deg, #fdba74, #ea580c)'
-  }
-];
-
-// 字体选项
-const fonts = [
-  { id: 'default', name: '默认', family: 'system-ui, -apple-system, sans-serif' },
-  { id: 'serif', name: '衬线体', family: 'serif' },
-  { id: 'mono', name: '等宽体', family: 'monospace' }
-];
-
-// AI设置
-interface AiSettings {
-  model: string;
-  language: string;
-  verbosity: number;
-  autoSuggestions: boolean;
-  dataCollection: boolean;
-}
-
-const aiSettings = reactive<AiSettings>({
-  model: 'default',
-  language: 'zh',
-  verbosity: 3,
-  autoSuggestions: true,
-  dataCollection: false
-});
-
-// AI模型选项
-const aiModels = [
-  { 
-    id: 'default', 
-    name: '通用模型', 
-    description: '平衡性能与速度的基础模型',
-    icon: '🤖'
-  },
-  { 
-    id: 'education', 
-    name: '教育专用模型', 
-    description: '针对教育场景优化的专业模型',
-    icon: '📚'
-  },
-  { 
-    id: 'advanced', 
-    name: '高级模型', 
-    description: '更强大的理解和生成能力，但速度较慢',
-    icon: '🧠'
-  }
-];
-
-// 系统外观设置相关函数
-function updateTheme(themeId: string): void {
-  systemSettings.theme = themeId;
-}
-
-function increaseFontSize(): void {
-  if (systemSettings.fontSize < 20) {
-    systemSettings.fontSize += 1;
-  }
-}
-
-function decreaseFontSize(): void {
-  if (systemSettings.fontSize > 12) {
-    systemSettings.fontSize -= 1;
-  }
-}
-
-function updateFont(fontId: string): void {
-  systemSettings.font = fontId;
-}
-
-function updateMode(mode: 'light' | 'dark' | 'auto'): void {
-  systemSettings.mode = mode;
-}
-
-function toggleAnimations(): void {
-  systemSettings.animations = !systemSettings.animations;
-}
-
-// AI设置相关函数
-function updateAiModel(modelId: string): void {
-  aiSettings.model = modelId;
-}
-
-function toggleAutoSuggestions(): void {
-  aiSettings.autoSuggestions = !aiSettings.autoSuggestions;
-}
-
-function toggleDataCollection(): void {
-  aiSettings.dataCollection = !aiSettings.dataCollection;
-}
 
 // 转盘设置相关函数
 function toggleLockAfterComplete(): void {
@@ -725,20 +321,6 @@ async function playSelectedSound(type: 'spin' | 'win'): Promise<void> {
     showAudioMessage.value = true;
     // 获取并转换音效URL
     let soundUrl = settings.sounds[type].url;
-    
-    // 使用Tauri的资源转换功能处理文件路径
-    // if (tauriApi.convertFileSrc) {
-      // try {
-        // soundUrl = tauriApi.convertFileSrc(soundUrl);
-        
-      // } catch (err: any) {
-      //   console.error('转换URL失败:', err);
-      //   audioMessage.value = `转换音频URL失败: ${err?.message || '未知错误'}`;
-      //   showAudioMessage.value = true;
-      //   setTimeout(() => { showAudioMessage.value = false; }, 3000);
-      //   return;
-      // }
-    // }
     
     // 创建新的Audio实例
     const audio = new Audio();

@@ -26,30 +26,51 @@
         
         <nav>
           <ul>
+            <!-- 英语转盘 -->
             <li class="mb-2">
-              <a href="#" class="nav-item flex items-center p-3 rounded-lg" 
-                :class="{ 
-                  'bg-blue-400 bg-opacity-20': activePage === 'englishWordLottery', 
-                  'hover:bg-white hover:bg-opacity-10': activePage !== 'englishWordLottery'
-                }" 
-                @click.prevent="changePage('englishWordLottery')"
-              >
-                <i class="fas fa-spinner w-6 text-lg"></i>
-                <span class="font-semibold ml-2">单词抽奖</span>
-              </a>
+              <div class="nav-category">
+                <a href="#" class="nav-item flex items-center justify-between p-3 rounded-lg" 
+                  :class="{ 
+                    'bg-blue-400 bg-opacity-20': ['englishWordLottery', 'vocabulary'].includes(activePage), 
+                    'hover:bg-white hover:bg-opacity-10': !['englishWordLottery', 'vocabulary'].includes(activePage)
+                  }" 
+                  @click.prevent="toggleSubMenu('wordSystem')"
+                >
+                  <div class="flex items-center">
+                    <i class="fas fa-book-open w-6 text-lg"></i>
+                    <span class="font-semibold ml-2">英语转盘</span>
+                  </div>
+                  <i class="fas" :class="expandedMenus.includes('wordSystem') ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+                </a>
+                
+                <!-- 二级菜单 -->
+                <div v-if="expandedMenus.includes('wordSystem')" class="submenu pl-6">
+                  <a href="#" class="nav-item flex items-center p-2 mt-1 rounded-lg" 
+                    :class="{ 
+                      'bg-blue-400 bg-opacity-20': activePage === 'englishWordLottery', 
+                      'hover:bg-white hover:bg-opacity-10': activePage !== 'englishWordLottery'
+                    }" 
+                    @click.prevent="changePage('englishWordLottery')"
+                  >
+                    <i class="fas fa-spinner w-6 text-lg"></i>
+                    <span class="font-semibold ml-2">抽奖转盘</span>
+                  </a>
+                  
+                  <a href="#" class="nav-item flex items-center p-2 mt-1 rounded-lg" 
+                    :class="{ 
+                      'bg-blue-400 bg-opacity-20': activePage === 'vocabulary', 
+                      'hover:bg-white hover:bg-opacity-10': activePage !== 'vocabulary'
+                    }" 
+                    @click.prevent="changePage('vocabulary')"
+                  >
+                    <i class="fas fa-book w-6 text-lg"></i>
+                    <span class="font-semibold ml-2">单词管理</span>
+                  </a>
+                </div>
+              </div>
             </li>
-            <li class="mb-2">
-              <a href="#" class="nav-item flex items-center p-3 rounded-lg" 
-                :class="{ 
-                  'bg-blue-400 bg-opacity-20': activePage === 'vocabulary', 
-                  'hover:bg-white hover:bg-opacity-10': activePage !== 'vocabulary'
-                }" 
-                @click.prevent="changePage('vocabulary')"
-              >
-                <i class="fas fa-book w-6 text-lg"></i>
-                <span class="font-semibold ml-2">单词管理</span>
-              </a>
-            </li>
+            
+            <!-- 设置菜单项 -->
             <li class="mb-2">
               <a href="#" class="nav-item flex items-center p-3 rounded-lg" 
                 :class="{ 
@@ -93,7 +114,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits } from 'vue';
+import { defineProps, defineEmits, ref } from 'vue';
 
 defineProps<{
   activePage: string;
@@ -104,6 +125,19 @@ const emit = defineEmits<{
   (e: 'change-page', page: string): void;
   (e: 'toggle-sidebar'): void;
 }>();
+
+// 控制展开菜单的状态
+const expandedMenus = ref(['wordSystem']); // 默认展开英语转盘菜单
+
+// 切换子菜单展开/折叠状态
+const toggleSubMenu = (menuId: string) => {
+  const index = expandedMenus.value.indexOf(menuId);
+  if (index === -1) {
+    expandedMenus.value.push(menuId);
+  } else {
+    expandedMenus.value.splice(index, 1);
+  }
+};
 
 const changePage = (page: string) => {
   emit('change-page', page);
@@ -127,6 +161,12 @@ const toggleSidebar = () => {
   padding: 0;
   border-radius: 0;
   opacity: 0;
+}
+
+/* 子菜单动画 */
+.submenu {
+  overflow: hidden;
+  transition: all 0.3s ease;
 }
 
 /* 气泡动画 */
