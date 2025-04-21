@@ -174,11 +174,6 @@ export function useWheelSettings() {
     settings.spinDuration = duration;
   };
   
-  // 新增：更新是否启用高亮边框效果的方法
-  const updateEnableHighlight = (enable: boolean) => {
-    settings.enableHighlight = enable;
-  };
-  
   // 新增：更新转盘大小缩放比例的方法
   const updateWheelScale = (scale: number) => {
     settings.wheelScale = scale;
@@ -201,7 +196,6 @@ export function useWheelSettings() {
     updatePrizeWords,
     updateSound,
     updateSpinDuration,
-    updateEnableHighlight,
     updateWheelScale,
     resetSettings,
     isInitialized

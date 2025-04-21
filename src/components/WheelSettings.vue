@@ -37,21 +37,6 @@
       </div>
     </div>
     
-    <div class="settings-group">
-      <h3>高亮边框效果</h3>
-      <div class="toggle-container">
-        <label class="toggle">
-          <input 
-            type="checkbox" 
-            v-model="enableHighlight"
-            @change="updateEnableHighlight"
-          />
-          <span class="toggle-slider"></span>
-        </label>
-        <span class="toggle-label">{{ enableHighlight ? '已开启' : '已关闭' }}</span>
-      </div>
-    </div>
-    
     <div class="settings-actions">
       <button class="btn reset-btn" @click="resetSettings">重置为默认设置</button>
     </div>
@@ -66,24 +51,17 @@ import { useWheelSettings } from '../utils/wheelSettings';
 const { 
   settings, 
   updateSpinDuration: setSpinDuration, 
-  updateEnableHighlight: setEnableHighlight, 
   updateWheelScale: setWheelScale,
   resetSettings 
 } = useWheelSettings();
 
 // 创建本地状态
 const spinDuration = ref(settings.spinDuration);
-const enableHighlight = ref(settings.enableHighlight);
 const wheelScale = ref(settings.wheelScale);
 
 // 更新转盘旋转时间
 function updateSpinDuration() {
   setSpinDuration(spinDuration.value);
-}
-
-// 更新高亮边框效果设置
-function updateEnableHighlight() {
-  setEnableHighlight(enableHighlight.value);
 }
 
 // 更新转盘大小
@@ -95,7 +73,6 @@ function updateWheelScale() {
 onMounted(() => {
   // 同步初始值
   spinDuration.value = settings.spinDuration;
-  enableHighlight.value = settings.enableHighlight;
   wheelScale.value = settings.wheelScale;
 });
 </script>
@@ -167,62 +144,6 @@ onMounted(() => {
   min-width: 50px;
   text-align: center;
   font-weight: bold;
-}
-
-.toggle-container {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.toggle {
-  position: relative;
-  display: inline-block;
-  width: 52px;
-  height: 28px;
-}
-
-.toggle input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.toggle-slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #ccc;
-  transition: 0.4s;
-  border-radius: 34px;
-}
-
-.toggle-slider:before {
-  position: absolute;
-  content: "";
-  height: 20px;
-  width: 20px;
-  left: 4px;
-  bottom: 4px;
-  background-color: white;
-  transition: 0.4s;
-  border-radius: 50%;
-}
-
-input:checked + .toggle-slider {
-  background-color: #e17055;
-}
-
-input:checked + .toggle-slider:before {
-  transform: translateX(24px);
-}
-
-.toggle-label {
-  font-size: 16px;
-  color: #2d3436;
 }
 
 .settings-actions {

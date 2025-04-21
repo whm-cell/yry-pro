@@ -17,16 +17,11 @@
         @rotating="rotatingCallback"
       >
         <!-- 添加高亮边框覆盖层 -->
-        <template #item="{index, transform, background, imgs, fonts}">
+        <template #item="{transform, background, imgs, fonts}">
           <div
             class="prize-item"
             :style="{background, transform}"
-            :class="{'highlight': settings.enableHighlight && highlightIndex === index}"
           >
-            <div
-              class="wheel-item-border"
-              :class="{'active': settings.enableHighlight && highlightIndex === index}"
-            ></div>
             <!-- 图片内容 -->
             <div v-for="(img, i) in imgs" :key="i">
               <img
@@ -216,8 +211,6 @@ const isTransitioning = ref(false); // 添加过渡状态锁，防止在过渡�
 let autoSlideTimer: number | null = null; // 添加自动滑动计时器
 let autoCloseInterval: number | null = null; // 添加进度条更新计时器
 
-// 新增：用于高亮边框的状态
-const highlightIndex = ref<number | null>(null);
 const isRotating = ref(false);
 
 // 自动关闭倒计时
@@ -453,7 +446,7 @@ const loadVocabularyFromDatabase = async () => {
           background: isMagicBag ? '#fab1a0' : (itemColor || getRandomColor()),
           fonts: [
             { 
-              text: isMagicBag ? 'Magic Bag' : item.word, 
+              text: isMagicBag ? 'Magic Bag' : "", 
               top: '55%', 
               fontColor: '#2d3436', 
               fontSize: '16px', 
@@ -952,11 +945,7 @@ function startCallback(): void {
 
 // 添加转盘旋转中回调
 function rotatingCallback(data: any): void {
-  // 不管是否启用高亮边框效果，都记录当前索引
-  // 这样当用户打开高亮边框效果设置时，可以立即看到效果
-  if (data.currIndex !== highlightIndex.value) {
-    highlightIndex.value = data.currIndex;
-  }
+  // Placeholder for potential future rotating logic
 }
 
 // 结束转动回调
@@ -968,11 +957,6 @@ function endCallback(prize: any): void {
   
   // 设置转盘旋转状态为结束
   isRotating.value = false;
-  
-  // 清空高亮索引
-  setTimeout(() => {
-    highlightIndex.value = null;
-  }, 1000); // 在转盘停止1秒后移除高亮效果
   
   // 获取中奖索引
   let prizeIndex = -1;
