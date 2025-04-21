@@ -76,7 +76,7 @@ jobs:
       - name: 构建Tauri应用
         uses: tauri-apps/tauri-action@v0
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }} # 使用个人访问令牌替代 GITHUB_TOKEN
           TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }} # 如果需要签名
           TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }} # 如果需要签名
           TAURI_TARGET: ${{ matrix.platform.target }}
@@ -86,8 +86,26 @@ jobs:
           releaseBody: '点击下方资源下载并安装此版本。'
           releaseDraft: false
           prerelease: false
-          args: --verbose
-          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --verbose --debug
+          token: ${{ secrets.GH_PAT }} # 同样使用个人访问令牌
+
+      - name: 发布失败时的诊断步骤
+        if: failure()
+        run: |
+          echo "发布过程失败，正在收集诊断信息..."
+          echo "检查 GitHub API 限制状态"
+          if [[ "${{ matrix.platform.os }}" == *"macos"* ]] || [[ "${{ matrix.platform.os }}" == *"ubuntu"* ]]; then
+            curl -s -H "Authorization: token ${{ secrets.GH_PAT }}" https://api.github.com/rate_limit
+          else
+            curl.exe -s -H "Authorization: token ${{ secrets.GH_PAT }}" https://api.github.com/rate_limit
+          fi
+          echo "检查是否存在与此标签相关的 release"
+          if [[ "${{ matrix.platform.os }}" == *"macos"* ]] || [[ "${{ matrix.platform.os }}" == *"ubuntu"* ]]; then
+            curl -s -H "Authorization: token ${{ secrets.GH_PAT }}" https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ github.ref_name }}
+          else
+            curl.exe -s -H "Authorization: token ${{ secrets.GH_PAT }}" https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ github.ref_name }}
+          fi
+        shell: bash
 
       - name: 上传构建产物（macOS）
         if: matrix.platform.os == 'macos-latest'
