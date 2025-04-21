@@ -1,55 +1,60 @@
 <template>
-  <div class="lucky-container">
+  <div class="lucky-container" :class="{'large-scale': settings.wheelScale > 2}">
     <!-- 转盘部分 -->
-    <LuckyWheel
-      ref="myLucky"
-      width="600px"
-      height="600px"
-      :prizes="prizes"
-      :blocks="blocks"
-      :buttons="buttons"
-      @start="startCallback"
-      @end="endCallback"
-      @rotating="rotatingCallback"
+    <div 
+      class="wheel-wrapper" 
+      :style="{ transform: `scale(${settings.wheelScale || 1})` }"
     >
-      <!-- 添加高亮边框覆盖层 -->
-      <template #item="{index, transform, background, imgs, fonts}">
-        <div
-          class="prize-item"
-          :style="{background, transform}"
-          :class="{'highlight': settings.enableHighlight && highlightIndex === index}"
-        >
+      <LuckyWheel
+        ref="myLucky"
+        width="600px"
+        height="600px"
+        :prizes="prizes"
+        :blocks="blocks"
+        :buttons="buttons"
+        @start="startCallback"
+        @end="endCallback"
+        @rotating="rotatingCallback"
+      >
+        <!-- 添加高亮边框覆盖层 -->
+        <template #item="{index, transform, background, imgs, fonts}">
           <div
-            class="wheel-item-border"
-            :class="{'active': settings.enableHighlight && highlightIndex === index}"
-          ></div>
-          <!-- 图片内容 -->
-          <div v-for="(img, i) in imgs" :key="i">
-            <img
-              :src="img.src"
-              :style="{
-                width: img.width,
-                top: img.top
-              }"
-            />
-          </div>
-          <!-- 文字内容 -->
-          <div 
-            v-for="(font, i) in fonts" 
-            :key="i"
-            :style="{
-              color: font.fontColor,
-              fontSize: font.fontSize,
-              lineHeight: font.lineHeight || font.fontSize,
-              top: font.top,
-              fontWeight: font.fontWeight
-            }"
+            class="prize-item"
+            :style="{background, transform}"
+            :class="{'highlight': settings.enableHighlight && highlightIndex === index}"
           >
-            {{font.text}}
+            <div
+              class="wheel-item-border"
+              :class="{'active': settings.enableHighlight && highlightIndex === index}"
+            ></div>
+            <!-- 图片内容 -->
+            <div v-for="(img, i) in imgs" :key="i">
+              <img
+                :src="img.src"
+                :style="{
+                  width: img.width,
+                  top: img.top
+                }"
+              />
+            </div>
+            <!-- 文字内容 -->
+            <div 
+              v-for="(font, i) in fonts" 
+              :key="i"
+              :style="{
+                color: font.fontColor,
+                fontSize: font.fontSize,
+                lineHeight: font.lineHeight || font.fontSize,
+                top: font.top,
+                fontWeight: font.fontWeight
+              }"
+            >
+              {{font.text}}
+            </div>
           </div>
-        </div>
-      </template>
-    </LuckyWheel>
+        </template>
+      </LuckyWheel>
+    </div>
     
     <!-- 图片展示区域 -->
     <div 

@@ -42,6 +42,8 @@ export interface WheelSettings {
   spinDuration: number;
   // 新增：是否启用高亮边框效果
   enableHighlight: boolean;
+  // 新增：转盘大小缩放比例
+  wheelScale: number;
 }
 
 // 设置存储键名
@@ -69,7 +71,9 @@ const defaultSettings: WheelSettings = {
   // 新增：默认转盘旋转时间3秒
   spinDuration: 3000,
   // 新增：默认启用高亮边框效果
-  enableHighlight: true
+  enableHighlight: true,
+  // 新增：默认转盘大小缩放比例为1（原始大小）
+  wheelScale: 1
 };
 
 // 从本地存储加载设置
@@ -175,6 +179,11 @@ export function useWheelSettings() {
     settings.enableHighlight = enable;
   };
   
+  // 新增：更新转盘大小缩放比例的方法
+  const updateWheelScale = (scale: number) => {
+    settings.wheelScale = scale;
+  };
+  
   // 重置设置
   const resetSettings = () => {
     Object.assign(settings, defaultSettings);
@@ -193,6 +202,7 @@ export function useWheelSettings() {
     updateSound,
     updateSpinDuration,
     updateEnableHighlight,
+    updateWheelScale,
     resetSettings,
     isInitialized
   };

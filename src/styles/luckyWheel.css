@@ -10,6 +10,29 @@
   height: 100%;
   width: 100%;
   overflow: visible;
+  transition: padding 0.3s ease;
+}
+
+/* 大尺寸转盘时的容器样式 */
+.lucky-container.large-scale {
+  padding: 50px;
+  min-height: 800px; /* 确保在300%缩放时有足够空间 */
+}
+
+/* 添加转盘包装器样式，支持缩放 */
+.wheel-wrapper {
+  transition: transform 0.3s ease;
+  transform-origin: center center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 20px 0;
+  /* 添加最小高度确保极小尺寸时仍然可见 */
+  min-height: 200px;
+  /* 确保在大缩放比例下内容不会溢出 */
+  overflow: visible;
+  /* 为大缩放比例添加足够的空间 */
+  padding: 20px;
 }
 
 /* 抽奖记录 */
@@ -24,6 +47,12 @@
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   z-index: 10;
   transition: all 0.3s ease;
+}
+
+/* 在大尺寸转盘下调整位置 */
+.large-scale .prize-records {
+  /* 增加z-index确保在大尺寸转盘上方 */
+  z-index: 15;
 }
 
 .prize-records h3 {

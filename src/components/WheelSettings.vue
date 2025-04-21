@@ -18,6 +18,26 @@
     </div>
     
     <div class="settings-group">
+      <h3>转盘大小</h3>
+      <div class="slider-container">
+        <input 
+          type="range" 
+          min="0.5" 
+          max="3" 
+          step="0.1"
+          v-model.number="wheelScale"
+          @input="updateWheelScale"
+        />
+        <div class="slider-value">{{ (wheelScale * 100).toFixed(0) }}%</div>
+      </div>
+      <div class="scale-hint">
+        <span>较小</span>
+        <span>原始大小</span>
+        <span>较大(300%)</span>
+      </div>
+    </div>
+    
+    <div class="settings-group">
       <h3>高亮边框效果</h3>
       <div class="toggle-container">
         <label class="toggle">
@@ -43,11 +63,18 @@ import { ref, onMounted } from 'vue';
 import { useWheelSettings } from '../utils/wheelSettings';
 
 // 获取转盘设置
-const { settings, updateSpinDuration: setSpinDuration, updateEnableHighlight: setEnableHighlight, resetSettings } = useWheelSettings();
+const { 
+  settings, 
+  updateSpinDuration: setSpinDuration, 
+  updateEnableHighlight: setEnableHighlight, 
+  updateWheelScale: setWheelScale,
+  resetSettings 
+} = useWheelSettings();
 
 // 创建本地状态
 const spinDuration = ref(settings.spinDuration);
 const enableHighlight = ref(settings.enableHighlight);
+const wheelScale = ref(settings.wheelScale);
 
 // 更新转盘旋转时间
 function updateSpinDuration() {
@@ -59,11 +86,17 @@ function updateEnableHighlight() {
   setEnableHighlight(enableHighlight.value);
 }
 
+// 更新转盘大小
+function updateWheelScale() {
+  setWheelScale(wheelScale.value);
+}
+
 // 监听全局设置变化
 onMounted(() => {
   // 同步初始值
   spinDuration.value = settings.spinDuration;
   enableHighlight.value = settings.enableHighlight;
+  wheelScale.value = settings.wheelScale;
 });
 </script>
 
@@ -214,5 +247,14 @@ input:checked + .toggle-slider:before {
 
 .reset-btn:hover {
   background-color: #b2bec3;
+}
+
+.scale-hint {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #7f8c8d;
+  margin-top: 5px;
+  padding: 0 2px;
 }
 </style> 
