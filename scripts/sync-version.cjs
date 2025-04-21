@@ -35,6 +35,13 @@ const updatedCargoToml = cargoToml.replace(
 );
 fs.writeFileSync(cargoTomlPath, updatedCargoToml);
 
+// 更新 tauri.conf.json 中的版本
+const tauriConfPath = path.join(rootDir, 'src-tauri', 'tauri.conf.json');
+const tauriConf = JSON.parse(fs.readFileSync(tauriConfPath, 'utf8'));
+tauriConf.version = newVersion;
+fs.writeFileSync(tauriConfPath, JSON.stringify(tauriConf, null, 2) + '\n');
+
 console.log(`版本已从 ${oldPackageVersion} 更新到 ${newVersion}`);
 console.log('- package.json 已更新');
-console.log('- src-tauri/Cargo.toml 已更新'); 
+console.log('- src-tauri/Cargo.toml 已更新');
+console.log('- src-tauri/tauri.conf.json 已更新'); 
